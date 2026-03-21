@@ -79,7 +79,7 @@ describe('Phase 1: Information Monotonicity', () => {
     const r = await verify(
       [{ file: 'server.js', search: 'h1 { color: #1a1a2e', replace: 'h1 { color: red' }],
       [{ type: 'css', selector: 'h1', property: 'color', expected: 'rgb(255, 0, 0)' }],
-      { appDir, goal: 'Change heading to red' },
+      { appDir, goal: 'Change heading to red', gates: { grounding: false } },
     );
 
     // Result structure is well-formed
@@ -98,7 +98,7 @@ describe('Phase 1: Information Monotonicity', () => {
     const r = await verify(
       [{ file: 'server.js', search: 'THIS DOES NOT EXIST', replace: 'anything' }],
       [{ type: 'css', selector: 'h1', property: 'color', expected: 'red' }],
-      { appDir, goal: 'Bad edit' },
+      { appDir, goal: 'Bad edit', gates: { grounding: false } },
     );
 
     expect(r.success).toBe(false);
@@ -157,14 +157,17 @@ describe('Phase 1: Information Monotonicity', () => {
 // ==========================================================================
 
 describe('Phase 2: Convergence — Smart Agent vs Naive Agent', () => {
-  test('2.1 — Naive agent is blocked on second attempt (K5 predicate ban)', async () => {
+  const hasDocker = dockerAvailable();
+  const dockerTest = hasDocker ? test : test.skip;
+
+  dockerTest('2.1 — Naive agent is blocked on second attempt (K5 predicate ban)', async () => {
     resetState();
 
     // Attempt 1: Wrong expected value — HTTP predicate fails
     const naive1 = await verify(
       [{ file: 'server.js', search: "{ id: 1, name: 'Alpha' }", replace: "{ id: 1, name: 'Alpha' }" }],
       [{ type: 'http', method: 'GET', path: '/api/items', expect: { status: 200, bodyContains: 'DOES_NOT_EXIST' } }],
-      { appDir, goal: 'Naive: check items API' },
+      { appDir, goal: 'Naive: check items API', gates: { grounding: false } },
     );
 
     // First attempt gets through to HTTP gate (or staging) and fails
@@ -178,7 +181,7 @@ describe('Phase 2: Convergence — Smart Agent vs Naive Agent', () => {
     const naive2 = await verify(
       [{ file: 'server.js', search: "{ id: 1, name: 'Alpha' }", replace: "{ id: 1, name: 'Alpha' }" }],
       [{ type: 'http', method: 'GET', path: '/api/items', expect: { status: 200, bodyContains: 'DOES_NOT_EXIST' } }],
-      { appDir, goal: 'Naive: check items API' },
+      { appDir, goal: 'Naive: check items API', gates: { grounding: false } },
     );
 
     expect(naive2.success).toBe(false);
@@ -192,7 +195,7 @@ describe('Phase 2: Convergence — Smart Agent vs Naive Agent', () => {
     expect(naive2.narrowing!.resolutionHint).toContain('predicate');
   });
 
-  test('2.2 — Smart agent changes predicates based on narrowing and succeeds', async () => {
+  dockerTest('2.2 — Smart agent changes predicates based on narrowing and succeeds', async () => {
     // Fresh state — no cross-contamination from 2.1
     resetState();
 
@@ -200,7 +203,7 @@ describe('Phase 2: Convergence — Smart Agent vs Naive Agent', () => {
     const attempt1 = await verify(
       [{ file: 'server.js', search: "{ id: 2, name: 'Beta' }", replace: "{ id: 2, name: 'Beta V2' }" }],
       [{ type: 'http', method: 'GET', path: '/api/items', expect: { status: 200, bodyContains: 'NONEXISTENT' } }],
-      { appDir, goal: 'Smart: rename Beta' },
+      { appDir, goal: 'Smart: rename Beta', gates: { grounding: false } },
     );
 
     expect(attempt1.success).toBe(false);
@@ -212,7 +215,7 @@ describe('Phase 2: Convergence — Smart Agent vs Naive Agent', () => {
       [{ file: 'server.js', search: "{ id: 2, name: 'Beta' }", replace: "{ id: 2, name: 'Beta V2' }" }],
       // Changed predicate — new fingerprint (different expected value)
       [{ type: 'http', method: 'GET', path: '/api/items', expect: { status: 200, bodyContains: 'Beta V2' } }],
-      { appDir, goal: 'Smart: rename Beta' },
+      { appDir, goal: 'Smart: rename Beta', gates: { grounding: false } },
     );
 
     // The smart agent converges
@@ -382,7 +385,7 @@ describe('Phase 5: Full Pipeline (Docker required)', () => {
     const r = await verify(
       [{ file: 'server.js', search: 'h1 { color: #1a1a2e; font-size: 2rem; }', replace: 'h1 { color: #ff6600; font-size: 2rem; }' }],
       [{ type: 'css', selector: 'h1', property: 'color', expected: 'rgb(255, 102, 0)' }],
-      { appDir, goal: 'Change heading to orange' },
+      { appDir, goal: 'Change heading to orange', gates: { grounding: false } },
     );
 
     // Verify all gates were present and passed
@@ -426,7 +429,7 @@ describe('Phase 5: Full Pipeline (Docker required)', () => {
     const r = await verify(
       [{ file: 'server.js', search: 'h1 { color: #1a1a2e; font-size: 2rem; }', replace: 'h1 { color: #ff6600; font-size: 2rem; }' }],
       [{ type: 'css', selector: 'h1', property: 'color', expected: 'rgb(255, 102, 0)' }],
-      { appDir, goal: 'Validate orange heading via Playwright' },
+      { appDir, goal: 'Validate orange heading via Playwright', gates: { grounding: false } },
     );
 
     expect(r.success).toBe(true);
@@ -449,7 +452,7 @@ describe('Phase 5: Full Pipeline (Docker required)', () => {
     const r = await verify(
       [{ file: 'server.js', search: 'h1 { color: #1a1a2e; font-size: 2rem; }', replace: 'h1 { color: #ff6600; font-size: 2rem; }' }],
       [{ type: 'css', selector: 'h1', property: 'color', expected: 'rgb(0, 128, 0)' }],
-      { appDir, goal: 'Predicate says green but edit makes orange' },
+      { appDir, goal: 'Predicate says green but edit makes orange', gates: { grounding: false } },
     );
 
     // MUST fail — the browser sees orange, predicate expects green
@@ -473,7 +476,7 @@ describe('Phase 5: Full Pipeline (Docker required)', () => {
     const r = await verify(
       [{ file: 'server.js', search: '<footer>Powered by Node.js</footer>', replace: '<footer>Verified by @sovereign-labs/verify</footer>' }],
       [{ type: 'html', selector: 'footer', expected: 'Verified by @sovereign-labs/verify' }],
-      { appDir, goal: 'Update footer text' },
+      { appDir, goal: 'Update footer text', gates: { grounding: false } },
     );
 
     expect(r.success).toBe(true);
@@ -492,7 +495,7 @@ describe('Phase 5: Full Pipeline (Docker required)', () => {
     const r = await verify(
       [{ file: 'server.js', search: "{ id: 2, name: 'Beta' }", replace: "{ id: 2, name: 'Gamma' }" }],
       [{ type: 'http', method: 'GET', path: '/api/items', expect: { status: 200, bodyContains: 'Gamma' } }],
-      { appDir, goal: 'Rename Beta to Gamma' },
+      { appDir, goal: 'Rename Beta to Gamma', gates: { grounding: false } },
     );
 
     expect(r.success).toBe(true);
@@ -516,7 +519,7 @@ describe('Phase 5: Full Pipeline (Docker required)', () => {
         { type: 'css', selector: 'h1', property: 'color', expected: 'rgb(204, 0, 0)' },
         { type: 'http', method: 'GET', path: '/api/items', expect: { status: 200, bodyContains: 'Omega' } },
       ],
-      { appDir, goal: 'Red heading + rename Alpha to Omega' },
+      { appDir, goal: 'Red heading + rename Alpha to Omega', gates: { grounding: false } },
     );
 
     expect(r.success).toBe(true);
@@ -557,6 +560,7 @@ describe('Phase 6: Invariant Protection (Docker required)', () => {
       {
         appDir,
         goal: 'Safe footer change',
+        gates: { grounding: false },
         invariants: [
           { name: 'Health endpoint responds', type: 'http', path: '/health', expect: { status: 200 } },
           { name: 'API still works', type: 'http', path: '/api/items', expect: { status: 200, contains: 'Alpha' } },
@@ -585,6 +589,7 @@ describe('Phase 6: Invariant Protection (Docker required)', () => {
       {
         appDir,
         goal: 'Rename Alpha to Destroyed',
+        gates: { grounding: false },
         invariants: [
           { name: 'Health endpoint responds', type: 'http', path: '/health', expect: { status: 200 } },
           // This invariant expects 'Alpha' — the edit broke it
@@ -625,7 +630,7 @@ describe('Phase 7: Full Convergence Cycle (Docker required)', () => {
     const a1 = await verify(
       [{ file: 'server.js', search: 'color: #1a1a2e', replace: 'color: #228B22' }],
       [{ type: 'css', selector: 'h1', property: 'color', expected: 'rgb(0, 0, 255)' }], // says blue, but it's green
-      { appDir, goal: 'Make heading forest green' },
+      { appDir, goal: 'Make heading forest green', gates: { grounding: false } },
     );
 
     expect(a1.success).toBe(false);
@@ -642,7 +647,7 @@ describe('Phase 7: Full Convergence Cycle (Docker required)', () => {
     const a2 = await verify(
       [{ file: 'server.js', search: 'color: #1a1a2e', replace: 'color: #228B22' }],
       [{ type: 'css', selector: 'h1', property: 'color', expected: 'rgb(34, 139, 34)' }], // correct rgb
-      { appDir, goal: 'Make heading forest green' },
+      { appDir, goal: 'Make heading forest green', gates: { grounding: false } },
     );
 
     // This should succeed — the edit and predicate agree
@@ -674,7 +679,7 @@ describe('Phase 7: Full Convergence Cycle (Docker required)', () => {
     const a1 = await verify(
       [{ file: 'server.js', search: 'TOTALLY_WRONG_SEARCH', replace: 'x' }],
       [{ type: 'css', selector: 'h1', property: 'font-size', expected: '3rem' }],
-      { appDir, goal: 'Information gain test' },
+      { appDir, goal: 'Information gain test', gates: { grounding: false } },
     );
     expect(a1.success).toBe(false);
 
@@ -690,7 +695,7 @@ describe('Phase 7: Full Convergence Cycle (Docker required)', () => {
     const a2 = await verify(
       [{ file: 'server.js', search: 'ANOTHER_WRONG_SEARCH', replace: 'y' }],
       [{ type: 'css', selector: 'h1', property: 'font-size', expected: '4rem' }],
-      { appDir, goal: 'Information gain test 2' },
+      { appDir, goal: 'Information gain test 2', gates: { grounding: false } },
     );
     expect(a2.success).toBe(false);
 
@@ -725,6 +730,7 @@ describe('Phase 7: Full Convergence Cycle (Docker required)', () => {
       {
         appDir,
         goal: 'Rename Alpha to Phoenix',
+        gates: { grounding: false },
         invariants: [
           { name: 'Homepage loads', type: 'http', path: '/', expect: { status: 200 } },
         ],
@@ -748,6 +754,7 @@ describe('Phase 7: Full Convergence Cycle (Docker required)', () => {
       {
         appDir,
         goal: 'Rename Alpha to Phoenix',
+        gates: { grounding: false },
         invariants: [
           { name: 'Homepage loads', type: 'http', path: '/', expect: { status: 200 } },
         ],

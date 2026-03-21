@@ -6,9 +6,9 @@
  * Every edit gets a fair trial before it touches your users.
  *
  * Gate sequence:
- *   F9 (syntax) → K5 (constraints) → G5 (containment) →
- *   Staging (Docker) → Browser (Playwright) → Vision (screenshot) →
- *   HTTP (fetch) → Invariants (health) → Narrowing (learning)
+ *   Grounding → F9 (syntax) → K5 (constraints) → G5 (containment) →
+ *   Filesystem → [Staging (Docker) → Browser (Playwright) → HTTP (fetch) →
+ *   Invariants (health)] → Vision (screenshot) → Triangulation → Narrowing (learning)
  *
  * On failure: returns what went wrong + what to try next.
  * On success: returns proof that the edits work.
@@ -27,11 +27,13 @@ import { runSyntaxGate, applyEdits } from './gates/syntax.js';
 import { runConstraintGate } from './gates/constraints.js';
 import { runContainmentGate } from './gates/containment.js';
 import { runStagingGate } from './gates/staging.js';
-import { runBrowserGate } from './gates/browser.js';
+import { runBrowserGate, type BrowserGateResult } from './gates/browser.js';
 import { runHttpGate } from './gates/http.js';
 import { runVisionGate } from './gates/vision.js';
+import { runTriangulationGate } from './gates/triangulation.js';
 import { runInvariantsGate } from './gates/invariants.js';
 import { groundInReality, validateAgainstGrounding } from './gates/grounding.js';
+import { runFilesystemGate } from './gates/filesystem.js';
 import { LocalDockerRunner, isDockerAvailable, hasDockerCompose } from './runners/docker-runner.js';
 
 /**
@@ -62,6 +64,7 @@ export async function verify(
   const gateConfig = config.gates ?? {};
   let runner: LocalDockerRunner | undefined;
   let stageDir: string | undefined;
+  let browserScreenshots: Record<string, Buffer> | undefined;
 
   try {
     // =========================================================================
@@ -72,7 +75,14 @@ export async function verify(
     log(`[grounding] Found ${grounding.routes.length} routes, ${grounding.routeCSSMap.size} route CSS maps`);
 
     // Validate predicates against grounding
-    const groundedPredicates = validateAgainstGrounding(predicates, grounding);
+    // Check if Docker staging is plausible (compose file exists + not disabled)
+    const hasCompose = hasDockerCompose(config.appDir, config.docker?.composefile);
+    const dockerPlausible = gateConfig.staging !== false && hasCompose;
+    const groundedPredicates = validateAgainstGrounding(predicates, grounding, {
+      appDir: config.appDir,
+      dockerAvailable: dockerPlausible,
+      edits,
+    });
     const fingerprints = groundedPredicates.map(p => predicateFingerprint(p));
 
     // Build gate context
@@ -83,6 +93,42 @@ export async function verify(
       grounding,
       log,
     };
+
+    // =========================================================================
+    // GROUNDING GATE: Reject fabricated selectors
+    // =========================================================================
+    if (gateConfig.grounding !== false) {
+      const groundingStart = Date.now();
+      const missed = groundedPredicates.filter((p: any) => p.groundingMiss === true);
+
+      if (missed.length > 0) {
+        const detail = missed.map((p: any) =>
+          p.groundingReason ?? `${p.type} predicate references "${p.selector}" which does not exist in the app`
+        ).join('; ');
+
+        log(`[grounding] FAILED: ${detail}`);
+        const groundingGate: GateResult = {
+          gate: 'grounding',
+          passed: false,
+          detail,
+          durationMs: Date.now() - groundingStart,
+        };
+        gates.push(groundingGate);
+
+        return buildResult({
+          gates, config, store, sessionId, totalStart, logs,
+          failedGate: 'grounding', error: detail, edits, predicates: groundedPredicates,
+        });
+      }
+
+      gates.push({
+        gate: 'grounding',
+        passed: true,
+        detail: `All ${groundedPredicates.length} predicates grounded in reality`,
+        durationMs: Date.now() - groundingStart,
+      });
+      log('[grounding] All predicates grounded');
+    }
 
     // =========================================================================
     // F9: SYNTAX VALIDATION
@@ -151,11 +197,34 @@ export async function verify(
     }
 
     // =========================================================================
+    // FILESYSTEM: Post-Edit Filesystem State Verification
+    // =========================================================================
+    {
+      const hasFilesystemPreds = groundedPredicates.some(p =>
+        p.type === 'filesystem_exists' || p.type === 'filesystem_absent' ||
+        p.type === 'filesystem_unchanged' || p.type === 'filesystem_count'
+      );
+      if (hasFilesystemPreds) {
+        log('[filesystem] Running filesystem predicate validation...');
+        const fsResult = runFilesystemGate(ctx);
+        gates.push(fsResult);
+
+        if (!fsResult.passed) {
+          log(`[filesystem] FAILED: ${fsResult.detail}`);
+          return buildResult({
+            gates, config, store, sessionId, totalStart, logs,
+            failedGate: 'filesystem', error: fsResult.detail, edits, predicates: groundedPredicates,
+          });
+        }
+      }
+    }
+
+    // =========================================================================
     // STAGING: Docker Build + Start
     // =========================================================================
     const dockerAvailable = await isDockerAvailable();
-    const hasCompose = hasDockerCompose(stageDir ?? config.appDir, config.docker?.composefile);
-    const shouldStage = gateConfig.staging !== false && dockerAvailable && hasCompose;
+    const hasStagingCompose = hasDockerCompose(stageDir ?? config.appDir, config.docker?.composefile);
+    const shouldStage = gateConfig.staging !== false && dockerAvailable && hasStagingCompose;
 
     if (shouldStage) {
       log('[staging] Starting Docker staging...');
@@ -186,31 +255,20 @@ export async function verify(
       // =====================================================================
       if (gateConfig.browser !== false) {
         log('[browser] Running Playwright validation...');
-        const browserResult = await runBrowserGate(ctx);
+        const browserResult = await runBrowserGate(ctx) as BrowserGateResult;
         gates.push(browserResult);
+
+        // Capture screenshots for vision gate threading
+        if (browserResult.screenshots) {
+          browserScreenshots = browserResult.screenshots;
+          log(`[browser] ${Object.keys(browserScreenshots).length} screenshot(s) captured for vision gate`);
+        }
 
         if (!browserResult.passed) {
           log(`[browser] FAILED: ${browserResult.detail}`);
           return buildResult({
             gates, config, store, sessionId, totalStart, logs,
             failedGate: 'browser', error: browserResult.detail, edits, predicates: groundedPredicates,
-          });
-        }
-      }
-
-      // =====================================================================
-      // VISION: Screenshot + Model Verification
-      // =====================================================================
-      if (gateConfig.vision === true && config.vision?.apiKey) {
-        log('[vision] Running vision model verification...');
-        const visionResult = await runVisionGate(ctx);
-        gates.push(visionResult);
-
-        if (!visionResult.passed) {
-          log(`[vision] FAILED: ${visionResult.detail}`);
-          return buildResult({
-            gates, config, store, sessionId, totalStart, logs,
-            failedGate: 'vision', error: visionResult.detail, edits, predicates: groundedPredicates,
           });
         }
       }
@@ -267,6 +325,60 @@ export async function verify(
     }
 
     // =========================================================================
+    // VISION: Screenshot + Model Verification (runs with or without staging)
+    // =========================================================================
+    if (gateConfig.vision === true && config.vision?.call) {
+      // Thread browser-captured screenshots into vision config
+      // Browser screenshots are authoritative (from the actual rendered page)
+      // Caller-provided screenshots serve as fallback for routes not captured
+      if (browserScreenshots && Object.keys(browserScreenshots).length > 0) {
+        // Browser screenshots take priority over caller-provided (they're from the actual rendered page)
+        const mergedScreenshots = { ...(config.vision.screenshots ?? {}), ...browserScreenshots };
+        ctx.config = {
+          ...ctx.config,
+          vision: {
+            ...ctx.config.vision!,
+            screenshots: mergedScreenshots,
+          },
+        };
+        log(`[vision] Threading ${Object.keys(browserScreenshots).length} browser screenshot(s) to vision gate`);
+      }
+
+      log('[vision] Running vision model verification...');
+      const visionResult = await runVisionGate(ctx);
+      gates.push(visionResult);
+      // Vision does NOT independently block — triangulation decides
+      if (!visionResult.passed) {
+        log(`[vision] FAILED: ${visionResult.detail} (triangulation will synthesize)`);
+      }
+    }
+
+    // =========================================================================
+    // TRIANGULATION: Cross-Authority Verdict Synthesis
+    // =========================================================================
+    // Runs when 2+ authorities contributed. Synthesizes deterministic + browser + vision.
+    {
+      const triangulationResult = runTriangulationGate(gates, log);
+      gates.push(triangulationResult);
+
+      if (triangulationResult.triangulation.action === 'rollback') {
+        log(`[triangulation] ROLLBACK: ${triangulationResult.triangulation.reasoning}`);
+        return buildResult({
+          gates, config, store, sessionId, totalStart, logs,
+          failedGate: 'triangulation', error: triangulationResult.triangulation.reasoning,
+          edits, predicates: groundedPredicates,
+          triangulation: triangulationResult.triangulation,
+        });
+      }
+
+      if (triangulationResult.triangulation.action === 'escalate') {
+        log(`[triangulation] ESCALATE: ${triangulationResult.triangulation.reasoning}`);
+        // Escalation is not a hard failure — surface the disagreement but continue
+        // The caller can inspect result.triangulation to decide
+      }
+    }
+
+    // =========================================================================
     // SUCCESS — All gates passed
     // =========================================================================
     log('[verify] All gates passed');
@@ -283,6 +395,7 @@ export async function verify(
     });
 
     const containmentGate = gates.find(g => g.gate === 'G5') as any;
+    const triangulationGate = gates.find(g => g.gate === 'triangulation') as any;
 
     return {
       success: true,
@@ -305,6 +418,7 @@ export async function verify(
         after: store.getConstraintCount(),
         seeded: [],
       },
+      triangulation: triangulationGate?.triangulation,
     };
   } finally {
     // Cleanup: stop container and remove staging directory
@@ -335,6 +449,7 @@ interface BuildResultOpts {
   edits: Edit[];
   predicates: Predicate[];
   violation?: any;
+  triangulation?: any;
 }
 
 function buildResult(opts: BuildResultOpts): VerifyResult {
@@ -426,6 +541,7 @@ function buildResult(opts: BuildResultOpts): VerifyResult {
       after: store.getConstraintCount(),
       seeded: seededConstraint ? [seededConstraint.signature] : [],
     },
+    triangulation: opts.triangulation,
   };
 }
 
@@ -469,6 +585,7 @@ function buildResolutionHint(gate: string, error: string, violation?: any): stri
   if (gate === 'browser') return 'The CSS/HTML validation failed against the rendered page. Check computed styles.';
   if (gate === 'http') return 'HTTP endpoint validation failed. Check the API response.';
   if (gate === 'invariants') return 'System health checks failed after applying edits. The change may have broken something.';
+  if (gate === 'filesystem') return 'Filesystem state does not match expectations after edits. Check file paths, existence, and content.';
   return 'Verification failed. Review the gate details.';
 }
 
@@ -477,7 +594,8 @@ function gateToSource(gate: string): 'syntax' | 'staging' | 'evidence' | 'invari
     case 'F9': return 'syntax';
     case 'staging': return 'staging';
     case 'browser':
-    case 'http': return 'evidence';
+    case 'http':
+    case 'filesystem': return 'evidence';
     case 'invariants': return 'invariant';
     default: return 'staging';
   }

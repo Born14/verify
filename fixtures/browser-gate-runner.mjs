@@ -128,6 +128,19 @@ async function main() {
           });
         }, { settleMs: DOM_SETTLE_MS, settleCap: DOM_SETTLE_CAP });
 
+        // Capture screenshot for this path (before predicate evaluation)
+        // Saved to /data/ for the harness to pick up and thread to vision gate
+        try {
+          const safePath = urlPath.replace(/\//g, '_') || '_root';
+          await page.screenshot({
+            fullPage: true,
+            path: `/data/screenshot-${safePath}.png`,
+          });
+        } catch (screenshotErr) {
+          // Non-fatal — predicates still evaluated
+          console.error(`Screenshot failed for ${urlPath}: ${screenshotErr.message}`);
+        }
+
         // Evaluate each predicate
         for (const pred of predicates) {
           try {

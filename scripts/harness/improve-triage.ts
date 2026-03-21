@@ -1,0 +1,392 @@
+/**
+ * Deterministic Triage — 0 LLM tokens
+ * =====================================
+ *
+ * Maps violation patterns to target functions and files.
+ * When confidence is 'mechanical', skip LLM diagnosis entirely.
+ */
+
+import type { LedgerEntry, EvidenceBundle, Severity, TriageConfidence } from './types.js';
+
+// =============================================================================
+// TRIAGE RULES — violation pattern → target function/file
+// =============================================================================
+
+interface TriageRule {
+  pattern: RegExp;
+  targetFunction: string;
+  targetFile: string;
+  confidence: TriageConfidence;
+}
+
+const TRIAGE_RULES: TriageRule[] = [
+  // Fingerprint invariants → predicateFingerprint()
+  {
+    pattern: /^fingerprint_distinct/,
+    targetFunction: 'predicateFingerprint()',
+    targetFile: 'src/store/constraint-store.ts',
+    confidence: 'mechanical',
+  },
+  {
+    pattern: /^fingerprint_deterministic/,
+    targetFunction: 'predicateFingerprint()',
+    targetFile: 'src/store/constraint-store.ts',
+    confidence: 'mechanical',
+  },
+
+  // K5 constraint invariants → checkConstraints() / seedFromFailure()
+  {
+    pattern: /^k5_should_block/,
+    targetFunction: 'checkConstraints()',
+    targetFile: 'src/store/constraint-store.ts',
+    confidence: 'mechanical',
+  },
+  {
+    pattern: /^k5_should_pass/,
+    targetFunction: 'checkConstraints()',
+    targetFile: 'src/store/constraint-store.ts',
+    confidence: 'mechanical',
+  },
+  {
+    pattern: /^constraint_monotonicity/,
+    targetFunction: 'seedFromFailure()',
+    targetFile: 'src/store/constraint-store.ts',
+    confidence: 'mechanical',
+  },
+  {
+    pattern: /^constraint_count/,
+    targetFunction: 'seedFromFailure()',
+    targetFile: 'src/store/constraint-store.ts',
+    confidence: 'mechanical',
+  },
+
+  // Gate sequencing → verify()
+  {
+    pattern: /^gate_order/,
+    targetFunction: 'verify()',
+    targetFile: 'src/verify.ts',
+    confidence: 'heuristic',
+  },
+  {
+    pattern: /^disabled_gates_absent/,
+    targetFunction: 'verify()',
+    targetFile: 'src/verify.ts',
+    confidence: 'heuristic',
+  },
+  {
+    pattern: /^gate_count/,
+    targetFunction: 'verify()',
+    targetFile: 'src/verify.ts',
+    confidence: 'heuristic',
+  },
+  {
+    pattern: /^gate_timing/,
+    targetFunction: 'verify()',
+    targetFile: 'src/verify.ts',
+    confidence: 'heuristic',
+  },
+  {
+    pattern: /^failed_gate_has_detail/,
+    targetFunction: 'verify()',
+    targetFile: 'src/verify.ts',
+    confidence: 'heuristic',
+  },
+
+  // Gate sequence consistency
+  {
+    pattern: /^gate_success_consistency/,
+    targetFunction: 'verify()',
+    targetFile: 'src/verify.ts',
+    confidence: 'mechanical',
+  },
+  {
+    pattern: /^result_well_formedness/,
+    targetFunction: 'verify()',
+    targetFile: 'src/verify.ts',
+    confidence: 'mechanical',
+  },
+  {
+    pattern: /^first_failing_gate/,
+    targetFunction: 'verify()',
+    targetFile: 'src/verify.ts',
+    confidence: 'mechanical',
+  },
+
+  // ─── Vision gate invariants → vision.ts ───
+  {
+    pattern: /^vision_gate_skipped/,
+    targetFunction: 'runVisionGate()',
+    targetFile: 'src/gates/vision.ts',
+    confidence: 'mechanical',
+  },
+  {
+    pattern: /^vision_gate_passed/,
+    targetFunction: 'runVisionGate()',
+    targetFile: 'src/gates/vision.ts',
+    confidence: 'mechanical',
+  },
+  {
+    pattern: /^vision_gate_failed/,
+    targetFunction: 'runVisionGate()',
+    targetFile: 'src/gates/vision.ts',
+    confidence: 'mechanical',
+  },
+  {
+    pattern: /^vision_gate_ran/,
+    targetFunction: 'runVisionGate()',
+    targetFile: 'src/gates/vision.ts',
+    confidence: 'mechanical',
+  },
+  {
+    pattern: /^vision_claim_verified/,
+    targetFunction: 'parseVisionResponse()',
+    targetFile: 'src/gates/vision.ts',
+    confidence: 'mechanical',
+  },
+  {
+    pattern: /^vision_claim_not_verified/,
+    targetFunction: 'parseVisionResponse()',
+    targetFile: 'src/gates/vision.ts',
+    confidence: 'mechanical',
+  },
+
+  // ─── Triangulation invariants → triangulation.ts ───
+  {
+    pattern: /^triangulation_action/,
+    targetFunction: 'triangulate()',
+    targetFile: 'src/gates/triangulation.ts',
+    confidence: 'mechanical',
+  },
+  {
+    pattern: /^triangulation_outlier/,
+    targetFunction: 'triangulate()',
+    targetFile: 'src/gates/triangulation.ts',
+    confidence: 'mechanical',
+  },
+  {
+    pattern: /^triangulation_confidence/,
+    targetFunction: 'triangulate()',
+    targetFile: 'src/gates/triangulation.ts',
+    confidence: 'mechanical',
+  },
+
+  // ─── Fault-derived scenario invariants (from external-scenario-loader.ts) ───
+
+  // false_positive intent → should_detect_problem (verify passed but should fail)
+  {
+    pattern: /^should_detect_problem/,
+    targetFunction: '',
+    targetFile: '',
+    confidence: 'needs_llm',
+  },
+
+  // false_positive + expectedFailedGate → should_fail_at_{gate}
+  {
+    pattern: /^should_fail_at_grounding/,
+    targetFunction: 'runGroundingGate()',
+    targetFile: 'src/gates/grounding.ts',
+    confidence: 'heuristic',
+  },
+  {
+    pattern: /^should_fail_at_browser/,
+    targetFunction: 'runBrowserGate()',
+    targetFile: 'src/gates/browser.ts',
+    confidence: 'heuristic',
+  },
+  {
+    pattern: /^should_fail_at_constraints/,
+    targetFunction: 'runConstraintGate()',
+    targetFile: 'src/gates/constraints.ts',
+    confidence: 'heuristic',
+  },
+  {
+    pattern: /^should_fail_at_containment/,
+    targetFunction: 'runContainmentGate()',
+    targetFile: 'src/gates/containment.ts',
+    confidence: 'heuristic',
+  },
+  {
+    pattern: /^should_fail_at_syntax/,
+    targetFunction: 'runSyntaxGate()',
+    targetFile: 'src/gates/syntax.ts',
+    confidence: 'heuristic',
+  },
+  {
+    pattern: /^should_fail_at_http/,
+    targetFunction: 'runHttpGate()',
+    targetFile: 'src/gates/http.ts',
+    confidence: 'heuristic',
+  },
+  {
+    pattern: /^should_fail_at_vision/,
+    targetFunction: 'runVisionGate()',
+    targetFile: 'src/gates/vision.ts',
+    confidence: 'heuristic',
+  },
+  {
+    pattern: /^should_fail_at_triangulation/,
+    targetFunction: 'runTriangulationGate()',
+    targetFile: 'src/gates/triangulation.ts',
+    confidence: 'heuristic',
+  },
+  {
+    pattern: /^should_fail_at_/,
+    targetFunction: '',
+    targetFile: '',
+    confidence: 'needs_llm',
+  },
+
+  // false_negative intent → should_accept_valid_edit
+  {
+    pattern: /^should_accept_valid_edit/,
+    targetFunction: '',
+    targetFile: '',
+    confidence: 'needs_llm',
+  },
+
+  // bad_hint intent → narrowing_should_be_helpful
+  {
+    pattern: /^narrowing_should_be_helpful/,
+    targetFunction: '',
+    targetFile: '',
+    confidence: 'needs_llm',
+  },
+
+  // regression_guard intent → outcome_matches_expected
+  {
+    pattern: /^outcome_matches_expected/,
+    targetFunction: '',
+    targetFile: '',
+    confidence: 'needs_llm',
+  },
+
+  // ─── Robustness → depends on stack trace ───
+  {
+    pattern: /^should_not_crash/,
+    targetFunction: '',
+    targetFile: '',
+    confidence: 'needs_llm',
+  },
+  {
+    pattern: /^no_crash/,
+    targetFunction: '',
+    targetFile: '',
+    confidence: 'needs_llm',
+  },
+];
+
+// =============================================================================
+// BUNDLE VIOLATIONS BY ROOT CAUSE
+// =============================================================================
+
+export function bundleViolations(entries: LedgerEntry[]): EvidenceBundle[] {
+  const dirty = entries.filter(e => !e.clean);
+  if (dirty.length === 0) return [];
+
+  // Group by invariant name prefix (e.g., "fingerprint_distinct_*" → "fingerprint_distinct")
+  const groups = new Map<string, EvidenceBundle['violations']>();
+  for (const entry of dirty) {
+    for (const inv of entry.invariants) {
+      if (inv.passed) continue;
+      const key = invariantGroupKey(inv.name);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push({
+        scenarioId: entry.id,
+        invariant: inv.name,
+        violation: inv.violation ?? 'unknown',
+        severity: (inv.severity ?? 'bug') as Severity,
+        family: entry.scenario.family as any,
+      });
+    }
+  }
+
+  // Convert to bundles with triage
+  const bundles: EvidenceBundle[] = [];
+  let bundleCounter = 0;
+  for (const [key, violations] of groups) {
+    const triage = triageByInvariantKey(key);
+    bundles.push({
+      id: `bundle_${++bundleCounter}`,
+      violations,
+      triage,
+    });
+  }
+
+  return bundles;
+}
+
+function invariantGroupKey(name: string): string {
+  // Strip trailing specifics: "fingerprint_distinct_A_vs_B" → "fingerprint_distinct"
+  // Keep enough to distinguish invariant categories
+  const parts = name.split('_');
+  // For named invariants like "k5_should_block: description", take before colon
+  const base = name.split(':')[0].trim();
+  // Group by first 2-3 meaningful segments
+  if (base.startsWith('fingerprint_distinct')) return 'fingerprint_distinct';
+  if (base.startsWith('fingerprint_deterministic')) return 'fingerprint_deterministic';
+  if (base.startsWith('k5_should_block')) return 'k5_should_block';
+  if (base.startsWith('k5_should_pass')) return 'k5_should_pass';
+  if (base.startsWith('constraint_count')) return 'constraint_count';
+  if (base.startsWith('gate_order')) return 'gate_order';
+  if (base.startsWith('gate_count')) return 'gate_count';
+  if (base.startsWith('should_not_crash')) return 'should_not_crash';
+  if (base.startsWith('should_detect_problem')) return 'should_detect_problem';
+  if (base.startsWith('vision_gate')) return 'vision_gate';
+  if (base.startsWith('vision_claim')) return 'vision_claim';
+  if (base.startsWith('triangulation_action')) return 'triangulation_action';
+  if (base.startsWith('triangulation_outlier')) return 'triangulation_outlier';
+  if (base.startsWith('triangulation_confidence')) return 'triangulation_confidence';
+  if (base.startsWith('should_fail_at_')) return base; // keep gate-specific key
+  if (base.startsWith('should_accept_valid_edit')) return 'should_accept_valid_edit';
+  if (base.startsWith('narrowing_should_be_helpful')) return 'narrowing_should_be_helpful';
+  if (base.startsWith('outcome_matches_expected')) return 'outcome_matches_expected';
+  return base;
+}
+
+function triageByInvariantKey(key: string): EvidenceBundle['triage'] {
+  for (const rule of TRIAGE_RULES) {
+    if (rule.pattern.test(key)) {
+      return {
+        targetFunction: rule.targetFunction || null,
+        targetFile: rule.targetFile || null,
+        failurePattern: key,
+        confidence: rule.confidence,
+      };
+    }
+  }
+  return {
+    targetFunction: null,
+    targetFile: null,
+    failurePattern: key,
+    confidence: 'needs_llm',
+  };
+}
+
+// =============================================================================
+// BOUNDED SURFACE — files the improvement engine is allowed to edit
+// =============================================================================
+
+export const BOUNDED_SURFACE: ReadonlyArray<{ file: string; description: string }> = [
+  { file: 'src/store/constraint-store.ts', description: 'Fingerprinting, signature extraction, K5 learning' },
+  { file: 'src/gates/constraints.ts', description: 'K5 enforcement logic' },
+  { file: 'src/gates/containment.ts', description: 'G5 attribution' },
+  { file: 'src/gates/grounding.ts', description: 'CSS/HTML parsing, route extraction' },
+  { file: 'src/gates/browser.ts', description: 'Playwright CSS/HTML validation' },
+  { file: 'src/gates/http.ts', description: 'HTTP predicate validation' },
+  { file: 'src/gates/syntax.ts', description: 'F9 edit application' },
+  { file: 'src/gates/vision.ts', description: 'Vision model screenshot verification' },
+  { file: 'src/gates/triangulation.ts', description: 'Cross-authority verdict synthesis' },
+];
+
+export const FROZEN_FILES = new Set([
+  'src/verify.ts',
+  'src/types.ts',
+  'scripts/harness/',
+]);
+
+export function isEditAllowed(file: string): boolean {
+  for (const frozen of FROZEN_FILES) {
+    if (file.startsWith(frozen)) return false;
+  }
+  return BOUNDED_SURFACE.some(s => file === s.file);
+}

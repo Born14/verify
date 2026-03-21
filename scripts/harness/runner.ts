@@ -18,13 +18,26 @@ import { checkInvariants } from './oracle.js';
 import { Ledger, collectRunIdentity } from './ledger.js';
 import { printProgress, printSummary, saveSummary } from './report.js';
 import { generateAllScenarios, generateFamily } from './scenario-generator.js';
+import { loadExternalScenarios } from './external-scenario-loader.js';
 
 const MAX_SCENARIO_TIMEOUT = 10 * 60 * 1000; // 10 min
 const MAX_TOTAL_TIMEOUT = 4 * 60 * 60 * 1000; // 4 hours
 
+// Built-in scenarios are authored against demo-app and hardcode its selectors/strings.
+// They always run against demo-app regardless of --appDir. External (fault-derived)
+// scenarios run against the target app. This prevents users from being blocked by
+// built-in scenario failures when testing their own app.
+function resolveFixtureDir(): string {
+  // import.meta.dir = packages/verify/scripts/harness/
+  // demo-app = packages/verify/fixtures/demo-app/
+  return join(import.meta.dir, '..', '..', 'fixtures', 'demo-app');
+}
+
 export async function runSelfTest(config: RunConfig): Promise<{ exitCode: number }> {
   const startedAt = new Date().toISOString();
   const identity = collectRunIdentity();
+  const fixtureDir = resolveFixtureDir();
+  const isCustomApp = config.appDir !== fixtureDir;
   const dataDir = join(config.appDir, '..', '..', 'data');
   mkdirSync(dataDir, { recursive: true });
 
@@ -32,15 +45,29 @@ export async function runSelfTest(config: RunConfig): Promise<{ exitCode: number
   const ledger = new Ledger(ledgerPath);
 
   console.log(`\n  Verify Self-Test — ${identity.packageVersion} (${identity.gitCommit ?? 'no git'})`);
-  console.log(`  App dir: ${config.appDir}`);
+  if (isCustomApp) {
+    console.log(`  Target app: ${config.appDir}`);
+    console.log(`  Built-in scenarios run against: ${fixtureDir}`);
+  } else {
+    console.log(`  App dir: ${config.appDir}`);
+  }
   console.log('');
 
-  // Generate scenarios
+  // Built-in scenarios always run against the fixture (demo-app)
+  // They hardcode demo-app selectors/strings and would produce false failures on other apps
   let scenarios: VerifyScenario[];
   if (config.families && config.families.length > 0) {
-    scenarios = config.families.flatMap(f => generateFamily(f, config.appDir));
+    scenarios = config.families.flatMap(f => generateFamily(f, fixtureDir));
   } else {
-    scenarios = generateAllScenarios(config.appDir);
+    scenarios = generateAllScenarios(fixtureDir);
+  }
+
+  // External (fault-derived) scenarios run against the TARGET app
+  const stateDir = join(config.appDir, '.verify');
+  const external = loadExternalScenarios(join(stateDir, 'custom-scenarios.json'), config.appDir);
+  if (external.length > 0) {
+    scenarios = [...scenarios, ...external];
+    console.log(`  + ${external.length} fault-derived scenarios from ${isCustomApp ? config.appDir : 'custom-scenarios.json'}`);
   }
 
   // Filter by Docker availability
@@ -134,6 +161,15 @@ async function runScenario(scenario: VerifyScenario, config: RunConfig): Promise
       appDir: scenario.config.appDir ?? config.appDir,
       stateDir,
     };
+
+    // Substitute vision callback from environment when scenario uses placeholder
+    if (mergedConfig.vision && !mergedConfig.vision.call) {
+      const envKey = process.env.GEMINI_API_KEY;
+      if (envKey) {
+        const { geminiVision } = await import('../../src/vision-helpers.js');
+        mergedConfig.vision = { ...mergedConfig.vision, call: geminiVision(envKey) };
+      }
+    }
 
     result = await Promise.race([
       verify(scenario.edits, scenario.predicates, mergedConfig),

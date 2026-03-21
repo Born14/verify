@@ -9,7 +9,7 @@
  * with all daemon dependencies removed. Pure filesystem + JSON.
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, appendFileSync, mkdirSync, unlinkSync } from 'fs';
 import { join, dirname } from 'path';
 import { createHash } from 'crypto';
 
@@ -138,40 +138,145 @@ export class ConstraintStore {
 
   constructor(stateDir: string) {
     this.stateDir = stateDir;
-    this.dataPath = join(stateDir, 'memory.json');
+    this.dataPath = join(stateDir, 'memory.jsonl');
     this.data = this.load();
   }
 
   // ---------------------------------------------------------------------------
-  // LOAD / SAVE
+  // LOAD / SAVE — Append-only JSONL
   // ---------------------------------------------------------------------------
 
   private load(): ConstraintStoreData {
+    // Migrate from legacy memory.json if it exists
+    const legacyPath = join(this.stateDir, 'memory.json');
+    if (!existsSync(this.dataPath) && existsSync(legacyPath)) {
+      this.migrateFromJson(legacyPath);
+    }
+
     if (!existsSync(this.dataPath)) {
       return { constraints: [], outcomes: [], patterns: [] };
     }
     try {
       const raw = readFileSync(this.dataPath, 'utf-8');
-      const parsed = JSON.parse(raw);
-      return {
-        constraints: parsed.constraints ?? [],
-        outcomes: parsed.outcomes ?? [],
-        patterns: parsed.patterns ?? [],
-      };
+      return this.replayLog(raw);
     } catch {
       return { constraints: [], outcomes: [], patterns: [] };
     }
   }
 
-  private save(): void {
+  /**
+   * Replay the append-only log to rebuild in-memory state.
+   * Each line is a JSON object with an `_op` field indicating the operation.
+   */
+  private replayLog(raw: string): ConstraintStoreData {
+    const data: ConstraintStoreData = { constraints: [], outcomes: [], patterns: [] };
+    const lines = raw.split('\n').filter(l => l.trim());
+
+    for (const line of lines) {
+      try {
+        const entry = JSON.parse(line);
+        switch (entry._op) {
+          case 'constraint':
+            data.constraints.push(entry.data);
+            break;
+          case 'outcome':
+            data.outcomes.push(entry.data);
+            break;
+          case 'pattern':
+            // Upsert: replace existing pattern with same signature
+            const idx = data.patterns.findIndex(p => p.signature === entry.data.signature);
+            if (idx >= 0) data.patterns[idx] = entry.data;
+            else data.patterns.push(entry.data);
+            break;
+          case 'cleanup': {
+            // Replay session cleanup: remove matching constraints
+            const { sessionId, expireBefore } = entry.data;
+            data.constraints = data.constraints.filter(c => {
+              if (c.sessionId === sessionId && c.sessionScope) return false;
+              if (expireBefore && c.expiresAt && c.expiresAt < expireBefore) return false;
+              return true;
+            });
+            break;
+          }
+          case 'compact':
+            // A compaction snapshot — reset state to this point
+            data.constraints = entry.data.constraints ?? [];
+            data.outcomes = entry.data.outcomes ?? [];
+            data.patterns = entry.data.patterns ?? [];
+            break;
+        }
+      } catch {
+        // Skip malformed lines
+      }
+    }
+
+    return data;
+  }
+
+  /**
+   * Migrate from legacy memory.json to memory.jsonl.
+   */
+  private migrateFromJson(legacyPath: string): void {
+    try {
+      const raw = readFileSync(legacyPath, 'utf-8');
+      const parsed = JSON.parse(raw);
+      mkdirSync(dirname(this.dataPath), { recursive: true });
+
+      // Write a single compaction entry with all legacy data
+      const compactEntry = {
+        _op: 'compact',
+        _ts: Date.now(),
+        data: {
+          constraints: parsed.constraints ?? [],
+          outcomes: parsed.outcomes ?? [],
+          patterns: parsed.patterns ?? [],
+        },
+      };
+      appendFileSync(this.dataPath, JSON.stringify(compactEntry) + '\n');
+
+      // Remove legacy file after successful migration
+      unlinkSync(legacyPath);
+    } catch {
+      // Migration failed — start fresh
+    }
+  }
+
+  /** Append a single entry to the log file. */
+  private appendEntry(op: string, data: unknown): void {
     mkdirSync(dirname(this.dataPath), { recursive: true });
-    // Evict if over capacity
+    const entry = { _op: op, _ts: Date.now(), data };
+    appendFileSync(this.dataPath, JSON.stringify(entry) + '\n');
+  }
+
+  /**
+   * Compact the log when it grows too large.
+   * Replaces the entire file with a single snapshot of current state.
+   */
+  compact(): void {
+    mkdirSync(dirname(this.dataPath), { recursive: true });
+    // Evict outcomes over capacity before compacting
     if (this.data.outcomes.length > MAX_OUTCOMES) {
       this.data.outcomes = this.data.outcomes
         .sort((a, b) => b.timestamp - a.timestamp)
         .slice(0, MAX_OUTCOMES);
     }
-    writeFileSync(this.dataPath, JSON.stringify(this.data, null, 2));
+    const compactEntry = {
+      _op: 'compact',
+      _ts: Date.now(),
+      data: {
+        constraints: this.data.constraints,
+        outcomes: this.data.outcomes,
+        patterns: this.data.patterns,
+      },
+    };
+    writeFileSync(this.dataPath, JSON.stringify(compactEntry) + '\n');
+  }
+
+  /**
+   * Get the path to the data file (for external tooling / tests).
+   */
+  getDataPath(): string {
+    return this.dataPath;
   }
 
   // ---------------------------------------------------------------------------
@@ -321,7 +426,7 @@ export class ConstraintStore {
     if (isDupe) return null;
 
     this.data.constraints.push(constraint);
-    this.save();
+    this.appendEntry('constraint', constraint);
     return constraint;
   }
 
@@ -331,6 +436,7 @@ export class ConstraintStore {
 
   recordOutcome(outcome: Outcome): void {
     this.data.outcomes.push(outcome);
+    this.appendEntry('outcome', outcome);
 
     // Update patterns
     if (!outcome.success && outcome.signature) {
@@ -339,14 +445,17 @@ export class ConstraintStore {
         existing.occurrences++;
         existing.lastSeen = outcome.timestamp;
         existing.affectedFiles = [...new Set([...existing.affectedFiles, ...outcome.filesTouched])];
+        this.appendEntry('pattern', existing);
       } else {
-        this.data.patterns.push({
+        const pattern: Pattern = {
           signature: outcome.signature,
           occurrences: 1,
           lastSeen: outcome.timestamp,
           winningFixes: [],
           affectedFiles: [...outcome.filesTouched],
-        });
+        };
+        this.data.patterns.push(pattern);
+        this.appendEntry('pattern', pattern);
       }
     }
 
@@ -358,10 +467,9 @@ export class ConstraintStore {
         if (pattern.winningFixes.length > 5) {
           pattern.winningFixes = pattern.winningFixes.slice(-5);
         }
+        this.appendEntry('pattern', pattern);
       }
     }
-
-    this.save();
   }
 
   // ---------------------------------------------------------------------------
@@ -379,7 +487,7 @@ export class ConstraintStore {
     });
 
     if (this.data.constraints.length !== before) {
-      this.save();
+      this.appendEntry('cleanup', { sessionId, expireBefore: now });
     }
   }
 
@@ -587,6 +695,9 @@ export function predicateFingerprint(p: {
   if (p.method != null) parts.push(`method=${p.method}`);
   if (p.table != null) parts.push(`table=${p.table}`);
   if (p.pattern != null) parts.push(`pattern=${p.pattern}`);
+  // Filesystem predicates
+  if ((p as any).count != null) parts.push(`count=${(p as any).count}`);
+  if ((p as any).hash != null) parts.push(`hash=${(p as any).hash.slice(0, 16)}`);
   // HTTP predicates: include expect object fields for unique fingerprint
   if (p.expect) {
     if (p.expect.status != null) parts.push(`status=${p.expect.status}`);

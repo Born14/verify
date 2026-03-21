@@ -96,6 +96,14 @@ function attributeEdit(edit: Edit, predicates: Predicate[]): MutationAttribution
     if (p.type === 'db' && edit.file.match(/migration|\.sql$/i)) {
       return { file: edit.file, attribution: 'direct', matchedPredicate: describePredicate(p) };
     }
+
+    // Filesystem predicates — edit file matches the predicate's file/path
+    if (p.type.startsWith('filesystem_')) {
+      const predPath = p.file ?? p.path;
+      if (predPath && edit.file.includes(predPath)) {
+        return { file: edit.file, attribution: 'direct', matchedPredicate: describePredicate(p) };
+      }
+    }
   }
 
   // Scaffolding: common support files
@@ -132,5 +140,9 @@ function describePredicate(p: Predicate): string {
   if (p.type === 'http') return `[http] ${p.method ?? 'GET'} ${p.path}`;
   if (p.type === 'content') return `[content] ${p.file} contains "${p.pattern?.substring(0, 30)}"`;
   if (p.type === 'db') return `[db] ${p.table} ${p.assertion}`;
+  if (p.type === 'filesystem_exists') return `[fs_exists] ${p.file ?? p.path}`;
+  if (p.type === 'filesystem_absent') return `[fs_absent] ${p.file ?? p.path}`;
+  if (p.type === 'filesystem_unchanged') return `[fs_unchanged] ${p.file ?? p.path}`;
+  if (p.type === 'filesystem_count') return `[fs_count] ${p.file ?? p.path} == ${p.count}`;
   return `[${p.type}]`;
 }

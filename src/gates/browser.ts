@@ -31,6 +31,8 @@ export interface BrowserPredicateResult {
 
 export interface BrowserGateResult extends GateResult {
   results: BrowserPredicateResult[];
+  /** Per-path screenshots captured during validation (PNG buffers) */
+  screenshots?: Record<string, Buffer>;
 }
 
 const PLAYWRIGHT_BASE_IMAGE = 'mcr.microsoft.com/playwright:v1.49.0-noble';
@@ -186,6 +188,19 @@ export async function runBrowserGate(ctx: GateContext): Promise<BrowserGateResul
 
   const allPassed = results.length > 0 && results.every(r => r.passed);
 
+  // Collect screenshots captured by the runner (for vision gate threading)
+  const screenshots: Record<string, Buffer> = {};
+  for (const path of paths) {
+    const safePath = path.replace(/\//g, '_') || '_root';
+    const screenshotFile = join(workDir, `screenshot-${safePath}.png`);
+    if (existsSync(screenshotFile)) {
+      try {
+        screenshots[path] = readFileSync(screenshotFile);
+        ctx.log(`[browser] Captured screenshot for ${path} (${screenshots[path].length} bytes)`);
+      } catch { /* best effort */ }
+    }
+  }
+
   // Cleanup
   try {
     const { rmSync } = require('fs');
@@ -200,6 +215,7 @@ export async function runBrowserGate(ctx: GateContext): Promise<BrowserGateResul
       : formatBrowserFailures(results),
     durationMs: Date.now() - start,
     results,
+    screenshots: Object.keys(screenshots).length > 0 ? screenshots : undefined,
   };
 }
 

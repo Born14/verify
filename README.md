@@ -1,19 +1,19 @@
 # @sovereign-labs/verify
 
-Verification gate for AI-generated code. Every edit gets a fair trial before it touches your users.
+Verification gate for AI agent actions. Every edit gets a fair trial before it touches your users.
 
-**For any coding agent** — Cursor, Aider, OpenHands, Claude Code, or your own.
+**For any agent** — coding agents, file system agents, or your own. The gates are universal. Only the predicates change.
 
 ## It found its own bug
 
 In v0.1.1, HTTP predicates with different `bodyContains` values produced identical fingerprints — K5 couldn't tell them apart. A human caught it by reading the code.
 
-Now 56 automated scenarios catch it in under 2 seconds:
+Now 80 automated scenarios across 9 families catch it in under 3 seconds:
 
 ```bash
 npx @sovereign-labs/verify self-test
 
-#   0 bugs | 50 scenarios | 0 unexpected | A: clean, B: clean, C: clean ...
+#   0 bugs | 80 scenarios | 0 unexpected | A: clean, B: clean, ... V: clean
 #   ALL CLEAN — No invariant violations detected.
 ```
 
@@ -24,14 +24,23 @@ The test that catches the v0.1.1 bug is scenario A10. It will never regress agai
 Your agent proposes edits. `verify()` checks them:
 
 ```
-F9 (syntax) → K5 (constraints) → G5 (containment) →
-Staging (Docker) → Browser (Playwright) → HTTP (fetch) →
-Invariants (health)
+Grounding → F9 (syntax) → K5 (constraints) → G5 (containment) →
+Filesystem (post-edit state) → Staging (Docker) →
+Browser (Playwright) → HTTP (fetch) → Invariants (health) →
+Vision (screenshot) → Triangulation (3-authority verdict)
 ```
 
 On **success**: returns proof that the edits work.
 On **failure**: returns what went wrong + what to try next.
 On **repeat failure**: K5 learns from mistakes, so attempt N+1 has a smaller, smarter search space.
+
+## Beyond Code
+
+The gates are domain-agnostic. K5 fingerprints any predicate type. G5 attributes any mutation. Narrowing guides any agent. Only the predicates are domain-specific.
+
+Today verify gates code edits. But the same pipeline works for file system agents (move, rename, organize), communication agents (message the right channel), document agents (don't overwrite the wrong cells), and infrastructure agents (don't delete the production database).
+
+**Built today:** Code predicates (css, html, content, http, db) + Filesystem predicates (exists, absent, unchanged, count). More domains coming.
 
 ## Install
 
@@ -115,7 +124,7 @@ Tools exposed:
 
 ## Self-Test Harness
 
-56 scenarios across 7 families exercise the verification pipeline's invariants. Run them to prove your install works, or use `--fail-on-bug` in CI.
+80 scenarios across 9 families exercise the verification pipeline's invariants. Run them to prove your install works, or use `--fail-on-bug` in CI.
 
 ```bash
 # Pure-only (~2s, no Docker needed)
@@ -140,8 +149,10 @@ npx @sovereign-labs/verify self-test --fail-on-bug
 | **E** | 6 | Grounding validation | No |
 | **F** | 6 | Full Docker pipeline (build → stage → verify) | Yes |
 | **G** | 10 | Edge cases (unicode, empty inputs, no-ops) | No |
+| **H** | 10 | Filesystem gate (beyond-code predicates) | No |
+| **V** | 14 | Vision + triangulation (3-authority verdict) | No |
 
-50 scenarios run pure. 6 need Docker. The harness is deterministic — no LLM calls, no network, no flakiness.
+74 scenarios run pure. 6 need Docker. The harness is deterministic — no LLM calls, no network, no flakiness.
 
 ## Gates
 
@@ -150,10 +161,13 @@ npx @sovereign-labs/verify self-test --fail-on-bug
 | **F9** (Syntax) | Search strings exist exactly once in target files | No |
 | **K5** (Constraints) | Edit doesn't repeat a known-failed pattern | No |
 | **G5** (Containment) | Every edit traces to a predicate (no sneaky changes) | No |
+| **Filesystem** | Post-edit filesystem state (exists, absent, unchanged, count) | No |
 | **Staging** | Docker build + start succeeds | Yes |
 | **Browser** | CSS/HTML predicates pass in Playwright | Yes |
 | **HTTP** | API endpoints return expected responses | Yes |
 | **Invariants** | Health checks pass after all edits applied | Yes |
+| **Vision** | Screenshot verified by vision model (pre-captured buffer) | No |
+| **Triangulation** | Cross-authority verdict (deterministic + browser + vision) | No |
 
 Gates can be individually disabled:
 
@@ -165,6 +179,8 @@ await verify(edits, predicates, {
     browser: false,   // Skip Playwright
     http: false,      // Skip HTTP checks
     invariants: false, // Skip health checks
+    vision: false,     // Skip vision model (default: false)
+    grounding: false,  // Skip grounding (default: true)
   },
 });
 ```
@@ -181,6 +197,10 @@ Predicates declare what should be true after the edits are applied.
 | `http` | HTTP response check | `{ type: 'http', path: '/api', method: 'GET', expect: { status: 200 } }` |
 | `http_sequence` | Multi-step HTTP flow | `{ type: 'http_sequence', steps: [{ method: 'POST', path: '/api/users', ... }] }` |
 | `db` | Database structure | `{ type: 'db', table: 'users', column: 'email', assertion: 'column_exists' }` |
+| `filesystem_exists` | File/dir exists at path | `{ type: 'filesystem_exists', file: 'config/app.json' }` |
+| `filesystem_absent` | File does NOT exist | `{ type: 'filesystem_absent', file: 'tmp/scratch.log' }` |
+| `filesystem_unchanged` | File hash unchanged | `{ type: 'filesystem_unchanged', file: 'LICENSE', hash: 'sha256:...' }` |
+| `filesystem_count` | Directory entry count | `{ type: 'filesystem_count', path: 'migrations/', count: 3 }` |
 
 ## K5: Learning from Failures
 
@@ -206,7 +226,7 @@ On failure, `result.narrowing` tells the agent:
 - **`bannedFingerprints`** — Which predicate fingerprints failed (for self-correction)
 - **`patternRecall`** — Prior winning fixes for similar failures
 
-Constraints persist in `.verify/constraints.json`. Commit this file to share learning across your team.
+Constraints persist in `.verify/memory.jsonl`. Commit this file to share learning across your team.
 
 ## Grounding
 
@@ -243,7 +263,7 @@ For full verification (Docker gates), your app needs:
 - A `docker-compose.yml` (or `docker-compose.yaml`)
 - A health check endpoint (recommended)
 
-Without Docker, F9/K5/G5 gates still run — you get syntax validation, constraint checking, and containment attribution.
+Without Docker, F9/K5/G5/Filesystem gates still run — you get syntax validation, constraint checking, containment attribution, and filesystem state verification.
 
 ## Configuration
 
@@ -266,6 +286,12 @@ Without Docker, F9/K5/G5 gates still run — you get syntax validation, constrai
     browser?: boolean;     // Playwright browser (default: true)
     http?: boolean;        // HTTP predicates (default: true)
     invariants?: boolean;  // Health checks (default: true)
+    vision?: boolean;      // Vision model gate (default: false)
+    grounding?: boolean;   // Grounding gate (default: true)
+  };
+  vision?: {               // Vision model configuration
+    call: (image: Buffer, prompt: string) => Promise<string>; // Provider-agnostic callback
+    screenshots?: Record<string, Buffer>; // Pre-captured screenshots by route
   };
   invariants?: Array<{     // System-scoped health checks
     name: string;

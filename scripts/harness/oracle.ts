@@ -48,11 +48,17 @@ const PRODUCT_INVARIANTS: InvariantCheck[] = [
       if (result instanceof Error) return { passed: true, severity: 'info' };
 
       if (result.success) {
-        const failedGates = result.gates.filter(g => !g.passed);
-        if (failedGates.length > 0) {
+        // Vision and triangulation are advisory gates — they feed into the triangulation
+        // decision but never independently block. Vision says "I see FAIL" but triangulation
+        // may still say "proceed" (insufficient) or "escalate" (disagreement). Only "rollback"
+        // causes the pipeline to exit early with success=false.
+        const blockingGates = result.gates.filter(g =>
+          !g.passed && g.gate !== 'vision' && g.gate !== 'triangulation'
+        );
+        if (blockingGates.length > 0) {
           return {
             passed: false,
-            violation: `success=true but gates failed: ${failedGates.map(g => g.gate).join(', ')}`,
+            violation: `success=true but blocking gates failed: ${blockingGates.map(g => g.gate).join(', ')}`,
             severity: 'bug',
           };
         }
@@ -712,6 +718,298 @@ export function constraintSeededOnFailure(): InvariantCheck {
           passed: false,
           violation: `Expected constraint seeding but count unchanged: ${context.constraintsBefore} → ${context.constraintsAfter}`,
           severity: 'unexpected',
+        };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+// =============================================================================
+// FILESYSTEM INVARIANTS (Family H)
+// =============================================================================
+
+/**
+ * Assert that the filesystem gate ran (present in gates array).
+ */
+export function filesystemGateRan(): InvariantCheck {
+  return {
+    name: 'filesystem_gate_ran',
+    category: 'filesystem' as any,
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const gate = result.gates.find(g => g.gate === 'filesystem');
+      if (!gate) {
+        return { passed: false, violation: 'Filesystem gate not found in gates array', severity: 'bug' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert that the filesystem gate passed.
+ */
+export function filesystemGatePassed(): InvariantCheck {
+  return {
+    name: 'filesystem_gate_passed',
+    category: 'filesystem' as any,
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const gate = result.gates.find(g => g.gate === 'filesystem');
+      if (!gate) {
+        return { passed: false, violation: 'Filesystem gate not found', severity: 'bug' };
+      }
+      if (!gate.passed) {
+        return { passed: false, violation: `Filesystem gate failed: ${gate.detail}`, severity: 'bug' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert that the filesystem gate failed (predicate mismatch).
+ */
+export function filesystemGateFailed(description: string): InvariantCheck {
+  return {
+    name: `filesystem_gate_failed: ${description}`,
+    category: 'filesystem' as any,
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const gate = result.gates.find(g => g.gate === 'filesystem');
+      if (!gate) {
+        return { passed: false, violation: 'Filesystem gate not found', severity: 'bug' };
+      }
+      if (gate.passed) {
+        return { passed: false, violation: `Expected filesystem gate to fail but it passed`, severity: 'bug' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+// =============================================================================
+// VISION INVARIANTS (Family V)
+// =============================================================================
+
+/**
+ * Assert vision gate was skipped (passed with "skipped" in detail).
+ */
+export function visionGateSkipped(): InvariantCheck {
+  return {
+    name: 'vision_gate_skipped',
+    category: 'vision' as any,
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const gate = result.gates.find(g => g.gate === 'vision');
+      if (!gate) {
+        // Vision gate absent = effectively skipped
+        return { passed: true, severity: 'info' };
+      }
+      if (!gate.passed || !gate.detail.toLowerCase().includes('skip')) {
+        return {
+          passed: false,
+          violation: `Expected vision gate to be skipped but got: passed=${gate.passed}, detail="${gate.detail}"`,
+          severity: 'bug',
+        };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert vision gate ran and passed.
+ */
+export function visionGatePassed(): InvariantCheck {
+  return {
+    name: 'vision_gate_passed',
+    category: 'vision' as any,
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const gate = result.gates.find(g => g.gate === 'vision');
+      if (!gate) {
+        return { passed: false, violation: 'Vision gate not found in results', severity: 'bug' };
+      }
+      if (!gate.passed) {
+        return { passed: false, violation: `Vision gate failed: ${gate.detail}`, severity: 'bug' };
+      }
+      if (gate.detail.toLowerCase().includes('skip')) {
+        return { passed: false, violation: `Vision gate was skipped, not truly passed`, severity: 'bug' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert vision gate ran and failed.
+ */
+export function visionGateFailed(): InvariantCheck {
+  return {
+    name: 'vision_gate_failed',
+    category: 'vision' as any,
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const gate = result.gates.find(g => g.gate === 'vision');
+      if (!gate) {
+        return { passed: false, violation: 'Vision gate not found in results', severity: 'bug' };
+      }
+      if (gate.passed) {
+        return { passed: false, violation: `Expected vision gate to fail but it passed: ${gate.detail}`, severity: 'bug' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert vision gate is present in results (ran, regardless of outcome).
+ */
+export function visionGateRan(): InvariantCheck {
+  return {
+    name: 'vision_gate_ran',
+    category: 'vision' as any,
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const gate = result.gates.find(g => g.gate === 'vision');
+      if (!gate) {
+        return { passed: false, violation: 'Vision gate not found in results', severity: 'bug' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert at least one vision claim was verified.
+ */
+export function visionClaimVerified(): InvariantCheck {
+  return {
+    name: 'vision_claim_verified',
+    category: 'vision' as any,
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const gate = result.gates.find(g => g.gate === 'vision') as any;
+      if (!gate?.claims || gate.claims.length === 0) {
+        return { passed: false, violation: 'No vision claims found', severity: 'bug' };
+      }
+      const verified = gate.claims.filter((c: any) => c.verified);
+      if (verified.length === 0) {
+        return { passed: false, violation: 'No vision claims were verified', severity: 'bug' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert at least one vision claim was NOT verified.
+ */
+export function visionClaimNotVerified(): InvariantCheck {
+  return {
+    name: 'vision_claim_not_verified',
+    category: 'vision' as any,
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const gate = result.gates.find(g => g.gate === 'vision') as any;
+      if (!gate?.claims || gate.claims.length === 0) {
+        return { passed: false, violation: 'No vision claims found', severity: 'bug' };
+      }
+      const notVerified = gate.claims.filter((c: any) => !c.verified);
+      if (notVerified.length === 0) {
+        return { passed: false, violation: 'All vision claims were verified (expected at least one NOT VERIFIED)', severity: 'bug' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+// =============================================================================
+// TRIANGULATION INVARIANTS (Family V)
+// =============================================================================
+
+/**
+ * Assert triangulation action matches expected value.
+ */
+export function triangulationAction(expected: string): InvariantCheck {
+  return {
+    name: `triangulation_action_${expected}`,
+    category: 'triangulation' as any,
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const gate = result.gates.find(g => g.gate === 'triangulation') as any;
+      if (!gate?.triangulation) {
+        return { passed: false, violation: 'Triangulation gate not found or missing result', severity: 'bug' };
+      }
+      if (gate.triangulation.action !== expected) {
+        return {
+          passed: false,
+          violation: `Expected triangulation action '${expected}' but got '${gate.triangulation.action}'`,
+          severity: 'bug',
+        };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert triangulation outlier matches expected value.
+ */
+export function triangulationOutlier(expected: string): InvariantCheck {
+  return {
+    name: `triangulation_outlier_${expected}`,
+    category: 'triangulation' as any,
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const gate = result.gates.find(g => g.gate === 'triangulation') as any;
+      if (!gate?.triangulation) {
+        return { passed: false, violation: 'Triangulation gate not found', severity: 'bug' };
+      }
+      if (gate.triangulation.outlier !== expected) {
+        return {
+          passed: false,
+          violation: `Expected outlier '${expected}' but got '${gate.triangulation.outlier}'`,
+          severity: 'bug',
+        };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert triangulation confidence matches expected value.
+ */
+export function triangulationConfidence(expected: string): InvariantCheck {
+  return {
+    name: `triangulation_confidence_${expected}`,
+    category: 'triangulation' as any,
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const gate = result.gates.find(g => g.gate === 'triangulation') as any;
+      if (!gate?.triangulation) {
+        return { passed: false, violation: 'Triangulation gate not found', severity: 'bug' };
+      }
+      if (gate.triangulation.confidence !== expected) {
+        return {
+          passed: false,
+          violation: `Expected confidence '${expected}' but got '${gate.triangulation.confidence}'`,
+          severity: 'bug',
         };
       }
       return { passed: true, severity: 'info' };

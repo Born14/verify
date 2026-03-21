@@ -3,19 +3,19 @@
  * ================================================
  *
  * Takes a screenshot of the staged app via Playwright, sends it to a
- * configurable vision model, and asks whether the predicates are visually
- * satisfied. Catches what CSS parsing and DOM inspection miss:
+ * user-provided vision model callback, and asks whether the predicates
+ * are visually satisfied. Catches what CSS parsing and DOM inspection miss:
  *
  * - Rendering issues (overlapping elements, invisible text)
  * - Color perception mismatches (computed style says green but it looks teal)
  * - Layout correctness (table is present but looks broken)
  * - Lie detection (agent claims navy blue but screenshot shows neon green)
  *
- * Model is user-configurable via config.vision.provider + config.vision.model.
- * Default models per provider:
- *   gemini:    gemini-2.0-flash (or user's choice)
- *   openai:    gpt-4o
- *   anthropic: claude-sonnet-4-20250514
+ * Verify owns the prompt and parsing. The user owns the LLM call.
+ *
+ * Convenience helpers for common providers:
+ *   import { geminiVision, openaiVision, anthropicVision } from '@sovereign-labs/verify';
+ *   vision: { call: geminiVision(process.env.GEMINI_API_KEY) }
  */
 
 import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
@@ -35,14 +35,7 @@ export interface VisionGateResult extends GateResult {
   screenshotPath?: string;
 }
 
-const VISION_TIMEOUT = 15_000;
 const SCREENSHOT_TIMEOUT = 10_000;
-
-const DEFAULT_MODELS: Record<string, string> = {
-  gemini: 'gemini-2.0-flash',
-  openai: 'gpt-4o',
-  anthropic: 'claude-sonnet-4-20250514',
-};
 
 export async function runVisionGate(ctx: GateContext): Promise<VisionGateResult> {
   const start = Date.now();
@@ -56,44 +49,49 @@ export async function runVisionGate(ctx: GateContext): Promise<VisionGateResult>
     return {
       gate: 'vision',
       passed: true,
-      detail: 'No visual predicates to check',
-      durationMs: Date.now() - start,
-      claims: [],
-    };
-  }
-
-  if (!ctx.appUrl) {
-    return {
-      gate: 'vision',
-      passed: true,
-      detail: 'No app URL — vision gate skipped (staging must run first)',
+      detail: 'No visual predicates — vision gate skipped',
       durationMs: Date.now() - start,
       claims: [],
     };
   }
 
   const visionConfig = ctx.config.vision;
-  if (!visionConfig?.apiKey) {
+  if (!visionConfig?.call) {
     return {
       gate: 'vision',
       passed: true,
-      detail: 'No vision API key configured — gate skipped',
+      detail: 'No vision callback configured — gate skipped',
       durationMs: Date.now() - start,
       claims: [],
     };
   }
 
-  // 1. Take screenshot of each unique path
+  // 1. Get screenshots — prefer pre-captured, fall back to Docker/Playwright
   const paths = [...new Set(visualPredicates.map(p => p.path ?? '/'))].slice(0, 3);
-  const workDir = join(ctx.config.appDir, '.verify-tmp');
-  mkdirSync(workDir, { recursive: true });
+  const providedScreenshots = visionConfig.screenshots;
 
   const screenshots: { path: string; buffer: Buffer }[] = [];
-  for (const path of paths) {
-    const screenshotPath = join(workDir, `vision-${path.replace(/\//g, '_') || 'root'}.png`);
-    const took = await takeScreenshot(ctx.appUrl, path, screenshotPath, ctx.log);
-    if (took && existsSync(screenshotPath)) {
-      screenshots.push({ path, buffer: readFileSync(screenshotPath) });
+
+  if (providedScreenshots && Object.keys(providedScreenshots).length > 0) {
+    // Use caller-provided screenshots — no Docker needed
+    for (const path of paths) {
+      const buf = providedScreenshots[path];
+      if (buf) {
+        ctx.log(`[vision] Using provided screenshot for ${path}`);
+        screenshots.push({ path, buffer: buf });
+      }
+    }
+  } else if (ctx.appUrl) {
+    // Fall back to Docker/Playwright
+    const workDir = join(ctx.config.appDir, '.verify-tmp');
+    mkdirSync(workDir, { recursive: true });
+
+    for (const path of paths) {
+      const screenshotPath = join(workDir, `vision-${path.replace(/\//g, '_') || 'root'}.png`);
+      const took = await takeScreenshot(ctx.appUrl, path, screenshotPath, ctx.log);
+      if (took && existsSync(screenshotPath)) {
+        screenshots.push({ path, buffer: readFileSync(screenshotPath) });
+      }
     }
   }
 
@@ -115,22 +113,19 @@ export async function runVisionGate(ctx: GateContext): Promise<VisionGateResult>
     claimTexts.push(desc);
   }
 
-  // 3. Send to vision model
-  const provider = visionConfig.provider;
-  const model = visionConfig.model ?? DEFAULT_MODELS[provider] ?? DEFAULT_MODELS.gemini;
-
-  ctx.log(`[vision] Sending ${screenshots.length} screenshot(s) to ${provider}/${model} with ${claimTexts.length} claim(s)...`);
+  // 3. Send to vision model via user-provided callback
+  ctx.log(`[vision] Sending screenshot to vision model with ${claimTexts.length} claim(s)...`);
 
   const prompt = buildVisionPrompt(claimTexts);
   let response: string;
   try {
-    response = await callVisionModel(provider, model, visionConfig.apiKey, screenshots[0].buffer, prompt);
+    response = await visionConfig.call(screenshots[0].buffer, prompt);
   } catch (err: any) {
-    ctx.log(`[vision] API call failed: ${err.message}`);
+    ctx.log(`[vision] Vision callback failed: ${err.message}`);
     return {
       gate: 'vision',
-      passed: true, // Don't block on vision API failure
-      detail: `Vision API failed: ${err.message} — gate skipped`,
+      passed: true, // Don't block on vision failure
+      detail: `Vision callback failed: ${err.message} — gate skipped`,
       durationMs: Date.now() - start,
       claims: [],
     };
@@ -143,8 +138,8 @@ export async function runVisionGate(ctx: GateContext): Promise<VisionGateResult>
   const failedCount = claims.filter(c => !c.verified).length;
 
   const detail = allVerified
-    ? `All ${claims.length} visual claim(s) verified by ${provider}/${model}`
-    : `${failedCount}/${claims.length} claim(s) NOT VERIFIED by ${provider}/${model}`;
+    ? `All ${claims.length} visual claim(s) verified`
+    : `${failedCount}/${claims.length} claim(s) NOT VERIFIED`;
 
   return {
     gate: 'vision',
@@ -152,7 +147,7 @@ export async function runVisionGate(ctx: GateContext): Promise<VisionGateResult>
     detail,
     durationMs: Date.now() - start,
     claims,
-    screenshotPath: join(workDir, 'vision-_root.png'),
+    screenshotPath: providedScreenshots ? undefined : join(ctx.config.appDir, '.verify-tmp', 'vision-_root.png'),
   };
 }
 
@@ -187,18 +182,22 @@ async function takeScreenshot(
   return new Promise<boolean>((resolve) => {
     const proc = spawn('docker', [
       'run', '--rm', '--network=host',
+      '-e', 'NODE_PATH=/app/node_modules',
       '-v', `${workDir}:/work`,
       'verify-playwright:latest',
       'node', '/work/vision-screenshot.js',
     ], { timeout: SCREENSHOT_TIMEOUT });
 
     let killed = false;
+    let stderr = '';
     const timer = setTimeout(() => { killed = true; proc.kill(); }, SCREENSHOT_TIMEOUT);
+
+    proc.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString(); });
 
     proc.on('close', (code) => {
       clearTimeout(timer);
       if (killed || code !== 0) {
-        log(`[vision] Screenshot failed (code=${code}, killed=${killed})`);
+        log(`[vision] Screenshot failed (code=${code}, killed=${killed}${stderr ? `, stderr=${stderr.slice(0, 200)}` : ''})`);
         resolve(false);
       } else {
         // Docker writes to /work/screenshot.png → copy to output
@@ -218,129 +217,6 @@ async function takeScreenshot(
       resolve(false);
     });
   });
-}
-
-// =============================================================================
-// VISION MODEL CALLS
-// =============================================================================
-
-async function callVisionModel(
-  provider: string,
-  model: string,
-  apiKey: string,
-  imageBuffer: Buffer,
-  prompt: string,
-): Promise<string> {
-  const base64 = imageBuffer.toString('base64');
-
-  if (provider === 'gemini') return callGemini(model, apiKey, base64, prompt);
-  if (provider === 'openai') return callOpenAI(model, apiKey, base64, prompt);
-  if (provider === 'anthropic') return callAnthropic(model, apiKey, base64, prompt);
-
-  throw new Error(`Unknown vision provider: ${provider}`);
-}
-
-async function callGemini(model: string, apiKey: string, base64: string, prompt: string): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-  const body = {
-    contents: [{
-      parts: [
-        { text: prompt },
-        { inline_data: { mime_type: 'image/png', data: base64 } },
-      ],
-    }],
-    generationConfig: {
-      maxOutputTokens: 1024,
-      temperature: 0,
-    },
-  };
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(VISION_TIMEOUT),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Gemini ${res.status}: ${text.substring(0, 200)}`);
-  }
-
-  const json: any = await res.json();
-  const parts = json?.candidates?.[0]?.content?.parts ?? [];
-  return parts.map((p: any) => p.text ?? '').join('');
-}
-
-async function callOpenAI(model: string, apiKey: string, base64: string, prompt: string): Promise<string> {
-  const url = 'https://api.openai.com/v1/chat/completions';
-
-  const body = {
-    model,
-    max_tokens: 1024,
-    temperature: 0,
-    messages: [{
-      role: 'user',
-      content: [
-        { type: 'text', text: prompt },
-        { type: 'image_url', image_url: { url: `data:image/png;base64,${base64}` } },
-      ],
-    }],
-  };
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(VISION_TIMEOUT),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`OpenAI ${res.status}: ${text.substring(0, 200)}`);
-  }
-
-  const json: any = await res.json();
-  return json?.choices?.[0]?.message?.content ?? '';
-}
-
-async function callAnthropic(model: string, apiKey: string, base64: string, prompt: string): Promise<string> {
-  const url = 'https://api.anthropic.com/v1/messages';
-
-  const body = {
-    model,
-    max_tokens: 1024,
-    messages: [{
-      role: 'user',
-      content: [
-        { type: 'image', source: { type: 'base64', media_type: 'image/png', data: base64 } },
-        { type: 'text', text: prompt },
-      ],
-    }],
-  };
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(VISION_TIMEOUT),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Anthropic ${res.status}: ${text.substring(0, 200)}`);
-  }
-
-  const json: any = await res.json();
-  return json?.content?.[0]?.text ?? '';
 }
 
 // =============================================================================

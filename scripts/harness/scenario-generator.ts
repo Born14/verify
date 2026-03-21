@@ -1,10 +1,11 @@
 /**
- * Scenario Generator — 7 Families of Adversarial Test Scenarios
+ * Scenario Generator — 8 Families of Adversarial Test Scenarios
  * ==============================================================
  *
  * Phase 1: Families A (fingerprint collision) + G (edge cases)
  * Phase 2: Families B (K5 learning) + C (gate sequencing)
- * Phase 3+: Families D, E, F (Docker)
+ * Phase 3+: Families D, E, F (Docker), H (filesystem)
+ * Phase 4: Family V (vision + triangulation)
  */
 
 import type { VerifyScenario, ScenarioFamily } from './types.js';
@@ -32,8 +33,24 @@ import {
   verifyFailedAt,
   narrowingPresent,
   constraintSeededOnFailure,
+  filesystemGateRan,
+  filesystemGatePassed,
+  filesystemGateFailed,
+  visionGateSkipped,
+  visionGatePassed,
+  visionGateFailed,
+  visionGateRan,
+  visionClaimVerified,
+  visionClaimNotVerified,
+  triangulationAction,
+  triangulationOutlier,
+  triangulationConfidence,
 } from './oracle.js';
+import { makeSolidPNG } from './test-png.js';
 import { ConstraintStore, predicateFingerprint } from '../../src/store/constraint-store.js';
+import { hashFile } from '../../src/gates/filesystem.js';
+import { existsSync, writeFileSync, mkdirSync } from 'fs';
+import { join } from 'path';
 
 let scenarioCounter = 0;
 function nextId(family: ScenarioFamily, generator: string): string {
@@ -610,7 +627,7 @@ function generateFamilyB(appDir: string): VerifyScenario[] {
         description: 'Second attempt with different predicate → K5 should NOT block',
         edits: [noopEdit],
         predicates: [{ type: 'http', path: '/api/items', method: 'GET', expect: { status: 200, bodyContains: 'DIFFERENT_VALUE' } }],
-        config: { appDir, gates: { staging: false, browser: false, http: false } },
+        config: { appDir, gates: { grounding: false, staging: false, browser: false, http: false } },
         invariants: [k5ShouldPass('corrected predicate with different fingerprint')],
         requiresDocker: false,
       },
@@ -658,7 +675,7 @@ function generateFamilyB(appDir: string): VerifyScenario[] {
         description: 'Retry with identical predicate → K5 MUST block',
         edits: [noopEdit],
         predicates: [{ type: 'css', selector: '.link', property: 'color', expected: 'green' }],
-        config: { appDir, gates: { staging: false, browser: false, http: false } },
+        config: { appDir, gates: { grounding: false, staging: false, browser: false, http: false } },
         invariants: [k5ShouldBlock('same predicate fingerprint should be blocked')],
         requiresDocker: false,
       },
@@ -696,15 +713,27 @@ function generateFamilyB(appDir: string): VerifyScenario[] {
             filesTouched: ['server.js'], attempt: 1,
             failedPredicates: [{ type: 'css', selector: '.btn', property: 'color', expected: 'blue' }],
           });
-          // Now manipulate the constraint to be expired
+          // Now manipulate the constraint to be expired by rewriting the JSONL
           const { readFileSync, writeFileSync } = require('fs');
           const { join } = require('path');
-          const dataPath = join(stateDir, 'memory.json');
-          const data = JSON.parse(readFileSync(dataPath, 'utf-8'));
-          for (const c of data.constraints) {
-            c.expiresAt = Date.now() - 1000; // 1 second in the past
-          }
-          writeFileSync(dataPath, JSON.stringify(data, null, 2));
+          const dataPath = join(stateDir, 'memory.jsonl');
+          const raw = readFileSync(dataPath, 'utf-8');
+          const lines = raw.split('\n').filter((l: string) => l.trim());
+          const rewritten = lines.map((line: string) => {
+            try {
+              const entry = JSON.parse(line);
+              if (entry._op === 'constraint' && entry.data?.expiresAt) {
+                entry.data.expiresAt = Date.now() - 1000; // 1 second in the past
+              }
+              if (entry._op === 'compact' && entry.data?.constraints) {
+                for (const c of entry.data.constraints) {
+                  if (c.expiresAt) c.expiresAt = Date.now() - 1000;
+                }
+              }
+              return JSON.stringify(entry);
+            } catch { return line; }
+          }).join('\n') + '\n';
+          writeFileSync(dataPath, rewritten);
         },
       },
       // Step 2: Verify with the same predicate → should NOT be blocked (constraint expired)
@@ -715,7 +744,7 @@ function generateFamilyB(appDir: string): VerifyScenario[] {
         description: 'Verify with same pred after expiry → K5 should pass',
         edits: [noopEdit],
         predicates: [{ type: 'css', selector: '.btn', property: 'color', expected: 'blue' }],
-        config: { appDir, gates: { staging: false, browser: false, http: false } },
+        config: { appDir, gates: { grounding: false, staging: false, browser: false, http: false } },
         invariants: [k5ShouldPass('expired constraint should not fire')],
         requiresDocker: false,
       },
@@ -764,7 +793,7 @@ function generateFamilyB(appDir: string): VerifyScenario[] {
         description: 'New store instance → K5 should still block (persisted)',
         edits: [noopEdit],
         predicates: [{ type: 'css', selector: '.header', property: 'color', expected: 'red' }],
-        config: { appDir, gates: { staging: false, browser: false, http: false } },
+        config: { appDir, gates: { grounding: false, staging: false, browser: false, http: false } },
         invariants: [k5ShouldBlock('constraint must persist across store reload')],
         requiresDocker: false,
       },
@@ -864,7 +893,7 @@ function generateFamilyB(appDir: string): VerifyScenario[] {
         description: 'Verify with override → K5 should pass despite matching constraint',
         edits: [noopEdit],
         predicates: [{ type: 'css', selector: '.nav', property: 'color', expected: 'orange' }],
-        config: { appDir, gates: { staging: false, browser: false, http: false } },
+        config: { appDir, gates: { grounding: false, staging: false, browser: false, http: false } },
         invariants: [k5ShouldPass('constraint overridden by overrideConstraints')],
         requiresDocker: false,
         // Runner will call beforeStep before verify — we'll set overrideConstraints dynamically
@@ -962,7 +991,7 @@ function generateFamilyB(appDir: string): VerifyScenario[] {
         description: 'Same predicate but path /b → K5 should NOT block',
         edits: [noopEdit],
         predicates: [{ type: 'css', selector: 'h1', property: 'color', expected: 'red', path: '/b' } as Predicate],
-        config: { appDir, gates: { staging: false, browser: false, http: false } },
+        config: { appDir, gates: { grounding: false, staging: false, browser: false, http: false } },
         invariants: [k5ShouldPass('different path should not be blocked')],
         requiresDocker: false,
       },
@@ -1059,7 +1088,7 @@ function generateFamilyC(appDir: string): VerifyScenario[] {
         description: 'K5 blocks → staging gate should be absent',
         edits: [noopEdit],
         predicates: [{ type: 'css', selector: '.target', property: 'color', expected: 'green' }],
-        config: { appDir, gates: { staging: true, browser: false, http: false } },
+        config: { appDir, gates: { grounding: false, staging: true, browser: false, http: false } },
         invariants: [
           k5ShouldBlock('K5 should block matching fingerprint'),
           gateAbsent('Staging', 'staging should not run when K5 blocks'),
@@ -1077,7 +1106,7 @@ function generateFamilyC(appDir: string): VerifyScenario[] {
     description: 'Same input run twice must produce identical gate names and order',
     edits: [noopEdit],
     predicates: [{ type: 'css', selector: 'h1', property: 'color', expected: 'red' }],
-    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    config: { appDir, gates: { grounding: false, staging: false, browser: false, http: false } },
     invariants: [{
       name: 'gate_order_determinism',
       category: 'gate_sequence',
@@ -1165,7 +1194,7 @@ function generateFamilyC(appDir: string): VerifyScenario[] {
     description: 'Every gate in result should have durationMs >= 0',
     edits: [noopEdit],
     predicates: [{ type: 'css', selector: 'h1', property: 'color', expected: 'red' }],
-    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    config: { appDir, gates: { grounding: false, staging: false, browser: false, http: false } },
     invariants: [{
       name: 'gate_timing_non_negative',
       category: 'gate_sequence',
@@ -1218,7 +1247,7 @@ function generateFamilyD(appDir: string): VerifyScenario[] {
     description: 'CSS color edit with CSS predicate should be attributed as direct',
     edits: [{ file: 'server.js', search: 'color: #1a1a2e', replace: 'color: #ff0000' }],
     predicates: [{ type: 'css', selector: 'h1', property: 'color', expected: '#ff0000' }],
-    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    config: { appDir, gates: { grounding: false, staging: false, browser: false, http: false } },
     invariants: [
       containmentAlwaysPasses(),
       containmentTotalMatchesEdits(),
@@ -1236,7 +1265,7 @@ function generateFamilyD(appDir: string): VerifyScenario[] {
     description: 'File content edit with content predicate should be attributed as direct',
     edits: [{ file: 'server.js', search: '<title>Demo App</title>', replace: '<title>Test App</title>' }],
     predicates: [{ type: 'content', file: 'server.js', pattern: 'Test App' }],
-    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    config: { appDir, gates: { grounding: false, staging: false, browser: false, http: false } },
     invariants: [
       containmentAlwaysPasses(),
       editAttributed('server.js', 'direct'),
@@ -1253,7 +1282,7 @@ function generateFamilyD(appDir: string): VerifyScenario[] {
     description: 'Dockerfile edit should be attributed as scaffolding',
     edits: [{ file: 'Dockerfile', search: 'FROM node', replace: 'FROM node' }], // no-op edit but file is scaffolding
     predicates: [{ type: 'css', selector: 'h1', property: 'color', expected: 'red' }],
-    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    config: { appDir, gates: { grounding: false, staging: false, browser: false, http: false } },
     invariants: [
       containmentAlwaysPasses(),
       editAttributed('Dockerfile', 'scaffolding'),
@@ -1269,7 +1298,7 @@ function generateFamilyD(appDir: string): VerifyScenario[] {
     description: 'Edit to unrelated file with no matching predicate should be unexplained',
     edits: [{ file: 'utils/helper.js', search: 'old', replace: 'new' }],
     predicates: [{ type: 'css', selector: 'h1', property: 'color', expected: 'red' }],
-    config: { appDir, gates: { syntax: false, staging: false, browser: false, http: false } },
+    config: { appDir, gates: { grounding: false, syntax: false, staging: false, browser: false, http: false } },
     invariants: [
       containmentAlwaysPasses(),
       editAttributed('utils/helper.js', 'unexplained'),
@@ -1290,7 +1319,7 @@ function generateFamilyD(appDir: string): VerifyScenario[] {
       { file: 'random-file.txt', search: 'old', replace: 'new' },                 // unexplained
     ],
     predicates: [{ type: 'css', selector: 'h1', property: 'color', expected: 'green' }],
-    config: { appDir, gates: { syntax: false, staging: false, browser: false, http: false } },
+    config: { appDir, gates: { grounding: false, syntax: false, staging: false, browser: false, http: false } },
     invariants: [
       containmentAlwaysPasses(),
       containmentTotalMatchesEdits(),
@@ -1307,7 +1336,7 @@ function generateFamilyD(appDir: string): VerifyScenario[] {
     description: 'Route handler edit with HTTP predicate should be attributed as direct',
     edits: [{ file: 'server.js', search: "'/api/items'", replace: "'/api/items'" }], // no-op in route file
     predicates: [{ type: 'http', path: '/api/items', method: 'GET', expect: { status: 200 } }],
-    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    config: { appDir, gates: { grounding: false, staging: false, browser: false, http: false } },
     invariants: [
       containmentAlwaysPasses(),
       editAttributed('server.js', 'direct'),
@@ -1323,7 +1352,7 @@ function generateFamilyD(appDir: string): VerifyScenario[] {
     description: 'Migration file edit with DB predicate should be attributed as direct',
     edits: [{ file: 'migrations/001.sql', search: 'CREATE', replace: 'CREATE' }],
     predicates: [{ type: 'db', table: 'users', assertion: 'table_exists' }],
-    config: { appDir, gates: { syntax: false, staging: false, browser: false, http: false } },
+    config: { appDir, gates: { grounding: false, syntax: false, staging: false, browser: false, http: false } },
     invariants: [
       containmentAlwaysPasses(),
       editAttributed('migrations/001.sql', 'direct'),
@@ -1342,7 +1371,7 @@ function generateFamilyD(appDir: string): VerifyScenario[] {
       { file: 'server.js', search: 'background: #ffffff', replace: 'background: #000000' },
     ],
     predicates: [],
-    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    config: { appDir, gates: { grounding: false, staging: false, browser: false, http: false } },
     invariants: [
       containmentAlwaysPasses(),
       containmentTotalMatchesEdits(),
@@ -1401,7 +1430,7 @@ function generateFamilyE(appDir: string): VerifyScenario[] {
     description: 'Mix of real and fabricated selectors — only fabricated gets groundingMiss',
     edits: [{ file: 'server.js', search: 'Demo App', replace: 'Test App' }],
     predicates: [
-      { type: 'css', selector: 'h1', property: 'color', expected: 'red' },
+      { type: 'css', selector: 'h1', property: 'color', expected: '#1a1a2e' },
       { type: 'css', selector: '.totally-fake', property: 'font-size', expected: '3rem' },
     ],
     config: { appDir, gates: { staging: false, browser: false, http: false } },
@@ -1583,6 +1612,682 @@ function generateFamilyF(appDir: string): VerifyScenario[] {
 }
 
 // =============================================================================
+// FAMILY H: FILESYSTEM GATE — Beyond-Code Verification
+// =============================================================================
+// Tests the 4 filesystem predicate types:
+//   filesystem_exists, filesystem_absent, filesystem_unchanged, filesystem_count
+// Proves verify works for file system agents, not just code agents.
+// No Docker required. Pure filesystem reads.
+
+function generateFamilyH(appDir: string): VerifyScenario[] {
+  const scenarios: VerifyScenario[] = [];
+
+  // Ensure fixture files exist for filesystem tests
+  const fsFixtureDir = join(appDir, 'test-data');
+  if (!existsSync(fsFixtureDir)) {
+    mkdirSync(fsFixtureDir, { recursive: true });
+  }
+  const fixtureFile = join(fsFixtureDir, 'sample.txt');
+  if (!existsSync(fixtureFile)) {
+    writeFileSync(fixtureFile, 'hello world\n');
+  }
+  const fixtureFileHash = hashFile(fixtureFile);
+
+  // H1: filesystem_exists — passes for a file that exists
+  scenarios.push({
+    id: nextId('H', 'fs_exists_pass'),
+    family: 'H',
+    generator: 'fs_exists_pass',
+    description: 'filesystem_exists passes when target file exists',
+    edits: [
+      { file: 'server.js', search: "Powered by Node.js", replace: "Powered by Node.js" }, // no-op edit
+    ],
+    predicates: [
+      { type: 'filesystem_exists', file: 'test-data/sample.txt', description: 'Sample file exists' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, invariants: false },
+    },
+    invariants: [
+      verifySucceeded('filesystem_exists should pass for existing file'),
+      filesystemGateRan(),
+      filesystemGatePassed(),
+    ],
+    requiresDocker: false,
+  });
+
+  // H2: filesystem_exists — fails for a non-existent file
+  scenarios.push({
+    id: nextId('H', 'fs_exists_fail'),
+    family: 'H',
+    generator: 'fs_exists_fail',
+    description: 'filesystem_exists fails when target file does not exist',
+    edits: [
+      { file: 'server.js', search: "Powered by Node.js", replace: "Powered by Node.js" },
+    ],
+    predicates: [
+      { type: 'filesystem_exists', file: 'nonexistent/phantom.txt', description: 'File should not exist' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, invariants: false },
+    },
+    invariants: [
+      verifyFailedAt('filesystem', 'should fail when file missing'),
+      filesystemGateRan(),
+      filesystemGateFailed('nonexistent file triggers failure'),
+      narrowingPresent(),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // H3: filesystem_absent — passes when file does not exist
+  // Grounding disabled: grounding marks trivially-absent paths as groundingMiss,
+  // but here we're testing the filesystem gate itself, not the grounding gate.
+  scenarios.push({
+    id: nextId('H', 'fs_absent_pass'),
+    family: 'H',
+    generator: 'fs_absent_pass',
+    description: 'filesystem_absent passes when target file does not exist',
+    edits: [
+      { file: 'server.js', search: "Powered by Node.js", replace: "Powered by Node.js" },
+    ],
+    predicates: [
+      { type: 'filesystem_absent', file: 'nonexistent/phantom.txt', description: 'File should not exist' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: { grounding: false, staging: false, browser: false, http: false, invariants: false },
+    },
+    invariants: [
+      verifySucceeded('filesystem_absent should pass for missing file'),
+      filesystemGateRan(),
+      filesystemGatePassed(),
+    ],
+    requiresDocker: false,
+  });
+
+  // H4: filesystem_absent — fails when file exists
+  scenarios.push({
+    id: nextId('H', 'fs_absent_fail'),
+    family: 'H',
+    generator: 'fs_absent_fail',
+    description: 'filesystem_absent fails when target file exists',
+    edits: [
+      { file: 'server.js', search: "Powered by Node.js", replace: "Powered by Node.js" },
+    ],
+    predicates: [
+      { type: 'filesystem_absent', file: 'test-data/sample.txt', description: 'File exists but should be absent' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, invariants: false },
+    },
+    invariants: [
+      verifyFailedAt('filesystem', 'should fail when file unexpectedly exists'),
+      filesystemGateRan(),
+      filesystemGateFailed('existing file triggers absent failure'),
+      narrowingPresent(),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // H5: filesystem_unchanged — passes with correct hash
+  scenarios.push({
+    id: nextId('H', 'fs_unchanged_pass'),
+    family: 'H',
+    generator: 'fs_unchanged_pass',
+    description: 'filesystem_unchanged passes when file hash matches',
+    edits: [
+      { file: 'server.js', search: "Powered by Node.js", replace: "Powered by Node.js" },
+    ],
+    predicates: [
+      { type: 'filesystem_unchanged', file: 'test-data/sample.txt', hash: fixtureFileHash, description: 'File hash should match' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, invariants: false },
+    },
+    invariants: [
+      verifySucceeded('filesystem_unchanged should pass with matching hash'),
+      filesystemGateRan(),
+      filesystemGatePassed(),
+    ],
+    requiresDocker: false,
+  });
+
+  // H6: filesystem_unchanged — fails with wrong hash
+  scenarios.push({
+    id: nextId('H', 'fs_unchanged_fail'),
+    family: 'H',
+    generator: 'fs_unchanged_fail',
+    description: 'filesystem_unchanged fails when file hash does not match',
+    edits: [
+      { file: 'server.js', search: "Powered by Node.js", replace: "Powered by Node.js" },
+    ],
+    predicates: [
+      { type: 'filesystem_unchanged', file: 'test-data/sample.txt', hash: 'deadbeef0000000000000000000000000000000000000000000000000000dead', description: 'Wrong hash should fail' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, invariants: false },
+    },
+    invariants: [
+      verifyFailedAt('filesystem', 'should fail when hash mismatches'),
+      filesystemGateRan(),
+      filesystemGateFailed('wrong hash triggers unchanged failure'),
+      narrowingPresent(),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // H7: filesystem_count — passes with correct count
+  scenarios.push({
+    id: nextId('H', 'fs_count_pass'),
+    family: 'H',
+    generator: 'fs_count_pass',
+    description: 'filesystem_count passes when directory entry count matches',
+    edits: [
+      { file: 'server.js', search: "Powered by Node.js", replace: "Powered by Node.js" },
+    ],
+    predicates: [
+      { type: 'filesystem_count', path: 'test-data', count: 1, description: 'test-data has 1 file' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, invariants: false },
+    },
+    invariants: [
+      verifySucceeded('filesystem_count should pass with correct count'),
+      filesystemGateRan(),
+      filesystemGatePassed(),
+    ],
+    requiresDocker: false,
+  });
+
+  // H8: filesystem_count — fails with wrong count
+  scenarios.push({
+    id: nextId('H', 'fs_count_fail'),
+    family: 'H',
+    generator: 'fs_count_fail',
+    description: 'filesystem_count fails when directory entry count mismatches',
+    edits: [
+      { file: 'server.js', search: "Powered by Node.js", replace: "Powered by Node.js" },
+    ],
+    predicates: [
+      { type: 'filesystem_count', path: 'test-data', count: 99, description: 'test-data definitely does not have 99 entries' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, invariants: false },
+    },
+    invariants: [
+      verifyFailedAt('filesystem', 'should fail when count mismatches'),
+      filesystemGateRan(),
+      filesystemGateFailed('wrong count triggers failure'),
+      narrowingPresent(),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // H9: Fingerprint distinctness — different filesystem predicate types produce different fingerprints
+  const fsPredicateA: Predicate = { type: 'filesystem_exists', file: 'server.js' };
+  const fsPredicateB: Predicate = { type: 'filesystem_absent', file: 'server.js' };
+  const fsPredicateC: Predicate = { type: 'filesystem_unchanged', file: 'server.js', hash: 'abc123' };
+  const fsPredicateD: Predicate = { type: 'filesystem_count', path: 'test-data', count: 1 };
+
+  scenarios.push({
+    id: nextId('H', 'fs_fingerprint'),
+    family: 'H',
+    generator: 'fs_fingerprint',
+    description: 'Filesystem predicates produce distinct fingerprints (K5 can tell them apart)',
+    edits: [
+      { file: 'server.js', search: "Powered by Node.js", replace: "Powered by Node.js" },
+    ],
+    predicates: [fsPredicateA, fsPredicateB],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, invariants: false },
+    },
+    invariants: [
+      shouldNotCrash('filesystem fingerprint generation should not crash'),
+      fingerprintDistinctness(
+        'filesystem_exists',
+        'filesystem_absent',
+        () => fsPredicateA,
+        () => fsPredicateB,
+      ),
+      fingerprintDistinctness(
+        'filesystem_exists',
+        'filesystem_unchanged',
+        () => fsPredicateA,
+        () => fsPredicateC,
+      ),
+      fingerprintDistinctness(
+        'filesystem_exists',
+        'filesystem_count',
+        () => fsPredicateA,
+        () => fsPredicateD,
+      ),
+      fingerprintDeterminism(
+        'filesystem_exists fingerprint is stable',
+        () => fsPredicateA,
+      ),
+    ],
+    requiresDocker: false,
+  });
+
+  // H10: G5 containment — filesystem predicates are attributed (direct match on file/path)
+  scenarios.push({
+    id: nextId('H', 'fs_containment'),
+    family: 'H',
+    generator: 'fs_containment',
+    description: 'Filesystem predicates are directly attributed by G5 containment',
+    edits: [
+      { file: 'server.js', search: "Powered by Node.js", replace: "Powered by Node.js" },
+    ],
+    predicates: [
+      { type: 'filesystem_exists', file: 'server.js', description: 'Server file exists' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, invariants: false },
+    },
+    invariants: [
+      verifySucceeded('containment should pass with filesystem predicates'),
+      containmentAlwaysPasses(),
+      editAttributed('server.js', 'direct'),
+    ],
+    requiresDocker: false,
+  });
+
+  return scenarios;
+}
+
+// =============================================================================
+// FAMILY V: VISION + TRIANGULATION
+// =============================================================================
+
+function generateFamilyV(appDir: string): VerifyScenario[] {
+  const scenarios: VerifyScenario[] = [];
+  const dummyEdit: Edit = { file: 'server.js', search: 'color: #666', replace: 'color: #666' };
+
+  // -------------------------------------------------------------------------
+  // V1: Vision gate skips when no visual predicates
+  // -------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('V', 'V1_noVisualPredicates'),
+    family: 'V',
+    generator: 'V1_noVisualPredicates',
+    description: 'Vision gate skips when only non-visual predicates are present',
+    edits: [dummyEdit],
+    predicates: [{ type: 'content', file: 'server.js', pattern: 'subtitle' }],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, grounding: false },
+      vision: {
+        call: async () => { throw new Error('should not be called'); },
+        screenshots: { '/': makeSolidPNG(0, 0, 0) },
+      },
+    },
+    invariants: [
+      shouldNotCrash('no visual predicates'),
+      visionGateSkipped(),
+    ],
+    requiresDocker: false,
+  });
+
+  // -------------------------------------------------------------------------
+  // V2: Vision gate skips when no vision callback configured
+  // -------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('V', 'V2_noApiKey'),
+    family: 'V',
+    generator: 'V2_noApiKey',
+    description: 'Vision gate skips when no vision callback configured',
+    edits: [dummyEdit],
+    predicates: [{ type: 'css', selector: 'body', property: 'background', expected: '#ffffff' }],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, vision: true, grounding: false },
+      // No vision config at all
+    },
+    invariants: [
+      shouldNotCrash('no API key'),
+      visionGateSkipped(),
+    ],
+    requiresDocker: false,
+  });
+
+  // -------------------------------------------------------------------------
+  // V3: Vision gate with pre-captured blue screenshot — "blue" claim verified
+  // Requires GEMINI_API_KEY
+  // -------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('V', 'V3_blueVerified'),
+    family: 'V',
+    generator: 'V3_blueScreenshotVerified',
+    description: 'Solid blue screenshot: "background is blue" should be VERIFIED',
+    edits: [dummyEdit],
+    predicates: [{ type: 'css', selector: 'body', property: 'background-color', expected: 'blue' }],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, vision: true, grounding: false },
+      vision: {
+        call: null as any, // Placeholder — runner substitutes with geminiVision()
+        screenshots: { '/': makeSolidPNG(0, 0, 255) },
+      },
+    },
+    invariants: [
+      shouldNotCrash('blue screenshot verified'),
+      visionGateRan(),
+      visionClaimVerified(),
+    ],
+    requiresDocker: false,
+  });
+
+  // -------------------------------------------------------------------------
+  // V4: Vision gate with red screenshot — "blue" claim NOT verified
+  // Requires GEMINI_API_KEY
+  // -------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('V', 'V4_redNotVerified'),
+    family: 'V',
+    generator: 'V4_redScreenshotNotVerified',
+    description: 'Solid red screenshot: "background is blue" should be NOT VERIFIED',
+    edits: [dummyEdit],
+    predicates: [{ type: 'css', selector: 'body', property: 'background-color', expected: 'blue' }],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, vision: true, grounding: false },
+      vision: {
+        call: null as any, // Placeholder — runner substitutes with geminiVision()
+        screenshots: { '/': makeSolidPNG(255, 0, 0) },
+      },
+    },
+    invariants: [
+      shouldNotCrash('red screenshot not verified'),
+      visionGateRan(),
+      visionGateFailed(),
+      visionClaimNotVerified(),
+    ],
+    requiresDocker: false,
+  });
+
+  // -------------------------------------------------------------------------
+  // V5-V10: Triangulation logic (pure — no API key needed)
+  // These test the triangulation gate's verdict synthesis by manipulating
+  // which gates are present in the results. Since triangulation reads from
+  // the gates array, we can control inputs via gate toggles.
+  // -------------------------------------------------------------------------
+
+  // V5: Only deterministic gates run (no browser, no vision) → proceed
+  scenarios.push({
+    id: nextId('V', 'V5_deterministicOnly'),
+    family: 'V',
+    generator: 'V5_deterministicOnly',
+    description: 'Only deterministic gates → triangulation proceeds (insufficient)',
+    edits: [dummyEdit],
+    predicates: [{ type: 'content', file: 'server.js', pattern: 'subtitle' }],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, vision: false, grounding: false },
+    },
+    invariants: [
+      shouldNotCrash('deterministic only'),
+      triangulationAction('proceed'),
+      triangulationConfidence('insufficient'),
+    ],
+    requiresDocker: false,
+  });
+
+  // V6: No gates at all → triangulation proceeds (insufficient, 0 authorities)
+  scenarios.push({
+    id: nextId('V', 'V6_noAuthorities'),
+    family: 'V',
+    generator: 'V6_noAuthorities',
+    description: 'No verification authorities → triangulation proceeds',
+    edits: [dummyEdit],
+    predicates: [],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, vision: false, grounding: false, syntax: false, constraints: false, containment: false },
+    },
+    invariants: [
+      shouldNotCrash('no authorities'),
+      triangulationAction('proceed'),
+    ],
+    requiresDocker: false,
+  });
+
+  // V7: Vision gate ordering — must appear after browser in gate array
+  scenarios.push({
+    id: nextId('V', 'V7_gateOrderVisionAfterBrowser'),
+    family: 'V',
+    generator: 'V7_gateOrderVisionAfterBrowser',
+    description: 'Vision gate must appear after browser gate in results',
+    edits: [dummyEdit],
+    predicates: [{ type: 'css', selector: 'body', property: 'background', expected: '#ffffff' }],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, vision: true, grounding: false },
+      vision: {
+        call: async () => { throw new Error('should not be called'); },
+        screenshots: { '/': makeSolidPNG(255, 255, 255) },
+      },
+    },
+    invariants: [
+      shouldNotCrash('gate ordering'),
+      // Vision should be skipped here (no visual predicates that pass through),
+      // but the gate ordering invariant only fires when both are present
+    ],
+    requiresDocker: false,
+  });
+
+  // V8: Triangulation always present — even when only F9 runs
+  scenarios.push({
+    id: nextId('V', 'V8_triangulationAlwaysPresent'),
+    family: 'V',
+    generator: 'V8_triangulationAlwaysPresent',
+    description: 'Triangulation gate is always present in results',
+    edits: [dummyEdit],
+    predicates: [],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, vision: false, grounding: false },
+    },
+    invariants: [
+      shouldNotCrash('triangulation always present'),
+      {
+        name: 'triangulation_gate_present',
+        category: 'triangulation' as any,
+        layer: 'product' as const,
+        check: (_scenario: any, result: any) => {
+          if (result instanceof Error) return { passed: true, severity: 'info' as const };
+          const gate = result.gates.find((g: any) => g.gate === 'triangulation');
+          if (!gate) {
+            return { passed: false, violation: 'Triangulation gate not in results', severity: 'bug' as const };
+          }
+          return { passed: true, severity: 'info' as const };
+        },
+      },
+    ],
+    requiresDocker: false,
+  });
+
+  // V9: Vision API failure → gate skipped (doesn't block)
+  scenarios.push({
+    id: nextId('V', 'V9_visionApiFailure'),
+    family: 'V',
+    generator: 'V9_visionApiFailure',
+    description: 'Vision API failure should skip gate, not block pipeline',
+    edits: [dummyEdit],
+    predicates: [{ type: 'css', selector: 'body', property: 'background', expected: '#ffffff' }],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, vision: true, grounding: false },
+      vision: {
+        call: async () => { throw new Error('invalid API key'); },
+        screenshots: { '/': makeSolidPNG(255, 255, 255) },
+      },
+    },
+    invariants: [
+      shouldNotCrash('vision API failure'),
+      visionGateSkipped(), // API failure → "gate skipped" in detail
+    ],
+    requiresDocker: false,
+  });
+
+  // V10: Multiple CSS predicates with vision → all claims addressed
+  // Requires GEMINI_API_KEY
+  scenarios.push({
+    id: nextId('V', 'V10_multiplePredicates'),
+    family: 'V',
+    generator: 'V10_multiplePredicates',
+    description: 'Multiple CSS predicates should each produce a vision claim',
+    edits: [dummyEdit],
+    predicates: [
+      { type: 'css', selector: 'body', property: 'background-color', expected: 'green' },
+      { type: 'css', selector: 'h1', property: 'color', expected: 'green' },
+    ],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, vision: true, grounding: false },
+      vision: {
+        call: null as any, // Placeholder — runner substitutes with geminiVision()
+        screenshots: { '/': makeSolidPNG(0, 128, 0) }, // green
+      },
+    },
+    invariants: [
+      shouldNotCrash('multiple predicates'),
+      visionGateRan(),
+      // At least the background claim should be verified (solid green image)
+      visionClaimVerified(),
+    ],
+    requiresDocker: false,
+  });
+
+  // V11: Triangulation gate ordering — must appear last (after vision)
+  scenarios.push({
+    id: nextId('V', 'V11_triangulationAfterVision'),
+    family: 'V',
+    generator: 'V11_triangulationAfterVision',
+    description: 'Triangulation must appear after vision in gate ordering',
+    edits: [dummyEdit],
+    predicates: [{ type: 'css', selector: 'body', property: 'background', expected: '#ffffff' }],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, vision: true, grounding: false },
+      vision: {
+        call: async () => { throw new Error('should not be called'); },
+        screenshots: { '/': makeSolidPNG(255, 255, 255) },
+      },
+    },
+    invariants: [
+      shouldNotCrash('triangulation ordering'),
+      // Only checks when both gates are present
+      gateOrderBefore('vision' as any, 'triangulation' as any),
+    ],
+    requiresDocker: false,
+  });
+
+  // V12: Non-visual predicate (content) with vision enabled → vision skips
+  scenarios.push({
+    id: nextId('V', 'V12_contentPredicateVisionSkips'),
+    family: 'V',
+    generator: 'V12_contentPredicateVisionSkips',
+    description: 'Content-only predicates should cause vision gate to skip',
+    edits: [dummyEdit],
+    predicates: [
+      { type: 'content', file: 'server.js', pattern: 'Demo' },
+    ],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, vision: true, grounding: false },
+      vision: {
+        call: async () => { throw new Error('should not be called'); },
+        screenshots: { '/': makeSolidPNG(0, 0, 0) },
+      },
+    },
+    invariants: [
+      shouldNotCrash('content predicate vision skip'),
+      visionGateSkipped(),
+    ],
+    requiresDocker: false,
+  });
+
+  // V13: HTML predicate IS visual → vision should run (not skip)
+  // Requires GEMINI_API_KEY
+  scenarios.push({
+    id: nextId('V', 'V13_htmlPredicateIsVisual'),
+    family: 'V',
+    generator: 'V13_htmlPredicateIsVisual',
+    description: 'HTML predicates are visual — vision gate should run',
+    edits: [dummyEdit],
+    predicates: [
+      { type: 'html', selector: 'h1', expected: 'exists' },
+    ],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, vision: true, grounding: false },
+      vision: {
+        call: null as any, // Placeholder — runner substitutes with geminiVision()
+        screenshots: { '/': makeSolidPNG(128, 128, 128) },
+      },
+    },
+    invariants: [
+      shouldNotCrash('html predicate is visual'),
+      visionGateRan(),
+    ],
+    requiresDocker: false,
+  });
+
+  // V14: Vision + Triangulation end-to-end with mixed predicates
+  // Tests that content predicates don't break vision, and triangulation
+  // synthesizes correctly when vision is the only perceptual authority
+  scenarios.push({
+    id: nextId('V', 'V14_mixedPredicatesTriangulation'),
+    family: 'V',
+    generator: 'V14_mixedPredicatesTriangulation',
+    description: 'Mixed predicates: content passes deterministic, vision runs for CSS',
+    edits: [dummyEdit],
+    predicates: [
+      { type: 'content', file: 'server.js', pattern: 'subtitle' },
+      { type: 'css', selector: 'body', property: 'background-color', expected: 'white' },
+    ],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, vision: true, grounding: false },
+      vision: {
+        call: null as any, // Placeholder — runner substitutes with geminiVision()
+        screenshots: { '/': makeSolidPNG(255, 255, 255) }, // white matches
+      },
+    },
+    invariants: [
+      shouldNotCrash('mixed predicates triangulation'),
+      visionGateRan(),
+    ],
+    requiresDocker: false,
+  });
+
+  return scenarios;
+}
+
+// =============================================================================
 // GENERATOR DISPATCH
 // =============================================================================
 
@@ -1595,6 +2300,8 @@ export function generateAllScenarios(appDir: string): VerifyScenario[] {
     ...generateFamilyE(appDir),
     ...generateFamilyF(appDir),
     ...generateFamilyG(appDir),
+    ...generateFamilyH(appDir),
+    ...generateFamilyV(appDir),
   ];
 }
 
@@ -1607,5 +2314,7 @@ export function generateFamily(family: ScenarioFamily, appDir: string): VerifySc
     case 'E': return generateFamilyE(appDir);
     case 'F': return generateFamilyF(appDir);
     case 'G': return generateFamilyG(appDir);
+    case 'H': return generateFamilyH(appDir);
+    case 'V': return generateFamilyV(appDir);
   }
 }

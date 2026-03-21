@@ -10,7 +10,7 @@ import type { Edit, Predicate, VerifyConfig, VerifyResult } from '../../src/type
 // SCENARIO
 // =============================================================================
 
-export type ScenarioFamily = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
+export type ScenarioFamily = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'V';
 
 export interface VerifyScenario {
   id: string;
@@ -44,7 +44,8 @@ export interface VerifyScenario {
 
 export type InvariantCategory =
   | 'fingerprint' | 'k5' | 'gate_sequence' | 'containment'
-  | 'grounding' | 'pipeline' | 'robustness';
+  | 'grounding' | 'pipeline' | 'robustness'
+  | 'vision' | 'triangulation';
 
 export type InvariantLayer = 'product' | 'harness';
 
@@ -188,6 +189,11 @@ export interface CandidateResult {
   improvements: string[];   // scenario IDs that went dirty→clean
   regressions: string[];    // scenario IDs that went clean→dirty
   score: number;
+  timedOut?: boolean;        // subprocess timed out (not necessarily a regression)
+  appliedEdits?: number;     // how many edits were successfully applied
+  skippedEdits?: number;     // how many edits failed to apply (search not found)
+  partialScore?: number;     // (improvements - regressions) / totalDirty — for reporting
+  holdoutSize?: number;      // holdout set size (for transparency)
 }
 
 export type ImprovementVerdict =
@@ -215,10 +221,12 @@ export interface ImprovementEntry {
 }
 
 export interface ImproveConfig {
-  llm: 'gemini' | 'anthropic' | 'ollama' | 'none';
+  llm: 'gemini' | 'anthropic' | 'ollama' | 'claude' | 'claude-code' | 'none';
   apiKey?: string;
   ollamaModel?: string;
   ollamaHost?: string;
+  /** Claude model override (default: claude-sonnet-4-20250514) */
+  claudeModel?: string;
   maxCandidates: number;
   maxLines: number;
   dryRun: boolean;

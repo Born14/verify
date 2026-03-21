@@ -31,7 +31,8 @@ export interface Edit {
  */
 export interface Predicate {
   /** What kind of check */
-  type: 'css' | 'html' | 'content' | 'db' | 'http' | 'http_sequence';
+  type: 'css' | 'html' | 'content' | 'db' | 'http' | 'http_sequence'
+    | 'filesystem_exists' | 'filesystem_absent' | 'filesystem_unchanged' | 'filesystem_count';
 
   /** CSS selector (for css/html types) */
   selector?: string;
@@ -80,6 +81,12 @@ export interface Predicate {
       bodyRegex?: string;
     };
   }>;
+
+  // --- Filesystem predicate fields ---
+  /** Expected file/directory count (for filesystem_count) */
+  count?: number;
+  /** SHA-256 hash captured at grounding time (for filesystem_unchanged) */
+  hash?: string;
 }
 
 /**
@@ -134,6 +141,8 @@ export interface VerifyConfig {
 
   // --- Gate toggles (progressive adoption) ---
   gates?: {
+    /** Grounding: Reject fabricated selectors (default: true) */
+    grounding?: boolean;
     /** F9: Syntax validation (default: true) */
     syntax?: boolean;
     /** K5: Constraint learning (default: true) */
@@ -154,9 +163,21 @@ export interface VerifyConfig {
 
   // --- Vision options ---
   vision?: {
-    provider: 'gemini' | 'openai' | 'anthropic';
-    apiKey: string;
-    model?: string;
+    /** Vision model callback — you bring your own LLM.
+     *  Receives a PNG image buffer and a prompt, returns raw text response.
+     *  Verify owns the prompt and parsing — you own the API call.
+     *
+     *  Example with the bundled Gemini helper:
+     *    import { geminiVision } from '@sovereign-labs/verify';
+     *    vision: { call: geminiVision(process.env.GEMINI_API_KEY) }
+     *
+     *  Example with your own model:
+     *    vision: { call: async (image, prompt) => myModel.analyze(image, prompt) }
+     */
+    call: (image: Buffer, prompt: string) => Promise<string>;
+    /** Pre-captured screenshots — skip Docker/Playwright entirely.
+     *  Map of route path → PNG buffer (e.g., { '/': Buffer, '/roster': Buffer }). */
+    screenshots?: Record<string, Buffer>;
   };
 
   // --- State directory for learning ---
@@ -183,7 +204,7 @@ export interface VerifyConfig {
  */
 export interface GateResult {
   /** Gate identifier */
-  gate: 'F9' | 'K5' | 'G5' | 'staging' | 'browser' | 'http' | 'invariants' | 'vision';
+  gate: 'grounding' | 'F9' | 'K5' | 'G5' | 'staging' | 'browser' | 'http' | 'invariants' | 'vision' | 'triangulation';
   /** Did this gate pass? */
   passed: boolean;
   /** Human-readable detail */
@@ -292,6 +313,16 @@ export interface VerifyResult {
     before: number;
     after: number;
     seeded: string[];
+  };
+
+  /** Cross-authority triangulation verdict (when 2+ authorities ran) */
+  triangulation?: {
+    action: string;
+    confidence: string;
+    outlier: string;
+    authorities: { deterministic: string; browser: string; vision: string };
+    authorityCount: number;
+    reasoning: string;
   };
 }
 

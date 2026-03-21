@@ -4,21 +4,41 @@ How verify gets smarter over time. The mental model, the pipeline, the daily rhy
 
 ## The One-Liner
 
-Verify makes agents converge faster by learning from their mistakes. The constraints file is the product. The improve loop is the factory. Campaigns are the fuel.
+Verify makes agents converge faster by learning from their mistakes. The constraints file is the product. The improve loop is the factory. Campaigns and the chaos engine are the fuel.
+
+## Anatomy of Verify
+
+The `@sovereign-labs/verify` package has distinct named components. Understanding what each piece is called prevents confusion when discussing the system.
+
+| Component | What It Is | Where It Lives |
+|-----------|-----------|----------------|
+| **Package** | The npm artifact (`@sovereign-labs/verify` v0.3.0). What users install. | `packages/verify/` |
+| **Pipeline** | The `verify()` function — the ordered gate sequence (Grounding→F9→K5→G5→Filesystem→Staging→Browser→Vision→HTTP→Invariants). The core product. | `src/verify.ts` |
+| **Gates** | Individual validation steps. Each gate is a pure function: context in, pass/fail out. | `src/gates/*.ts` |
+| **Store** | Persistent state — constraint store (K5 learning), fault ledger (discovery tracking + goalData persistence), external scenarios (encoded tests). | `src/store/*.ts` |
+| **Harness** | The self-test + improve infrastructure. Runs scenarios against the pipeline, detects regressions, proposes fixes. The inner circle's engine. | `scripts/harness/*.ts` |
+| **Campaign** | Outer-circle orchestration. Discovers real-world faults by firing diverse goals through `verify()` against real apps. | `scripts/campaign/*.ts` |
+| **Chaos Engine** | 3 MCP tools (`verify_chaos_plan`, `verify_chaos_run`, `verify_chaos_encode`) that generate, execute, and encode stress-test goals autonomously. Sits at the intersection of both circles. | `src/mcp-server.ts` |
+| **MCP Server** | The tool surface — 16 tools exposing pipeline, harness, campaign, and chaos to any MCP client. | `src/mcp-server.ts` |
+| **CLI** | Command-line interface for `self-test`, `faults`, `improve`, and `ground`. | `src/cli.ts` |
+
+**The relationship:** The *pipeline* is the product. The *harness* is the factory that improves it. *Campaigns* and the *chaos engine* are the fuel — they discover what the harness needs to fix. The *store* is the memory that compounds learning across sessions.
 
 ## The Two Circles
 
 Verify has two concentric loops that never mix during runtime.
 
-### Outer Circle: Real-World Usage (Campaigns)
+### Outer Circle: Real-World Usage (Campaigns + Chaos)
 
 This is where agents run real tasks against real apps through verify's gates.
 
 - An agent (Cursor, Aider, Claude Code, Sovereign, or a custom agent) proposes edits
-- `verify()` gates every edit (F9 -> K5 -> G5 -> Staging -> Browser -> HTTP)
+- `verify()` gates every edit (Grounding → F9 → K5 → G5 → Filesystem → Staging → Browser → HTTP → Invariants → Vision → Triangulation)
 - On failure: narrowing hints tell the agent what to try next
 - On repeated failure: K5 blocks known-bad patterns automatically
 - Each attempt shrinks the solution space until the agent converges or exhausts
+
+The chaos engine accelerates discovery by firing systematic, diverse goals across 8 categories (css_change, html_mutation, content_change, http_behavior, db_schema, adversarial_predicate, mixed_surface, grounding_probe). `verify_chaos_plan` reports **coverage gaps** — which gate categories have zero custom scenarios — steering Claude toward under-tested areas.
 
 The "intelligence" here is the agent's LLM. It's creative, unpredictable, sometimes wrong. Verify doesn't care which model it is. It just gates the output.
 
@@ -26,10 +46,10 @@ The "intelligence" here is the agent's LLM. It's creative, unpredictable, someti
 
 This is verify's own quality assurance system. It runs offline, after failures have been collected.
 
-- 56+ deterministic scenarios test verify's behavior against known invariants
+- 66+ deterministic scenarios test verify's behavior against known invariants
 - When a scenario is dirty (verify violates an invariant), the loop proposes fixes
 - Fixes are validated in subprocess isolation with holdout protection
-- Human reviews and applies accepted patches
+- Human reviews and applies accepted patches (or uses `verify_improve_apply` through MCP)
 
 The loop is mostly deterministic. The only LLM call is for fix-candidate generation when the deterministic triage can't map the bug to an exact function.
 
@@ -50,17 +70,18 @@ verify gates code -> failures reveal verify bugs -> loop fixes verify -> verify 
 This is structurally recursive. But it has hard limits that prevent runaway:
 
 - **Frozen constitution** - the harness, oracle, and scenarios never change by the loop
-- **Bounded surface** - the loop can only edit 7 source files, never its own tests
-- **Human veto** - accepted patches are printed, not auto-applied
+- **Bounded surface** - the loop can only edit 8 source files, never its own tests
+- **Human veto** - accepted patches require explicit apply (via `verify_improve_apply` or manual)
 - **Subprocess isolation** - candidates validated in a copy, never the live codebase
 - **Holdout protection** - 30% of clean scenarios catch overfitting
+- **Scoring cap** - line penalty capped at 3.0 so correct large fixes aren't rejected
 
 The loop is demand-driven, not continuous. No dirty scenarios = nothing to fix. It runs when there's real signal to learn from.
 
 ## The Three Tiers (How Users Benefit)
 
 ### Tier 1: Local Learning (Free, Automatic)
-Every `verify()` call that fails creates a constraint in `.verify/constraints.json`. The next attempt is automatically smarter because K5 blocks the pattern that just failed. This happens inside a single session with zero config.
+Every `verify()` call that fails creates a constraint in `.verify/memory.jsonl`. The next attempt is automatically smarter because K5 blocks the pattern that just failed. This happens inside a single session with zero config.
 
 ### Tier 2: Team Learning (Free, Commit the File)
 `git commit .verify/constraints.json` shares one project's learning with the whole team. New developer clones the repo, their agent already knows what doesn't work. The file contains failure patterns, not secrets.
@@ -85,13 +106,16 @@ The fault ledger (`src/store/fault-ledger.ts`) bridges the two circles. It captu
 ### Entry Flow
 
 ```
-Campaign runs -> verify produces result + cross-check probes run
+Campaign/Chaos runs -> verify produces result + cross-check probes run
     |
     v
 FaultLedger.recordFromResult(result, { app, goal, crossCheck })
     |
     v  (auto-classifies)
 .verify/faults.jsonl
+    |
+    v  (chaos_run also patches goalData for cross-session encoding)
+FaultLedger.patchGoalData(id, { edits, predicates, category, difficulty, expectedOutcome })
 ```
 
 ### Auto-Classification Rules
@@ -107,7 +131,7 @@ When verify says FAIL:
 
 Internal contradictions (success but gate failed, all gates passed but success is false) are always verify bugs regardless of probe results.
 
-No cross-check evidence -> `ambiguous` (low confidence, needs human review)
+No cross-check evidence -> `ambiguous` (low confidence, needs human review or `expectedOutcome` from chaos cache)
 
 ### Fault Classifications
 
@@ -118,7 +142,24 @@ No cross-check evidence -> `ambiguous` (low confidence, needs human review)
 | `bad_hint` | Narrowing sent agent in wrong direction | Encode as scenario |
 | `correct` | Verify judged correctly | No action needed |
 | `agent_fault` | Agent was wrong, verify was right | No action needed |
-| `ambiguous` | Can't determine automatically | Human reviews |
+| `ambiguous` | Can't determine automatically | Human reviews or chaos encode uses expectedOutcome |
+
+### goalData Persistence (Cross-Session Encoding)
+
+The fault ledger's `goalData` field stores the original edits, predicates, category, difficulty, and `expectedOutcome` from the chaos run. This ensures encoding works even after VS Code restart (when the session cache is lost).
+
+```typescript
+interface FaultEntry {
+  // ... standard fields ...
+  goalData?: {
+    edits: Array<{ file: string; search: string; replace: string }>;
+    predicates: Array<Record<string, unknown>>;
+    category?: string;
+    difficulty?: string;
+    expectedOutcome?: string;  // 'pass' | 'fail' — used for intent derivation
+  };
+}
+```
 
 ### CLI Commands
 
@@ -136,14 +177,14 @@ npx @sovereign-labs/verify faults link       # Connect fault to scenario (<id> -
 
 ### Evening: Chaos Runs
 
-Campaigns fire diverse goals through verify's gates. Goals can be:
-- Manual (you submit through sovereign_submit)
-- Automated (chaos engine generates goals from grounding context)
+The chaos engine fires diverse goals through verify's gates. Goals can be:
+- Autonomous (chaos engine generates goals from grounding context via `verify_chaos_plan` + `verify_chaos_run`)
+- Manual (you submit through `verify_submit` or `verify_campaign_run_goal`)
 - Real usage (end users running verify on their projects)
 
-Every outcome is auto-logged to the fault ledger with cross-check probes.
+Every outcome is auto-logged to the fault ledger with cross-check probes. Goal data is persisted for cross-session encoding.
 
-### Morning: Triage + Encode
+### Morning: Triage + Encode + Fix
 
 ```bash
 # 1. Check the inbox (~2 minutes)
@@ -153,63 +194,65 @@ npx @sovereign-labs/verify faults inbox
 npx @sovereign-labs/verify faults review
 npx @sovereign-labs/verify faults classify <id> --class=agent_fault --reason="K5 was right"
 
-# 3. Encode verify bugs as scenarios (~15-30 min, or paste inbox to Claude)
-#    Write scenarios in scenario-generator.ts
+# 3. Encode via chaos tools (automatic — or manual scenario writing)
+#    verify_chaos_encode handles intent derivation automatically
+#    Or write scenarios in scenario-generator.ts and link:
 npx @sovereign-labs/verify faults link <id> --scenario=C8
 
 # 4. Run self-test — new scenarios should be dirty (~2 seconds)
 npx @sovereign-labs/verify self-test
 
-# 5. Run improve — loop proposes fixes (~3 minutes)
+# 5. Run improve via MCP tools (Claude Code as doctor) or fallback:
 bun run packages/verify/scripts/self-test.ts --improve --llm=gemini --api-key=$KEY
 
-# 6. Review patches, apply good ones, re-run self-test
-npx @sovereign-labs/verify self-test   # should be all clean now
+# 6. Apply fixes, re-run self-test
+#    Via MCP: verify_improve_apply → verify_improve_discover (confirm 0 dirty)
+#    Via CLI: manually apply edits, re-run self-test
 ```
 
 ### What Accelerates Failure Discovery
 
 The bottleneck is always discovery, not fixing. Three levers:
 
-1. **More goals per night** - Nightly campaign with 10-20 diverse goals. Cost: ~$0.50-2.00/night on Gemini.
+1. **More goals per session** - Chaos engine with 10-20 diverse goals across 8 categories. Cost: $0 on Claude Code Max.
 2. **More apps** - Different architectures stress different gates. Use GitHub import to bring in React, Python, multi-service apps.
-3. **Adversarial goals** - Deliberately probe gate boundaries: CSS with !important, 15-file edits, unicode selectors, 10-step HTTP sequences.
+3. **Coverage steering** - `verify_chaos_plan` now reports which gates have zero custom scenarios. Target those gaps first.
+4. **Adversarial goals** - Deliberately probe gate boundaries: CSS with !important, 15-file edits, unicode selectors, 10-step HTTP sequences, named colors, shorthand properties.
 
-### The Chaos Engine (Future)
+### The Chaos Engine
 
-A push-button goal generator in the Sovereign platform:
-1. Reads grounding context for each app (routes, CSS, HTML, schema)
-2. LLM generates 10-20 diverse goals with target predicates
-3. Fires them as a campaign
-4. Morning report: X passed, Y failed (agent fault), Z failed (gate fault)
-5. Gate faults auto-logged to fault ledger
+Three MCP tools for autonomous stress-testing of any app verify can reach:
+
+1. **`verify_chaos_plan`** — Reads grounding context (routes, CSS, HTML, schema, constraints, prior faults). Returns structured attack surface inventory + generation templates across 8 categories. **New: reports scenario coverage per gate category** — shows which gates have zero scenarios and suggests goal types to fill the gaps.
+2. **`verify_chaos_run`** — Takes an array of goals (edits + predicates + expected outcome), fires each through `verify()`, auto-records to the fault ledger, **persists goalData for cross-session encoding**, classifies expected vs actual, caches goal data for encoding. Returns per-goal results + campaign summary with bug fault IDs.
+3. **`verify_chaos_encode`** — Takes fault IDs (or "all unencoded bugs"), pulls edits/predicates from session cache **with fault ledger goalData as cross-session fallback**, derives intent from classification + expectedOutcome, creates permanent scenarios via `ExternalScenarioStore`, links back to fault ledger. Turns discovered bugs into self-test armor.
 
 The diversity of target apps matters as much as goal diversity. A chaos engine firing creative goals against one app will eventually plateau. The same engine against 20 different apps surfaces new failure classes for much longer.
 
 ## The Pipeline (Complete)
 
 ```
-Chaos Engine (generates diverse goals)
+Chaos Engine / Campaign (generates diverse goals)
     |
-Sovereign Campaign (fires via sovereign_submit)
+verify_chaos_run / verify_campaign_run_goal
     |
-Verify Gates (F9 -> K5 -> G5 -> Staging -> Browser -> HTTP)
+Verify Gates (Grounding -> F9 -> K5 -> G5 -> Filesystem -> Staging -> Browser -> HTTP -> Invariants -> Vision -> Triangulation)
     |
-recordFromResult() auto-classifies via cross-check probes
+recordFromResult() auto-classifies + patchGoalData() persists goal context
     |
 .verify/faults.jsonl (the fault ledger)
     |
 faults inbox (unencoded verify bugs)
     |
-Scenario Encoding (human + Claude today, LLM auto-encode future)
+verify_chaos_encode (automatic) or manual scenario writing
     |
 faults link (marks fault as encoded)
     |
 self-test (new scenarios are dirty)
     |
-Improve Loop (nightly guard on all scenarios)
+Improve Loop (Claude Code as doctor, or API LLM fallback)
     |
-Patches reviewed + applied
+verify_improve_apply (apply + revalidate)
     |
 Verify is stronger -> back to top
 ```
@@ -218,54 +261,60 @@ Verify is stronger -> back to top
 
 | Piece | Status |
 |-------|--------|
-| Verify gates | Shipped (v0.2.0 on npm) |
-| Self-test harness | Shipped (56 scenarios, 7 families) |
-| Improve loop | Built, tested on intentional regression |
-| Fault ledger | Built, wired into CLI |
-| constraints.json | Works for end users today |
-| Chaos engine | Not built (future) |
-| Auto scenario encoding | Not built (future) |
+| Verify gates | Shipped (v0.3.0 on npm) |
+| Self-test harness | Shipped (80 scenarios, 9 families) |
+| Improve loop | Built, proven end-to-end (chaos→encode→improve→apply) |
+| Fault ledger | Built, wired into CLI, goalData persistence for cross-session |
+| memory.jsonl | Works for end users today |
+| Chaos engine | Built (3 MCP tools: plan with coverage steering, run with goalData, encode with intent derivation) |
+| Auto scenario encoding | Built (via `verify_chaos_encode` with two-source intent derivation) |
+| Grounding cache | Built (mtime-based per appDir, cleared after apply) |
+| Coverage steering | Built (chaos plan reports scenarios per gate category) |
 | Universal constraint feed | Not built (future) |
 
-### What's Proprietary (Stays In-House)
+### Open Source (Everything)
+
+The entire verify system is open source, including the improve loop. Verify is a standard, not a product. Maximum adoption requires zero friction — teams need the full loop to harden verify for their own surfaces.
 
 - `scripts/harness/improve.ts` - improve loop orchestrator
 - `scripts/harness/improve-triage.ts` - deterministic triage rules
 - `scripts/harness/improve-prompts.ts` - LLM diagnosis + candidate generation
-- `scripts/harness/improve-subprocess.ts` - subprocess validation + holdout
+- `scripts/harness/improve-subprocess.ts` - subprocess validation + holdout (capped scoring)
 - `scripts/harness/improve-report.ts` - improve result formatting
+- `scripts/harness/claude-improve.ts` - Claude-specific prompts with architectural context
 - `scripts/harness/llm-providers.ts` - Gemini/Anthropic/Ollama wrappers
 
-The loop is the factory. The constraints file is the product. Open source the engine, keep the factory, sell the output.
+Open source everything. The improve loop is the contribution surface, not the moat. The moat is the standard — every agent framework, every surface, every domain speaking the same constraint language.
 
 ## Key Analogies
 
-- **Campaigns** = the geologist (finds new minerals)
+- **Chaos engine** = the geologist (finds new minerals systematically)
+- **Campaigns** = the expedition (targeted exploration)
 - **You** = the taxonomist (classifies what was found)
-- **Fault ledger** = the field notebook (permanent record of discoveries)
+- **Fault ledger** = the field notebook (permanent record of discoveries, with goalData for encoding)
 - **Scenarios** = the museum collection (encoded knowledge)
 - **Improve loop** = the museum guard (nothing in the collection goes missing)
-- **constraints.json** = the product (what users actually buy/use)
+- **constraints.json** = the shared language (what every agent speaks)
 
 ## The Long Game
 
 The labs are making models smarter.
-We’re making failure impossible.
+We're making failure impossible.
 
-Both look like “it just works.”
+Both look like "it just works."
 
 The difference is: their gains reset with context.
 Ours compound with every mistake that never happens again.
 
-Constraints aren’t intelligence.
-They’re the systematic removal of stupidity.
+Constraints aren't intelligence.
+They're the systematic removal of stupidity.
 
-And when enough stupidity is removed, what’s left behaves like true intelligence.
+And when enough stupidity is removed, what's left behaves like true intelligence.
 
 
                      +-----------------------------------+
                      |          Outer Circle             |
-                     |     Real-World Campaigns          |
+                     |   Chaos Engine + Campaigns        |
                      |   (Creative / Agent LLM here)     |
                      +-----------------------------------+
                                     │
@@ -282,8 +331,8 @@ And when enough stupidity is removed, what’s left behaves like true intelligen
                └────────────────────┼────────────────────┘
                                     │
                                     ▼
-                    recordFromResult() ← AUTOMATED
-                    (auto-classifies via cross-check probes)
+                    recordFromResult() + patchGoalData()
+                    (auto-classifies, persists goal context)
                                     │
                                     ▼
                          .verify/faults.jsonl
@@ -294,39 +343,37 @@ And when enough stupidity is removed, what’s left behaves like true intelligen
                     ┌───────────────┼───────────────┐
                     │               │               │
                agent_fault     ambiguous      verify bug
-               (auto-filtered)  (YOU review)  (auto or YOU)
+               (auto-filtered)  (uses         (auto-encode
+                                expectedOutcome  via chaos)
+                                to classify)
                     │               │               │
                     ▼               ▼               ▼
-                  ignore        classify       encode scenario
+                  ignore        classify     verify_chaos_encode
                                                     │
                                     ┌───────────────┘
-                                    │  ← YOU + CLAUDE (today)
-                                    │  ← LLM auto-encode (future)
+                                    │  ← Automatic (chaos encode)
+                                    │  ← Or manual scenario writing
                                     ▼
                      +-----------------------------------+
                      |          Inner Circle             |
-                     |   Autoresearch Loop (--improve)   |
+                     |   Improve Loop (MCP-driven)       |
                      +-----------------------------------+
                                     │
                                     ▼
-                        Run self-test (dirty?)
+                    verify_improve_discover (dirty?)
                                     │
                                     ▼
-                         Triage → LLM candidates
+                    verify_improve_diagnose + read
                                     │
                                     ▼
-                      Subprocess validation + holdout
+                    verify_improve_submit (validate + holdout)
                                     │
                                     ▼
-                          Verdict + patches
-                                    │
-                                    ▼
-                        Human review → Apply
+                    verify_improve_apply (apply + revalidate)
                                     │
                                     ▼
                       Verify is now stronger
                                     │
                                     └──────────────┐
                                                    ▼
-                              Back to Outer Circle (next day)
-
+                              Back to Outer Circle (next session)

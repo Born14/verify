@@ -21,6 +21,7 @@ import type { Edit, Predicate, VerifyConfig } from './types.js';
 import type { ScenarioFamily } from '../scripts/harness/types.js';
 import { FaultLedger } from './store/fault-ledger.js';
 import type { FaultClassification } from './store/fault-ledger.js';
+import { runCampaignCLI } from '../scripts/campaign/campaign.js';
 
 const args = process.argv.slice(2);
 const command = args[0];
@@ -39,6 +40,12 @@ async function main() {
       return runSelfTestCommand();
     case 'faults':
       return runFaults();
+    case 'campaign':
+      return runCampaignCommand();
+    case 'improve':
+      return runImproveCommand();
+    case 'report':
+      return runReport();
     case '--version':
     case '-v':
       return printVersion();
@@ -309,15 +316,17 @@ async function runDoctor() {
 async function runSelfTestCommand() {
   const { runSelfTest } = await import('../scripts/harness/runner.js');
 
-  // Resolve the fixtures/demo-app directory relative to this file
+  // Resolve app directory — use --app-dir if provided, else default to fixtures/demo-app
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = dirname(__filename);
   const packageRoot = resolve(__dirname, '..');
-  const appDir = resolve(packageRoot, 'fixtures', 'demo-app');
+  const appDirArg = args.find(a => a.startsWith('--app-dir='))?.split('=')[1];
+  const appDir = appDirArg ? resolve(appDirArg) : resolve(packageRoot, 'fixtures', 'demo-app');
 
   if (!existsSync(appDir)) {
-    console.error(`Demo app not found at ${appDir}`);
-    console.error('The fixtures/demo-app directory is required for self-test.');
+    console.error(`App directory not found at ${appDir}`);
+    if (!appDirArg) console.error('The fixtures/demo-app directory is required for self-test.');
+    console.error('Use --app-dir=/path/to/app to test a different app.');
     process.exit(1);
   }
 
@@ -531,6 +540,248 @@ function runFaults() {
   }
 }
 
+async function runCampaignCommand() {
+  await runCampaignCLI(args.slice(1));
+}
+
+async function runImproveCommand() {
+  const { runImproveLoop } = await import('../scripts/harness/improve.js');
+  const { resolve, join, dirname } = await import('path');
+  const { fileURLToPath } = await import('url');
+  const { existsSync } = await import('fs');
+
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  const packageRoot = resolve(__dirname, '..');
+
+  // Parse args
+  const getArg = (name: string): string | undefined => {
+    const found = args.find(a => a.startsWith(`--${name}=`));
+    return found?.split('=').slice(1).join('=');
+  };
+
+  const appDirArg = getArg('app-dir');
+  const appDir = appDirArg ? resolve(appDirArg) : resolve(packageRoot, 'fixtures', 'demo-app');
+
+  if (!existsSync(appDir)) {
+    console.error(`App directory not found at ${appDir}`);
+    console.error('Use --app-dir=/path/to/app to test a different app.');
+    process.exit(1);
+  }
+  const hasFlag = (name: string): boolean => args.includes(`--${name}`);
+
+  const llm = (getArg('llm') ?? 'claude-code') as 'gemini' | 'anthropic' | 'ollama' | 'claude' | 'claude-code' | 'none';
+  const apiKey = getArg('api-key')
+    ?? (llm === 'claude' || llm === 'anthropic'
+      ? process.env.ANTHROPIC_API_KEY
+      : llm === 'gemini' ? process.env.GEMINI_API_KEY : undefined);
+  const claudeModel = getArg('claude-model');
+  const ollamaModel = getArg('ollama-model');
+  const ollamaHost = getArg('ollama-host');
+  const maxCandidates = parseInt(getArg('max-candidates') ?? '3', 10);
+  const maxLines = parseInt(getArg('max-lines') ?? '20', 10);
+  const dryRun = hasFlag('dry-run');
+
+  // Parse families
+  const familiesArg = getArg('families');
+  const families: ScenarioFamily[] = [];
+  if (familiesArg) {
+    for (const l of familiesArg.split(',')) {
+      const upper = l.trim().toUpperCase();
+      if ('ABCDEFG'.includes(upper)) families.push(upper as ScenarioFamily);
+    }
+  }
+
+  const dockerEnabled = hasFlag('docker');
+
+  console.log(`\nRunning improve loop from ${appDir}`);
+  console.log(`  LLM: ${llm}${llm === 'claude' || llm === 'claude-code' ? ' (domain-aware brain)' : ''}`);
+  if (llm === 'claude-code') console.log(`  Mode: Claude Code as LLM (Max subscription, filesystem exchange)`);
+  if (families.length > 0) console.log(`  Families: ${families.join(', ')}`);
+  console.log(`  Docker: ${dockerEnabled ? 'enabled' : 'disabled'}`);
+  console.log(`  Max candidates: ${maxCandidates}, Max lines: ${maxLines}`);
+  if (dryRun) console.log('  Mode: DRY RUN');
+
+  await runImproveLoop(
+    {
+      appDir,
+      families: families.length > 0 ? families : undefined,
+      dockerEnabled,
+    },
+    {
+      llm,
+      apiKey,
+      claudeModel,
+      ollamaModel,
+      ollamaHost,
+      maxCandidates,
+      maxLines,
+      dryRun,
+    },
+  );
+}
+
+// =============================================================================
+// REPORT — Capture verification outcomes as sharable JSON bundles
+// =============================================================================
+
+async function runReport() {
+  const subcommand = args[1] || 'capture';
+
+  if (subcommand === 'capture') {
+    return runReportCapture();
+  } else if (subcommand === 'list') {
+    return runReportList();
+  } else if (subcommand === 'view') {
+    return runReportView();
+  } else {
+    console.error(`Unknown report subcommand: ${subcommand}`);
+    console.error('Subcommands: capture, list, view');
+    process.exit(1);
+  }
+}
+
+async function runReportCapture() {
+  // Parse arguments
+  const appDir = getArg('--app-dir') || getArg('--app') || process.cwd();
+  const goal = getArg('--goal') || 'manual verification';
+  const outputFile = getArg('--output') || getArg('-o');
+  const diffMode = args.includes('--diff');
+  const checkFile = args[2] && !args[2].startsWith('--') ? args[2] : undefined;
+
+  let edits: Edit[] = [];
+  let predicates: Predicate[] = [];
+  let config: VerifyConfig = { appDir };
+
+  // Load from check file or diff
+  if (diffMode) {
+    const stdin = readFileSync(0, 'utf-8');
+    edits = parseDiff(stdin);
+    console.log(`Parsed ${edits.length} edits from diff`);
+  } else if (checkFile || existsSync(join(appDir, '.verify', 'check.json'))) {
+    const path = checkFile || join(appDir, '.verify', 'check.json');
+    try {
+      const spec = JSON.parse(readFileSync(path, 'utf-8'));
+      edits = spec.edits || [];
+      predicates = spec.predicates || [];
+      config = { ...config, ...(spec.config || {}) };
+    } catch (e: any) {
+      console.error(`Failed to read spec file: ${e.message}`);
+      process.exit(1);
+    }
+  } else {
+    console.error('No edits provided. Use --diff (pipe from git diff) or provide a check.json file.');
+    process.exit(1);
+  }
+
+  // Run verify
+  console.log(`Running verify with ${edits.length} edits, ${predicates.length} predicates...`);
+  const result = await verify(edits, predicates, config);
+
+  // Build report bundle
+  const report = {
+    version: '1.0',
+    capturedAt: new Date().toISOString(),
+    goal,
+    appDir: resolve(appDir),
+    edits,
+    predicates,
+    config: {
+      gates: config.gates,
+      docker: config.docker,
+    },
+    result: {
+      success: result.success,
+      gates: result.gates,
+      attestation: result.attestation,
+      narrowing: result.narrowing || null,
+      timing: result.timing,
+      effectivePredicates: result.effectivePredicates || null,
+      constraintDelta: result.constraintDelta || null,
+    },
+  };
+
+  // Output
+  const json = JSON.stringify(report, null, 2);
+
+  if (outputFile) {
+    writeFileSync(outputFile, json);
+    console.log(`\nReport saved to ${outputFile}`);
+  } else {
+    // Default: save to .verify/reports/
+    const reportDir = join(appDir, '.verify', 'reports');
+    mkdirSync(reportDir, { recursive: true });
+    const ts = new Date().toISOString().replace(/[:.]/g, '-');
+    const defaultPath = join(reportDir, `report-${ts}.json`);
+    writeFileSync(defaultPath, json);
+    console.log(`\nReport saved to ${defaultPath}`);
+  }
+
+  // Print summary
+  console.log(`\n${result.attestation}`);
+  if (!result.success && result.narrowing?.resolutionHint) {
+    console.log(`\nHint: ${result.narrowing.resolutionHint}`);
+  }
+}
+
+async function runReportList() {
+  const appDir = getArg('--app-dir') || getArg('--app') || process.cwd();
+  const reportDir = join(appDir, '.verify', 'reports');
+
+  if (!existsSync(reportDir)) {
+    console.log('No reports found. Run "verify report capture" first.');
+    return;
+  }
+
+  const { readdirSync } = await import('fs');
+  const files = readdirSync(reportDir)
+    .filter(f => f.endsWith('.json'))
+    .sort()
+    .reverse();
+
+  if (files.length === 0) {
+    console.log('No reports found.');
+    return;
+  }
+
+  console.log(`${files.length} report(s) in ${reportDir}:\n`);
+  for (const file of files.slice(0, 20)) {
+    try {
+      const report = JSON.parse(readFileSync(join(reportDir, file), 'utf-8'));
+      const status = report.result?.success ? '✓' : '✗';
+      const gates = report.result?.gates?.map((g: any) => `${g.gate}${g.passed ? '✓' : '✗'}`).join(' ') || '';
+      console.log(`  ${status} ${file}`);
+      console.log(`    Goal: ${report.goal || '(none)'}`);
+      console.log(`    Gates: ${gates}`);
+      console.log(`    Duration: ${report.result?.timing?.totalMs || '?'}ms`);
+      console.log('');
+    } catch {
+      console.log(`  ? ${file} (unreadable)`);
+    }
+  }
+}
+
+async function runReportView() {
+  const reportFile = args[2];
+  if (!reportFile) {
+    console.error('Usage: verify report view <report-file>');
+    process.exit(1);
+  }
+
+  try {
+    const report = JSON.parse(readFileSync(reportFile, 'utf-8'));
+    console.log(JSON.stringify(report, null, 2));
+  } catch (e: any) {
+    console.error(`Failed to read report: ${e.message}`);
+    process.exit(1);
+  }
+}
+
+function getArg(prefix: string): string | undefined {
+  const arg = args.find(a => a.startsWith(prefix + '='));
+  return arg ? arg.slice(prefix.length + 1) : undefined;
+}
+
 function printVersion() {
   try {
     const pkg = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
@@ -549,8 +800,11 @@ Commands:
   check [file]      Run verification (default: .verify/check.json)
   ground [dir]      Print grounding context (CSS, HTML, routes)
   doctor            Check Docker + Playwright availability
-  self-test         Run the verification harness (56 scenarios, 7 families)
+  self-test         Run the verification harness (66 scenarios, 8 families)
   faults            Manage the gate fault ledger (discovered verify bugs)
+  campaign          Run autonomous fault discovery campaign
+  improve           Run the evidence-centric improvement loop
+  report            Capture and manage verification outcome bundles
 
 Options:
   --json            Output full result as JSON
@@ -558,6 +812,7 @@ Options:
   --diff            Read edits from stdin as unified diff
 
 Self-test options:
+  --app-dir=/path   App to test (default: fixtures/demo-app)
   --families=A,B,G  Run specific families only
   --docker          Enable Docker scenarios (Family F)
   --fail-on-bug     Exit 1 on bug-severity violations
@@ -582,7 +837,39 @@ Examples:
   npx @sovereign-labs/verify self-test --families=A,B --fail-on-bug
   npx @sovereign-labs/verify faults inbox
   npx @sovereign-labs/verify faults log --app=myapp --goal="change color" --class=false_positive --reason="health 500"
-`);
+
+Campaign options:
+  campaign                                           Run full campaign (default: 10 goals/app, Gemini)
+  campaign --apps=football --goals-per-app=15        Custom app + goal count
+  campaign --dry-run --apps=football                 Generate goals + edits, don't run verify
+  campaign --categories=adversarial_predicate        Focus on specific categories
+  campaign report                                    Show latest morning report
+  campaign estimate --apps=football,sovtris          Cost estimate (no execution)
+  campaign --llm=claude --api-key=KEY                Use Claude as brain (domain-aware prompts)
+  campaign --llm=gemini --api-key=KEY                Use Gemini Flash (cheapest)
+  campaign --verbose                                 Show all log lines
+
+Improve loop options:
+  improve                                            Run improve loop (default: Claude brain)
+  improve --app-dir=/path/to/app                     Test a specific app (default: fixtures/demo-app)
+  improve --llm=claude                               Claude with architectural context (default)
+  improve --llm=gemini --api-key=KEY                 Use Gemini for diagnosis + fix generation
+  improve --llm=none --dry-run                       Triage only, no LLM
+  improve --families=A,C                             Test specific scenario families
+  improve --max-candidates=5 --max-lines=30          More fix strategies, bigger edits
+  improve --docker                                   Enable Docker scenarios
+
+Report subcommands:
+  report capture [file]    Run verify and save outcome bundle (default: .verify/check.json)
+  report list              List saved reports
+  report view <file>       Print report as JSON
+
+Report capture options:
+  --goal="description"     Human description of what the edits achieve
+  --app-dir=/path          App directory (default: current directory)
+  --diff                   Read edits from stdin as unified diff
+  -o report.json           Save to specific file (default: .verify/reports/)
+`);;
 }
 
 main().catch(err => {

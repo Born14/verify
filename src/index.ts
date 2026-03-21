@@ -57,8 +57,11 @@ export { groundInReality, validateAgainstGrounding } from './gates/grounding.js'
 
 // Individual gates — for users who want to run gates separately
 export { runSyntaxGate, applyEdits } from './gates/syntax.js';
+export { runFilesystemGate, hashFile, isFilesystemPredicate } from './gates/filesystem.js';
+export type { FilesystemGateResult, FilesystemPredicateResult } from './gates/filesystem.js';
 export { runBrowserGate } from './gates/browser.js';
 export { runVisionGate } from './gates/vision.js';
+export { geminiVision, openaiVision, anthropicVision } from './vision-helpers.js';
 export { runHttpGate } from './gates/http.js';
 export { runInvariantsGate } from './gates/invariants.js';
 
@@ -71,6 +74,15 @@ export type {
   CrossCheckEvidence,
   RecordContext,
 } from './store/fault-ledger.js';
+
+// External scenario store — encode faults as permanent self-test scenarios
+export { ExternalScenarioStore, classifyTransferability, classifyCategory } from './store/external-scenarios.js';
+export type {
+  SerializedScenario,
+  ScenarioIntent,
+  ScenarioTransferability,
+  ScenarioCategory,
+} from './store/external-scenarios.js';
 
 // Parsers — convert external formats into Edit[]
 export { parseDiff } from './parsers/git-diff.js';

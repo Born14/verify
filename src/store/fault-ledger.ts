@@ -166,6 +166,15 @@ export interface FaultEntry {
 
   /** Notes from human review */
   notes?: string;
+
+  /** Original goal data for cross-session encoding (populated by chaos engine) */
+  goalData?: {
+    edits: Array<{ file: string; search: string; replace: string }>;
+    predicates: Array<Record<string, unknown>>;
+    category?: string;
+    difficulty?: string;
+    expectedOutcome?: string;
+  };
 }
 
 /**
@@ -563,6 +572,16 @@ export class FaultLedger {
   /** All entries */
   all(): FaultEntry[] {
     return [...this.entries];
+  }
+
+  /** Attach original goal data to a fault entry (for cross-session encoding). Rewrites JSONL. */
+  patchGoalData(id: string, goalData: NonNullable<FaultEntry['goalData']>): void {
+    const entry = this.entries.find(e => e.id === id);
+    if (!entry) return;
+    entry.goalData = goalData;
+    // Rewrite entire JSONL (entries are small, <100 typically)
+    mkdirSync(dirname(this.path), { recursive: true });
+    writeFileSync(this.path, this.entries.map(e => JSON.stringify(e)).join('\n') + '\n');
   }
 
   /** Faults not yet encoded as scenarios (the inbox) */
