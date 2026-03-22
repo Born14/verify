@@ -8,12 +8,13 @@ Verification gate for AI agent actions. Every edit gets a fair trial before it t
 
 In v0.1.1, HTTP predicates with different `bodyContains` values produced identical fingerprints — K5 couldn't tell them apart. A human caught it by reading the code.
 
-Now 80 automated scenarios across 9 families catch it in under 3 seconds:
+Now 115 automated scenarios across 9 families catch it in under 3 seconds:
 
 ```bash
 npx @sovereign-labs/verify self-test
 
-#   0 bugs | 80 scenarios | 0 unexpected | A: clean, B: clean, ..., H: clean, V: clean
+#   0 bugs | 115 scenarios | 0 unexpected | A: clean, B: clean, ..., H: clean, V: clean
+#   Failure Class Coverage: 12/12 clean
 #   ALL CLEAN — No invariant violations detected.
 ```
 
@@ -145,7 +146,7 @@ Add to your agent's MCP config:
 
 ## Self-Test Harness
 
-80 scenarios across 9 families exercise the verification pipeline's invariants. Run them to prove your install works, or use `--fail-on-bug` in CI.
+115 scenarios across 9 families exercise the verification pipeline's invariants — including 14 filesystem failure classes tracked by the [failure taxonomy](FAILURE-TAXONOMY.md). Run them to prove your install works, or use `--fail-on-bug` in CI.
 
 ```bash
 # Pure-only (~2s, no Docker needed)
@@ -170,10 +171,10 @@ npx @sovereign-labs/verify self-test --fail-on-bug
 | **E** | 6 | Grounding validation | No |
 | **F** | 6 | Full Docker pipeline (build → stage → verify) | Yes |
 | **G** | 10 | Edge cases (unicode, empty inputs, no-ops) | No |
-| **H** | 10 | Filesystem gate (beyond-code predicates) | No |
+| **H** | 34 | Filesystem gate — 14 failure classes (FS-01 through FS-16) | No |
 | **V** | 14 | Vision + triangulation (3-authority verdict) | No |
 
-74 scenarios run pure. 6 need Docker. Plus external fault-derived scenarios from `.verify/custom-scenarios.json` when testing against a real app. The harness is deterministic — no LLM calls, no network, no flakiness.
+109 scenarios run pure. 6 need Docker. Plus external fault-derived scenarios from `.verify/custom-scenarios.json` when testing against a real app. The harness is deterministic — no LLM calls, no network, no flakiness.
 
 ## Gates
 
