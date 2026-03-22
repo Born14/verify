@@ -13,7 +13,7 @@ Now 80 automated scenarios across 9 families catch it in under 3 seconds:
 ```bash
 npx @sovereign-labs/verify self-test
 
-#   0 bugs | 80 scenarios | 0 unexpected | A: clean, B: clean, ... V: clean
+#   0 bugs | 80 scenarios | 0 unexpected | A: clean, B: clean, ..., H: clean, V: clean
 #   ALL CLEAN — No invariant violations detected.
 ```
 
@@ -117,10 +117,31 @@ Add to your agent's MCP config:
 }
 ```
 
-Tools exposed:
+16 tools exposed across 4 categories:
+
+**Core Pipeline** (any agent):
 - `verify_ground` — Scan app for CSS rules, HTML elements, routes, schema
 - `verify_read` — Read a source file
 - `verify_submit` — Submit edits + predicates through the full gate pipeline
+
+**Campaign** (surgical fault hunting):
+- `verify_campaign_ground` — Ground + format for campaign brain
+- `verify_campaign_run_goal` — Submit goal with edits + predicates, get verdict
+- `verify_campaign_faults` — View fault ledger
+- `verify_campaign_encode` — Encode fault as self-test scenario
+
+**Chaos Engine** (autonomous stress-testing):
+- `verify_chaos_plan` — Recon: grounding + constraints + coverage gaps + templates
+- `verify_chaos_run` — Fire batch of goals, auto-classify, cache for encoding
+- `verify_chaos_encode` — Encode bugs as permanent scenarios
+
+**Improve Loop** (self-hardening):
+- `verify_improve_discover` — Run baseline, return violations + triage
+- `verify_improve_diagnose` — Structured diagnosis context
+- `verify_improve_read` — Read verify source files
+- `verify_improve_submit` — Submit fix edits, validate in subprocess + holdout
+- `verify_improve_apply` — Apply winning edits to real source
+- `verify_improve_cycle` — Full automated cycle with API LLM (fallback)
 
 ## Self-Test Harness
 
@@ -152,7 +173,7 @@ npx @sovereign-labs/verify self-test --fail-on-bug
 | **H** | 10 | Filesystem gate (beyond-code predicates) | No |
 | **V** | 14 | Vision + triangulation (3-authority verdict) | No |
 
-74 scenarios run pure. 6 need Docker. The harness is deterministic — no LLM calls, no network, no flakiness.
+74 scenarios run pure. 6 need Docker. Plus external fault-derived scenarios from `.verify/custom-scenarios.json` when testing against a real app. The harness is deterministic — no LLM calls, no network, no flakiness.
 
 ## Gates
 

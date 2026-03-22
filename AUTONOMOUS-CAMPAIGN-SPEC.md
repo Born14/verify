@@ -197,9 +197,11 @@ triangulation (3-authority verdict) → narrowing (learning)
 | D | 8 | G5 containment attribution (direct, scaffolding, unexplained) |
 | E | 6 | Grounding validation (real vs fabricated selectors) |
 | F | 6 | Docker scenarios (requires Docker) |
-| G | 10+ | Edge cases + fault-derived external scenarios |
+| G | 10 | Edge cases (unicode, empty inputs, no-ops) |
+| H | 10 | Filesystem gate (beyond-code predicates) |
+| V | 14 | Vision + triangulation (3-authority verdict) |
 
-External scenarios (from campaign/chaos fault discovery) are loaded from `.verify/custom-scenarios.json` and merged into family G.
+74 scenarios run pure. 6 need Docker. Plus external fault-derived scenarios from `.verify/custom-scenarios.json` when testing against a real app.
 
 ## Improve Loop Triage
 
@@ -209,30 +211,42 @@ The improve loop maps self-test invariant violations to target files using deter
 |-------------------|--------|------------|
 | `fingerprint_*` | `src/store/constraint-store.ts` | mechanical |
 | `k5_should_*` | `src/store/constraint-store.ts` | mechanical |
-| `gate_*` | `src/verify.ts` | heuristic |
+| `constraint_*` | `src/store/constraint-store.ts` | mechanical |
+| `gate_success_consistency` | `src/verify.ts` | mechanical |
+| `gate_order_*` | `src/verify.ts` | heuristic |
+| `vision_gate_*` | `src/gates/vision.ts` | mechanical |
+| `vision_claim_*` | `src/gates/vision.ts` | mechanical |
+| `triangulation_*` | `src/gates/triangulation.ts` | mechanical |
 | `should_fail_at_grounding` | `src/gates/grounding.ts` | heuristic |
 | `should_fail_at_browser` | `src/gates/browser.ts` | heuristic |
 | `should_fail_at_constraints` | `src/gates/constraints.ts` | heuristic |
 | `should_fail_at_http` | `src/gates/http.ts` | heuristic |
+| `should_fail_at_vision` | `src/gates/vision.ts` | heuristic |
+| `should_fail_at_triangulation` | `src/gates/triangulation.ts` | heuristic |
 | `should_detect_problem` | (needs LLM — ambiguous target) | needs_llm |
 | `should_accept_valid_edit` | (needs LLM) | needs_llm |
 
 ### Bounded Edit Surface
 
-The improve loop can only modify these 8 files:
+The improve loop can only modify **predicate gates** — gates that evaluate truth claims about the world. These have clear correctness criteria and benefit from self-improvement. Two gate categories are intentionally frozen:
+
+- **Environment gates** (`staging.ts`): Orchestrates Docker build/start — infrastructure, not predicate logic. Mutating risks teaching verify to swallow build failures instead of detecting them.
+- **Constitutional gates** (`invariants.ts`): Defines what "healthy" means. If the loop can rewrite health checks, it redefines success to make tests pass.
 
 | File | What It Does |
 |------|-------------|
-| `src/store/constraint-store.ts` | Fingerprinting, K5 learning |
+| `src/store/constraint-store.ts` | Fingerprinting, signature extraction, K5 learning |
 | `src/gates/constraints.ts` | K5 enforcement logic |
 | `src/gates/containment.ts` | G5 attribution |
 | `src/gates/grounding.ts` | CSS/HTML parsing, route extraction |
-| `src/gates/filesystem.ts` | Filesystem state verification |
+| `src/gates/filesystem.ts` | Filesystem state verification (exists/absent/unchanged/count) |
 | `src/gates/browser.ts` | Playwright CSS/HTML validation |
 | `src/gates/http.ts` | HTTP predicate validation |
 | `src/gates/syntax.ts` | F9 edit application |
+| `src/gates/vision.ts` | Vision model screenshot verification |
+| `src/gates/triangulation.ts` | Cross-authority verdict synthesis |
 
-Frozen files: `src/verify.ts` (orchestrator), `src/types.ts`, `scripts/harness/` (harness logic).
+Frozen files: `src/verify.ts` (orchestrator), `src/types.ts`, `scripts/harness/` (harness logic), `src/gates/staging.ts` (environment), `src/gates/invariants.ts` (constitutional).
 
 ## Running the Loops
 

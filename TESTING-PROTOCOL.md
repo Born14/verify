@@ -55,7 +55,11 @@ On the Lenovo via SSH, always prefix with `PATH=$HOME/.bun/bin:$PATH` (non-inter
 | **D** | 8 | No | G5 containment attribution | Attribution arithmetic (direct/scaffolding/unexplained) |
 | **E** | 6 | No | Grounding validation | Grounding false negatives, fabricated selectors |
 | **F** | 6 | Yes | Full Docker pipeline | End-to-end regressions (build → stage → verify) |
-| **G** | 10+ | No | Edge cases, robustness, + external fault-derived scenarios | Crash/hang, chaos-discovered bugs |
+| **G** | 10 | No | Edge cases (unicode, empty inputs, no-ops) | Crash/hang, boundary conditions |
+| **H** | 10 | No | Filesystem gate (beyond-code predicates) | exists/absent/unchanged/count verification |
+| **V** | 14 | No | Vision + triangulation (3-authority verdict) | Vision parsing, triangulation truth table |
+
+74 scenarios run pure. 6 need Docker. Plus external fault-derived scenarios from `.verify/custom-scenarios.json` when testing against a real app.
 
 ### Family A: Fingerprint Collision
 
@@ -314,23 +318,27 @@ The improve loop is also available as 6 MCP tools for interactive use (e.g., Cla
 
 ## Bounded Edit Surface
 
-The improve loop can ONLY edit these files:
+The improve loop can only edit **predicate gates** — gates that evaluate truth claims about the world (CSS values, HTTP responses, file state, etc.). These have clear correctness criteria and benefit from self-improvement.
 
 | File | What It Contains |
 |------|-----------------|
-| `src/store/constraint-store.ts` | Fingerprinting, K5 learning |
-| `src/gates/constraints.ts` | K5 enforcement |
+| `src/store/constraint-store.ts` | Fingerprinting, signature extraction, K5 learning |
+| `src/gates/constraints.ts` | K5 enforcement logic |
 | `src/gates/containment.ts` | G5 attribution |
-| `src/gates/grounding.ts` | CSS/HTML parsing |
-| `src/gates/filesystem.ts` | Filesystem state verification |
-| `src/gates/browser.ts` | Playwright validation |
-| `src/gates/http.ts` | HTTP predicates |
+| `src/gates/grounding.ts` | CSS/HTML parsing, route extraction |
+| `src/gates/filesystem.ts` | Filesystem state verification (exists/absent/unchanged/count) |
+| `src/gates/browser.ts` | Playwright CSS/HTML validation |
+| `src/gates/http.ts` | HTTP predicate validation |
 | `src/gates/syntax.ts` | F9 edit application |
+| `src/gates/vision.ts` | Vision model screenshot verification |
+| `src/gates/triangulation.ts` | Cross-authority verdict synthesis |
 
 **Frozen (never edited by loop):**
 - `src/verify.ts` — gate orchestrator
 - `src/types.ts` — type definitions
 - `scripts/harness/*` — the harness itself
+- `src/gates/staging.ts` — environment gate (Docker orchestration, not predicate logic — mutating risks masking build failures)
+- `src/gates/invariants.ts` — constitutional gate (defines "healthy" — if the loop rewrites health checks, it redefines success)
 
 If the triage targets a frozen file, the bundle is skipped.
 

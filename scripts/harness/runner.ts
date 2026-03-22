@@ -18,7 +18,7 @@ import { checkInvariants } from './oracle.js';
 import { Ledger, collectRunIdentity } from './ledger.js';
 import { printProgress, printSummary, saveSummary } from './report.js';
 import { generateAllScenarios, generateFamily } from './scenario-generator.js';
-import { loadExternalScenarios } from './external-scenario-loader.js';
+import { loadExternalScenarios, loadUniversalScenarios } from './external-scenario-loader.js';
 
 const MAX_SCENARIO_TIMEOUT = 10 * 60 * 1000; // 10 min
 const MAX_TOTAL_TIMEOUT = 4 * 60 * 60 * 1000; // 4 hours
@@ -60,6 +60,14 @@ export async function runSelfTest(config: RunConfig): Promise<{ exitCode: number
     scenarios = config.families.flatMap(f => generateFamily(f, fixtureDir));
   } else {
     scenarios = generateAllScenarios(fixtureDir);
+  }
+
+  // Universal scenarios: health-checked, portable, always run against demo-app
+  // These test verify gate logic (CSS spec, shorthand, color normalization) not app-specific content
+  const universals = loadUniversalScenarios(fixtureDir);
+  if (universals.length > 0) {
+    scenarios = [...scenarios, ...universals];
+    console.log(`  + ${universals.length} universal scenarios from fixtures/scenarios/universal.json`);
   }
 
   // External (fault-derived) scenarios run against the TARGET app

@@ -44,6 +44,8 @@ async function main() {
       return runCampaignCommand();
     case 'improve':
       return runImproveCommand();
+    case 'scenario-health':
+      return runScenarioHealthCommand();
     case 'report':
       return runReport();
     case '--version':
@@ -622,6 +624,22 @@ async function runImproveCommand() {
 }
 
 // =============================================================================
+// SCENARIO HEALTH — Independent scenario validation
+// =============================================================================
+
+async function runScenarioHealthCommand() {
+  const { runScenarioHealth } = await import('../scripts/harness/scenario-health.js');
+
+  const scenarioPath = args.find((a: string) => a.startsWith('--scenarios='))?.split('=')[1];
+  const universalOnly = args.includes('--universal-only');
+  const verbose = args.includes('--verbose') || args.includes('-v');
+  const json = args.includes('--json');
+
+  const report = await runScenarioHealth({ scenarioPath, universalOnly, verbose, json });
+  if (report.unhealthy > 0) process.exit(1);
+}
+
+// =============================================================================
 // REPORT — Capture verification outcomes as sharable JSON bundles
 // =============================================================================
 
@@ -804,6 +822,7 @@ Commands:
   faults            Manage the gate fault ledger (discovered verify bugs)
   campaign          Run autonomous fault discovery campaign
   improve           Run the evidence-centric improvement loop
+  scenario-health   Validate scenario integrity (independent of verify gates)
   report            Capture and manage verification outcome bundles
 
 Options:
@@ -816,6 +835,12 @@ Self-test options:
   --families=A,B,G  Run specific families only
   --docker          Enable Docker scenarios (Family F)
   --fail-on-bug     Exit 1 on bug-severity violations
+
+Scenario health options:
+  --scenarios=\path  Path to custom-scenarios.json (default: .verify/custom-scenarios.json)
+  --universal-only  Only check universal scenarios
+  --verbose, -v     Show per-predicate detail
+  --json            Output JSON report
 
 Fault ledger subcommands:
   faults list       All faults (--filter=false_positive, --app=myapp)

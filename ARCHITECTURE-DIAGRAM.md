@@ -102,12 +102,11 @@
                 ║         │              └─────────────────────┘║
                 ║         │                        │            ║
                 ║         │                        ▼            ║
-                ║         │              ┌─────────────────────┐║
-                ║         │              │     Narrowing       │║
-                ║         │              │  K5 constraint seed │║
-                ║         │              │  Resolution hints   │║
-                ║         │              │  Banned fingerprints│║
-                ║         │              └─────────────────────┘║
+                ║         │                        │            ║
+                ║         │    On failure: Narrowing (inline)     ║
+                ║         │      K5 constraint seeded             ║
+                ║         │      Resolution hints returned        ║
+                ║         │      Banned fingerprints tracked      ║
                 ╚═══════════════════════════════════════════════╝
                                         │
                ┌────────────────────────┼────────────────────────┐
@@ -158,7 +157,7 @@
                      ║                                       ║
                      ║   Frozen constitution:                ║
                      ║     Harness cannot edit itself         ║
-                     ║     Bounded to 7 source files         ║
+                     ║     Bounded to 10 predicate gates     ║
                      ║     Subprocess isolation              ║
                      ║     30% holdout protection             ║
                      ╚═══════════════════════════════════════╝
@@ -226,13 +225,22 @@
                                             (next session)
 
 
-## The Bounded Edit Surface (8 files)
+## The Bounded Edit Surface (10 files)
 
-The improve loop can ONLY modify these files. Everything else is frozen.
+The improve loop can ONLY modify **predicate gates** — gates that evaluate truth
+claims about the world. Everything else is frozen.
+
+The distinction is principled, not mechanical:
+- **Predicate gates** evaluate truth ("does this CSS selector have this value?").
+  Bugs here mean verify is wrong about reality. Self-improvement makes these more accurate.
+- **Environment gates** (`staging.ts`) orchestrate Docker. Mutating this risks
+  masking failures instead of detecting them.
+- **Constitutional gates** (`invariants.ts`) define what "healthy" means. If the
+  loop can rewrite health checks, it can redefine success.
 
 ```
   ┌─────────────────────────────────────────────────────┐
-  │                  EDITABLE (8 files)                  │
+  │            EDITABLE — Predicate Gates (10 files)     │
   │                                                     │
   │  src/store/constraint-store.ts   Fingerprinting,    │
   │                                  K5 learning        │
@@ -245,13 +253,17 @@ The improve loop can ONLY modify these files. Everything else is frozen.
   │  src/gates/browser.ts            Playwright         │
   │  src/gates/http.ts               HTTP validation    │
   │  src/gates/syntax.ts             F9 edit app        │
+  │  src/gates/vision.ts             Screenshot model   │
+  │  src/gates/triangulation.ts      3-authority verdict │
   └─────────────────────────────────────────────────────┘
 
   ┌─────────────────────────────────────────────────────┐
-  │                  FROZEN (never touched)              │
+  │            FROZEN — Environment + Constitutional     │
   │                                                     │
   │  src/verify.ts                   Pipeline orchestr. │
   │  src/types.ts                    Type definitions   │
+  │  src/gates/staging.ts            Docker orchestr.   │
+  │  src/gates/invariants.ts         Health definitions │
   │  scripts/harness/*.ts            Harness logic      │
   │  scripts/harness/oracle.ts       Invariant checks   │
   │  scripts/harness/scenario-       Scenario generators│
@@ -378,7 +390,7 @@ The improve loop can ONLY modify these files. Everything else is frozen.
 ```
 
 
-## Scenario Families (80+ built-in + 21 external)
+## Scenario Families (80 built-in + custom external)
 
 ```
   ┌─────┬────────┬─────────────────────────────────────────────┐
@@ -391,17 +403,17 @@ The improve loop can ONLY modify these files. Everything else is frozen.
   │  E  │    6   │ Grounding validation (real vs fabricated)   │
   │  F  │    6   │ Full Docker pipeline (build→stage→verify)   │
   │  G  │   10   │ Edge cases (unicode, empty, no-ops)         │
-  │  H  │   10   │ Filesystem predicates (exists/absent/      │
+  │  H  │   10   │ Filesystem predicates (exists/absent/       │
   │     │        │ unchanged/count)                            │
-  │  V  │   14   │ Vision + triangulation (screenshot +       │
+  │  V  │   14   │ Vision + triangulation (screenshot +        │
   │     │        │ 3-authority verdict synthesis)              │
   ├─────┼────────┼─────────────────────────────────────────────┤
-  │ EXT │   21   │ Fault-derived (14 false_positive,           │
-  │     │        │ 3 false_negative, 2 bad_hint,               │
-  │     │        │ 2 regression_guard)                         │
+  │ EXT │  var   │ Fault-derived from chaos/campaign runs      │
+  │     │        │ (false_positive, false_negative, bad_hint,  │
+  │     │        │ regression_guard)                           │
   └─────┴────────┴─────────────────────────────────────────────┘
 
-  74 pure (no Docker, <3s)  │  6 Docker (~80s)  │  21 external
+  74 pure (no Docker, <3s)  │  6 Docker (~80s)  │  external varies by app
 ```
 
 

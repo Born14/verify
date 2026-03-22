@@ -12,7 +12,7 @@ The `@sovereign-labs/verify` package (v0.3.0) has a 12-gate verification pipelin
 
 ```
 self-test.ts (CLI entry)
-  → scenario-generator.ts (9 families × ~15 generators = ~80+ scenarios)
+  → scenario-generator.ts (9 families × ~9 generators = 80 scenarios)
   → external-scenario-loader.ts (loads fault-derived scenarios from .verify/custom-scenarios.json)
   → runner.ts (orchestrate: generate → execute → check → record)
   → oracle.ts (property-based invariant checks)
@@ -206,7 +206,7 @@ Can run as a Sovereign campaign goal on the Lenovo via `sovereign_agent_start`:
 When the self-test finds bugs:
 1. Ledger entry = the "gap" (benchmark that fails)
 2. Scenario = the reproduction case
-3. Bounded surface = 8 files in `packages/verify/src/` (constraint-store.ts, gates/*.ts)
+3. Bounded surface = 10 predicate gate files in `packages/verify/src/` (constraint-store.ts, predicate gates in gates/*.ts)
 4. Verification = re-run same scenario after proposed fix → invariant now passes
 5. Holdout = 30% of clean scenarios catch overfitting
 
@@ -343,9 +343,9 @@ Family F Docker scenarios wired and passing on Lenovo ThinkCentre.
 ### Current State (March 20, 2026)
 
 ```
-Default run (demo-app): 50 scenarios, ALL CLEAN, ~2.5s
-With Docker:            56 scenarios, ALL CLEAN, ~80s
-With --appDir=football: 66+ scenarios (50 built-in + 16+ external)
+Default run (demo-app): 67 scenarios (50 built-in + 17 universal), ALL CLEAN, ~2.5s
+With Docker:            73 scenarios, ALL CLEAN, ~80s
+With --appDir=football: 83+ scenarios (50 built-in + 17 universal + 16+ external)
 
 Family A: 10 (fingerprint collision)         — clean
 Family B:  9 (K5 constraint learning)        — clean
@@ -354,6 +354,7 @@ Family D:  8 (containment attribution)       — clean
 Family E:  6 (grounding validation)          — clean
 Family F:  6 (full pipeline, Docker)         — clean (14-16s each on Lenovo)
 Family G: 10 built-in (edge cases)           — clean
+       + 17 universal (health-checked)       — clean
        + 16+ external (chaos-derived)        — clean after improve cycle
 ```
 
@@ -373,3 +374,36 @@ External scenarios now carry `transferability` and `category` metadata, auto-cla
 | `category` | `grounding`, `containment`, `constraints`, `staging`, `syntax`, `sequencing`, `evidence`, `narrowing` | Which verify subsystem |
 
 Classifiers are deterministic (no LLM) — use tags, `expectedFailedGate`, rationale keywords, and predicate patterns. Existing scenarios can be backfilled via `ExternalScenarioStore.backfillClassifications()`.
+
+### Universal Scenario Extraction (March 2026)
+
+Universal scenarios test verify gate logic (CSS spec compliance, shorthand resolution, named color normalization, predicate type validation) that applies to ANY app. They ship with the package at `fixtures/scenarios/universal.json` and run against `demo-app` during every self-test alongside the 80 built-in scenarios.
+
+**Current state:** 17 universal scenarios, all health-checked. Loaded by `loadUniversalScenarios()` in `external-scenario-loader.ts`, wired into `runner.ts`.
+
+**What's universal vs app-specific:**
+
+| Universal (portable to demo-app) | App-specific (needs real app structure) |
+|---|---|
+| Fabricated CSS selector detection | Cross-route CSS ambiguity (needs 2+ HTML routes) |
+| Named color ↔ hex equivalence | Database predicates (needs DB) |
+| Shorthand → longhand resolution | HTTP sequence predicates (needs stateful API) |
+| Property existence checks | Multi-file edit interactions |
+| Content/HTML text validation | Route-scoped CSS scoping conflicts |
+| Bad hint quality (narrowing presence) | Migration/schema scenarios |
+
+Roughly 80% of grounding-category scenarios are portable. Staging/Docker/DB scenarios skew app-specific.
+
+**Extraction workflow (manual, after chaos campaigns):**
+
+1. **Identify candidates:** `ExternalScenarioStore.byTransferability('universal')` on the app's `.verify/custom-scenarios.json`
+2. **Rewrite edits:** Change app-specific selectors/content to demo-app equivalents. Demo-app surface: `h1`, `footer`, `a.nav-link`, `.items li`, `.subtitle`, `body`, plus content strings `Demo App`, `Alpha`, `Beta`, `Powered by Node.js`
+3. **Assign IDs:** Use `uv-NNN` format (next available number)
+4. **Health-check:** `bun run scripts/harness/scenario-health.ts --scenarios="fixtures/scenarios/universal.json" --verbose` — confirms every scenario's `expectedSuccess` matches independent predicate evaluation
+5. **Commit:** Add to `fixtures/scenarios/universal.json`. They'll run in the next self-test automatically.
+
+**Health check is the integrity gate.** A scenario with wrong `expectedSuccess` corrupts the oracle → improve loop → verify gates. The health checker bypasses verify entirely — applies edits to a fresh demo-app copy, runs predicates directly against grounding context, compares against claimed outcome. Quarantine candidates are flagged with actionable diagnostics.
+
+**Why not automated:** The edit rewrite step (2) requires judgment — mapping `.roster-link` to `a.nav-link`, knowing that demo-app has one HTML route so cross-route tests are impossible, choosing which demo-app element tests the same gate logic. Classification is automatic; portability rewriting is not.
+
+**Demo-app constraints:** Single `server.js`, one HTML route (`/`), one API route (`/api/items`), no database, no Redis. Scenarios requiring multi-route, DB, or stateful API coverage stay app-specific.

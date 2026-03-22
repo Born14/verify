@@ -29,6 +29,27 @@ export function loadExternalScenarios(registryPath: string, appDir: string): Ver
 }
 
 /**
+ * Load universal scenarios from fixtures/scenarios/universal.json.
+ * These are health-checked, portable scenarios that always run against demo-app.
+ * They test verify gate logic (CSS spec, shorthand, color normalization) that
+ * applies to ANY app — not app-specific selectors or routes.
+ */
+export function loadUniversalScenarios(fixtureDir: string): VerifyScenario[] {
+  const { join } = require('path');
+  const { existsSync, readFileSync } = require('fs');
+
+  const universalPath = join(fixtureDir, '..', 'scenarios', 'universal.json');
+  if (!existsSync(universalPath)) return [];
+
+  try {
+    const raw = JSON.parse(readFileSync(universalPath, 'utf-8')) as SerializedScenario[];
+    return raw.map(s => deserialize(s, fixtureDir));
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Convert a SerializedScenario into a VerifyScenario with appropriate invariants.
  */
 function deserialize(s: SerializedScenario, appDir: string): VerifyScenario {

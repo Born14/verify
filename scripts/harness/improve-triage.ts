@@ -365,12 +365,34 @@ function triageByInvariantKey(key: string): EvidenceBundle['triage'] {
 // =============================================================================
 // BOUNDED SURFACE — files the improvement engine is allowed to edit
 // =============================================================================
+//
+// The bounded surface includes PREDICATE GATES — gates that evaluate truth
+// claims about the world (CSS values, HTTP responses, file state, etc.).
+// These have clear correctness criteria and benefit from self-improvement.
+//
+// Two gate categories are intentionally EXCLUDED:
+//
+//   ENVIRONMENT GATES (staging.ts):
+//     Staging orchestrates Docker build/start — it's infrastructure, not
+//     predicate logic. Letting the improve loop mutate staging risks teaching
+//     it to swallow build failures instead of detecting them.
+//
+//   CONSTITUTIONAL GATES (invariants.ts):
+//     Invariants define what "healthy" means. If the loop can rewrite health
+//     checks, it can redefine success to make tests pass. That breaks the
+//     entire constitution model.
+//
+// Rule: predicate gates → inside bounded surface.
+//       environment/orchestration gates → frozen.
+//       system health definitions → frozen.
+//
 
 export const BOUNDED_SURFACE: ReadonlyArray<{ file: string; description: string }> = [
   { file: 'src/store/constraint-store.ts', description: 'Fingerprinting, signature extraction, K5 learning' },
   { file: 'src/gates/constraints.ts', description: 'K5 enforcement logic' },
   { file: 'src/gates/containment.ts', description: 'G5 attribution' },
   { file: 'src/gates/grounding.ts', description: 'CSS/HTML parsing, route extraction' },
+  { file: 'src/gates/filesystem.ts', description: 'Filesystem state verification (exists/absent/unchanged/count)' },
   { file: 'src/gates/browser.ts', description: 'Playwright CSS/HTML validation' },
   { file: 'src/gates/http.ts', description: 'HTTP predicate validation' },
   { file: 'src/gates/syntax.ts', description: 'F9 edit application' },

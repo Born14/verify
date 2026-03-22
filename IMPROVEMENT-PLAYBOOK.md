@@ -16,7 +16,7 @@ The `@sovereign-labs/verify` package has distinct named components. Understandin
 | **Pipeline** | The `verify()` function — the ordered gate sequence (Grounding→F9→K5→G5→Filesystem→Staging→Browser→Vision→HTTP→Invariants). The core product. | `src/verify.ts` |
 | **Gates** | Individual validation steps. Each gate is a pure function: context in, pass/fail out. | `src/gates/*.ts` |
 | **Store** | Persistent state — constraint store (K5 learning), fault ledger (discovery tracking + goalData persistence), external scenarios (encoded tests). | `src/store/*.ts` |
-| **Harness** | The self-test + improve infrastructure. Runs scenarios against the pipeline, detects regressions, proposes fixes. The inner circle's engine. | `scripts/harness/*.ts` |
+| **Harness** | The self-test + improve infrastructure. Runs 80 scenarios across 9 families against the pipeline, detects regressions, proposes fixes. The inner circle's engine. | `scripts/harness/*.ts` |
 | **Campaign** | Outer-circle orchestration. Discovers real-world faults by firing diverse goals through `verify()` against real apps. | `scripts/campaign/*.ts` |
 | **Chaos Engine** | 3 MCP tools (`verify_chaos_plan`, `verify_chaos_run`, `verify_chaos_encode`) that generate, execute, and encode stress-test goals autonomously. Sits at the intersection of both circles. | `src/mcp-server.ts` |
 | **MCP Server** | The tool surface — 16 tools exposing pipeline, harness, campaign, and chaos to any MCP client. | `src/mcp-server.ts` |
@@ -69,8 +69,8 @@ verify gates code -> failures reveal verify bugs -> loop fixes verify -> verify 
 
 This is structurally recursive. But it has hard limits that prevent runaway:
 
-- **Frozen constitution** - the harness, oracle, and scenarios never change by the loop
-- **Bounded surface** - the loop can only edit 8 source files, never its own tests
+- **Frozen constitution** - the harness, oracle, scenarios, and constitutional gates never change by the loop
+- **Bounded surface** - the loop can only edit 10 predicate gate files, never environment gates, invariant definitions, or its own tests
 - **Human veto** - accepted patches require explicit apply (via `verify_improve_apply` or manual)
 - **Subprocess isolation** - candidates validated in a copy, never the live codebase
 - **Holdout protection** - 30% of clean scenarios catch overfitting
@@ -262,7 +262,7 @@ Verify is stronger -> back to top
 | Piece | Status |
 |-------|--------|
 | Verify gates | Shipped (v0.3.0 on npm) |
-| Self-test harness | Shipped (80 scenarios, 9 families) |
+| Self-test harness | Shipped (80 built-in scenarios, 9 families A-H + V) |
 | Improve loop | Built, proven end-to-end (chaos→encode→improve→apply) |
 | Fault ledger | Built, wired into CLI, goalData persistence for cross-session |
 | memory.jsonl | Works for end users today |
