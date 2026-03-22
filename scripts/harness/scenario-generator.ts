@@ -49,8 +49,9 @@ import {
 import { makeSolidPNG } from './test-png.js';
 import { ConstraintStore, predicateFingerprint } from '../../src/store/constraint-store.js';
 import { hashFile } from '../../src/gates/filesystem.js';
-import { existsSync, writeFileSync, mkdirSync } from 'fs';
+import { existsSync, writeFileSync, mkdirSync, readdirSync } from 'fs';
 import { join } from 'path';
+import { createHash } from 'crypto';
 
 let scenarioCounter = 0;
 function nextId(family: ScenarioFamily, generator: string): string {
@@ -1792,29 +1793,8 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
   });
 
   // H7: filesystem_count — passes with correct count
-  scenarios.push({
-    id: nextId('H', 'fs_count_pass'),
-    family: 'H',
-    generator: 'fs_count_pass',
-    description: 'filesystem_count passes when directory entry count matches',
-    edits: [
-      { file: 'server.js', search: "Powered by Node.js", replace: "Powered by Node.js" },
-    ],
-    predicates: [
-      { type: 'filesystem_count', path: 'test-data', count: 1, description: 'test-data has 1 file' },
-      { type: 'content', file: 'server.js', pattern: 'Demo App' },
-    ],
-    config: {
-      appDir,
-      gates: { staging: false, browser: false, http: false, invariants: false },
-    },
-    invariants: [
-      verifySucceeded('filesystem_count should pass with correct count'),
-      filesystemGateRan(),
-      filesystemGatePassed(),
-    ],
-    requiresDocker: false,
-  });
+  // NOTE: Moved to after all FS fixture files are created (see bottom of Family H)
+  // so the dynamic count reflects the actual directory state at test time.
 
   // H8: filesystem_count — fails with wrong count
   scenarios.push({
@@ -1913,6 +1893,717 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
       editAttributed('server.js', 'direct'),
     ],
     requiresDocker: false,
+  });
+
+  // ===========================================================================
+  // FS FAILURE SHAPES — Taxonomy FS-01 through FS-15
+  // ===========================================================================
+  // Each group targets one failure shape from FAILURE-TAXONOMY.md.
+  // H1-H10 above cover basic pass/fail. These exercise the edge cases.
+
+  const noopEdit: Edit = { file: 'server.js', search: "Powered by Node.js", replace: "Powered by Node.js" };
+  const noDockerGates = { staging: false, browser: false, http: false, invariants: false };
+
+  // ── FS-01: File should exist but doesn't (after failed edit) ──
+  // An edit creates a file, but the edit search string doesn't match,
+  // so the file never appears — filesystem_exists catches the gap.
+
+  scenarios.push({
+    id: nextId('H', 'fs01_edit_creates_missing'),
+    family: 'H',
+    generator: 'fs01_edit_fail_no_create',
+    description: 'FS-01: Edit meant to create file fails, filesystem_exists catches absence',
+    edits: [
+      // This edit won't apply — search string doesn't exist
+      { file: 'new-page.html', search: 'THIS_DOES_NOT_EXIST', replace: '<h1>New Page</h1>' },
+    ],
+    predicates: [
+      { type: 'filesystem_exists', file: 'new-page.html', description: 'New page should exist after edit' },
+    ],
+    config: {
+      appDir,
+      gates: { ...noDockerGates, grounding: false },
+    },
+    invariants: [
+      // F9 should catch the bad edit before filesystem gate runs
+      verifyFailedAt('F9', 'edit application should fail — file does not exist'),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // ── FS-02: File should not exist but does (leftover artifact) ──
+
+  scenarios.push({
+    id: nextId('H', 'fs02_leftover_artifact'),
+    family: 'H',
+    generator: 'fs02_leftover',
+    description: 'FS-02: Leftover file (server.js) should be absent but exists',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'filesystem_absent', file: 'server.js', description: 'server.js should have been deleted' },
+    ],
+    config: {
+      appDir,
+      gates: noDockerGates,
+    },
+    invariants: [
+      verifyFailedAt('filesystem', 'existing file should fail absent check'),
+      filesystemGateRan(),
+      filesystemGateFailed('leftover artifact not removed'),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // ── FS-03: Directory vs file mismatch ──
+  // Expected file at path, but it's actually a directory (test-data/)
+
+  scenarios.push({
+    id: nextId('H', 'fs03_dir_vs_file'),
+    family: 'H',
+    generator: 'fs03_dir_file_mismatch',
+    description: 'FS-03: filesystem_unchanged on a directory (not a file) — should fail hash',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'filesystem_unchanged', file: 'test-data', hash: 'deadbeef00000000000000000000000000000000000000000000000000000000', description: 'Directory should not hash like a file' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: noDockerGates,
+    },
+    invariants: [
+      // readFileSync on a directory throws — gate should handle gracefully
+      shouldNotCrash('filesystem_unchanged on directory should not crash'),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  scenarios.push({
+    id: nextId('H', 'fs03_count_on_file'),
+    family: 'H',
+    generator: 'fs03_count_on_file',
+    description: 'FS-03: filesystem_count on a file (not a directory) — should fail',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'filesystem_count', path: 'server.js', count: 1, description: 'readdirSync on a file should fail' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: noDockerGates,
+    },
+    invariants: [
+      shouldNotCrash('filesystem_count on file should not crash'),
+      filesystemGateRan(),
+      filesystemGateFailed('readdirSync on a file should error'),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // ── FS-04: Relative path resolution edge cases ──
+
+  scenarios.push({
+    id: nextId('H', 'fs04_dotslash_path'),
+    family: 'H',
+    generator: 'fs04_dotslash',
+    description: 'FS-04: Path with ./ prefix resolves correctly',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'filesystem_exists', file: './server.js', description: 'Dot-slash path should resolve' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: { ...noDockerGates, grounding: false },
+    },
+    invariants: [
+      shouldNotCrash('dot-slash path should not crash'),
+      filesystemGateRan(),
+      filesystemGatePassed(),
+    ],
+    requiresDocker: false,
+  });
+
+  scenarios.push({
+    id: nextId('H', 'fs04_dotdot_traversal'),
+    family: 'H',
+    generator: 'fs04_dotdot',
+    description: 'FS-04: Path with ../ traversal — fails in staging (temp dir isolation)',
+    edits: [noopEdit],
+    predicates: [
+      // ../demo-app/server.js won't resolve in staging temp dir (parent has no demo-app/)
+      // This correctly tests that staging isolation prevents parent traversal
+      { type: 'filesystem_exists', file: '../demo-app/server.js', description: 'Parent traversal fails in staging temp dir' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: { ...noDockerGates, grounding: false },
+    },
+    invariants: [
+      shouldNotCrash('dot-dot path should not crash'),
+      filesystemGateRan(),
+      filesystemGateFailed('parent traversal does not resolve in staging'),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // ── FS-07: Content mismatch via hash change ──
+  // Edit modifies a file, hash no longer matches grounding-time snapshot
+
+  scenarios.push({
+    id: nextId('H', 'fs07_edit_changes_hash'),
+    family: 'H',
+    generator: 'fs07_content_mismatch',
+    description: 'FS-07: Edit changes file content, filesystem_unchanged detects hash drift',
+    edits: [
+      { file: 'test-data/sample.txt', search: 'hello world', replace: 'goodbye world' },
+    ],
+    predicates: [
+      { type: 'filesystem_unchanged', file: 'test-data/sample.txt', hash: fixtureFileHash, description: 'File should be unchanged (but edit modified it)' },
+      { type: 'content', file: 'test-data/sample.txt', pattern: 'goodbye' },
+    ],
+    config: {
+      appDir,
+      gates: noDockerGates,
+    },
+    invariants: [
+      verifyFailedAt('filesystem', 'hash should mismatch after edit'),
+      filesystemGateRan(),
+      filesystemGateFailed('edit changed file content, hash mismatch'),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // ── FS-08: Encoding — BOM prefix in file ──
+  // Create a UTF-8 BOM file. Hash computed on raw bytes including BOM.
+  // If hash is computed without BOM awareness, it'll differ from a clean file.
+
+  const bomFixtureDir = join(appDir, 'test-data');
+  const bomFile = join(bomFixtureDir, 'bom-sample.txt');
+  const bomContent = Buffer.concat([
+    Buffer.from([0xEF, 0xBB, 0xBF]),  // UTF-8 BOM
+    Buffer.from('hello world\n'),
+  ]);
+  writeFileSync(bomFile, bomContent);
+  const bomHash = hashFile(bomFile);
+
+  scenarios.push({
+    id: nextId('H', 'fs08_bom_hash_match'),
+    family: 'H',
+    generator: 'fs08_bom_encoding',
+    description: 'FS-08: UTF-8 BOM file — hash includes BOM bytes (raw byte comparison)',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'filesystem_unchanged', file: 'test-data/bom-sample.txt', hash: bomHash, description: 'BOM file hash should match raw bytes' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: noDockerGates,
+    },
+    invariants: [
+      verifySucceeded('BOM file with correct raw hash should pass'),
+      filesystemGateRan(),
+      filesystemGatePassed(),
+    ],
+    requiresDocker: false,
+  });
+
+  // Hash computed WITHOUT BOM should fail
+  const noBomHash = createHash('sha256').update('hello world\n').digest('hex');
+  scenarios.push({
+    id: nextId('H', 'fs08_bom_hash_mismatch'),
+    family: 'H',
+    generator: 'fs08_bom_mismatch',
+    description: 'FS-08: UTF-8 BOM file — hash without BOM bytes does NOT match (encoding-aware failure)',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'filesystem_unchanged', file: 'test-data/bom-sample.txt', hash: noBomHash, description: 'Non-BOM hash should fail against BOM file' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: noDockerGates,
+    },
+    invariants: [
+      verifyFailedAt('filesystem', 'BOM bytes cause hash mismatch'),
+      filesystemGateRan(),
+      filesystemGateFailed('BOM presence causes hash difference'),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // ── FS-09: Line ending differences (CRLF/LF) ──
+  // Same logical content, different line endings → different hash
+
+  const crlfFile = join(bomFixtureDir, 'crlf-sample.txt');
+  writeFileSync(crlfFile, 'line one\r\nline two\r\n');
+  const crlfHash = hashFile(crlfFile);
+
+  const lfOnlyHash = createHash('sha256').update('line one\nline two\n').digest('hex');
+
+  scenarios.push({
+    id: nextId('H', 'fs09_crlf_hash_match'),
+    family: 'H',
+    generator: 'fs09_crlf_match',
+    description: 'FS-09: CRLF file hashes correctly when hash was captured from CRLF',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'filesystem_unchanged', file: 'test-data/crlf-sample.txt', hash: crlfHash, description: 'CRLF hash matches CRLF file' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: noDockerGates,
+    },
+    invariants: [
+      verifySucceeded('CRLF file with CRLF-aware hash should pass'),
+      filesystemGateRan(),
+      filesystemGatePassed(),
+    ],
+    requiresDocker: false,
+  });
+
+  scenarios.push({
+    id: nextId('H', 'fs09_crlf_lf_mismatch'),
+    family: 'H',
+    generator: 'fs09_crlf_lf_mismatch',
+    description: 'FS-09: LF hash does not match CRLF file (line ending sensitivity)',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'filesystem_unchanged', file: 'test-data/crlf-sample.txt', hash: lfOnlyHash, description: 'LF hash should fail against CRLF file' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: noDockerGates,
+    },
+    invariants: [
+      verifyFailedAt('filesystem', 'CRLF vs LF hash mismatch'),
+      filesystemGateRan(),
+      filesystemGateFailed('line ending difference produces different hash'),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // ── FS-10: Binary file content check ──
+  // Binary content (PNG-like header) should hash correctly without text interpretation
+
+  const binaryFile = join(bomFixtureDir, 'binary-sample.bin');
+  const binaryContent = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00]);
+  writeFileSync(binaryFile, binaryContent);
+  const binaryHash = hashFile(binaryFile);
+
+  scenarios.push({
+    id: nextId('H', 'fs10_binary_hash'),
+    family: 'H',
+    generator: 'fs10_binary_hash',
+    description: 'FS-10: Binary file hashes correctly (no text misinterpretation)',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'filesystem_unchanged', file: 'test-data/binary-sample.bin', hash: binaryHash, description: 'Binary file hash should match' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: noDockerGates,
+    },
+    invariants: [
+      verifySucceeded('binary file with correct hash should pass'),
+      filesystemGateRan(),
+      filesystemGatePassed(),
+    ],
+    requiresDocker: false,
+  });
+
+  scenarios.push({
+    id: nextId('H', 'fs10_binary_exists'),
+    family: 'H',
+    generator: 'fs10_binary_exists',
+    description: 'FS-10: Binary file exists check works for non-text files',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'filesystem_exists', file: 'test-data/binary-sample.bin', description: 'Binary file should exist' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: noDockerGates,
+    },
+    invariants: [
+      verifySucceeded('binary file existence check should pass'),
+      filesystemGateRan(),
+      filesystemGatePassed(),
+    ],
+    requiresDocker: false,
+  });
+
+  // ── FS-11: NUL bytes in text-like file ──
+
+  const nulFile = join(bomFixtureDir, 'nul-sample.txt');
+  writeFileSync(nulFile, Buffer.from('hello\x00world\n'));
+  const nulHash = hashFile(nulFile);
+
+  scenarios.push({
+    id: nextId('H', 'fs11_nul_bytes'),
+    family: 'H',
+    generator: 'fs11_nul_bytes',
+    description: 'FS-11: File with NUL bytes hashes correctly (no truncation)',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'filesystem_unchanged', file: 'test-data/nul-sample.txt', hash: nulHash, description: 'NUL-containing file hash should be stable' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: noDockerGates,
+    },
+    invariants: [
+      verifySucceeded('NUL byte file with correct hash should pass'),
+      filesystemGateRan(),
+      filesystemGatePassed(),
+    ],
+    requiresDocker: false,
+  });
+
+  // NUL-stripped hash should NOT match
+  const nulStrippedHash = createHash('sha256').update('helloworld\n').digest('hex');
+  scenarios.push({
+    id: nextId('H', 'fs11_nul_stripped_mismatch'),
+    family: 'H',
+    generator: 'fs11_nul_stripped',
+    description: 'FS-11: NUL-stripped hash does not match NUL-containing file',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'filesystem_unchanged', file: 'test-data/nul-sample.txt', hash: nulStrippedHash, description: 'NUL-stripped hash should fail' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: noDockerGates,
+    },
+    invariants: [
+      verifyFailedAt('filesystem', 'NUL bytes affect hash'),
+      filesystemGateRan(),
+      filesystemGateFailed('NUL byte presence changes hash'),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // ── FS-14: Empty file (0 bytes) ──
+
+  const emptyFile = join(bomFixtureDir, 'empty.txt');
+  writeFileSync(emptyFile, '');
+  const emptyHash = hashFile(emptyFile);
+
+  scenarios.push({
+    id: nextId('H', 'fs14_empty_exists'),
+    family: 'H',
+    generator: 'fs14_empty_exists',
+    description: 'FS-14: Empty file (0 bytes) passes filesystem_exists',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'filesystem_exists', file: 'test-data/empty.txt', description: 'Empty file should exist' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: noDockerGates,
+    },
+    invariants: [
+      verifySucceeded('empty file exists'),
+      filesystemGateRan(),
+      filesystemGatePassed(),
+    ],
+    requiresDocker: false,
+  });
+
+  scenarios.push({
+    id: nextId('H', 'fs14_empty_unchanged'),
+    family: 'H',
+    generator: 'fs14_empty_unchanged',
+    description: 'FS-14: Empty file (0 bytes) has stable hash for filesystem_unchanged',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'filesystem_unchanged', file: 'test-data/empty.txt', hash: emptyHash, description: 'Empty file hash should match empty SHA-256' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: noDockerGates,
+    },
+    invariants: [
+      verifySucceeded('empty file with correct hash should pass'),
+      filesystemGateRan(),
+      filesystemGatePassed(),
+    ],
+    requiresDocker: false,
+  });
+
+  scenarios.push({
+    id: nextId('H', 'fs14_empty_nonempty_hash'),
+    family: 'H',
+    generator: 'fs14_empty_nonempty_mismatch',
+    description: 'FS-14: Non-empty hash does not match empty file',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'filesystem_unchanged', file: 'test-data/empty.txt', hash: fixtureFileHash, description: 'sample.txt hash should not match empty file' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: noDockerGates,
+    },
+    invariants: [
+      verifyFailedAt('filesystem', 'non-empty hash vs empty file'),
+      filesystemGateRan(),
+      filesystemGateFailed('hash mismatch between non-empty and empty'),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // ── FS-05/FS-06: Symlink edge cases ──
+  // Only create on non-Windows (symlinks need admin on Windows)
+
+  if (process.platform !== 'win32') {
+    const { symlinkSync, unlinkSync } = require('fs');
+    const symlinkPath = join(bomFixtureDir, 'link-to-sample.txt');
+    try { unlinkSync(symlinkPath); } catch { /* may not exist */ }
+    try {
+      symlinkSync(join(bomFixtureDir, 'sample.txt'), symlinkPath);
+
+      scenarios.push({
+        id: nextId('H', 'fs05_symlink_exists'),
+        family: 'H',
+        generator: 'fs05_symlink_exists',
+        description: 'FS-05: Symlink target exists — filesystem_exists follows symlink',
+        edits: [noopEdit],
+        predicates: [
+          { type: 'filesystem_exists', file: 'test-data/link-to-sample.txt', description: 'Symlink should report as existing' },
+          { type: 'content', file: 'server.js', pattern: 'Demo App' },
+        ],
+        config: {
+          appDir,
+          gates: noDockerGates,
+        },
+        invariants: [
+          verifySucceeded('symlink to existing file should pass exists'),
+          filesystemGateRan(),
+          filesystemGatePassed(),
+        ],
+        requiresDocker: false,
+      });
+
+      scenarios.push({
+        id: nextId('H', 'fs05_symlink_hash'),
+        family: 'H',
+        generator: 'fs05_symlink_hash',
+        description: 'FS-05: Symlink hash matches target file hash (follows symlink)',
+        edits: [noopEdit],
+        predicates: [
+          { type: 'filesystem_unchanged', file: 'test-data/link-to-sample.txt', hash: fixtureFileHash, description: 'Symlink hash should match target' },
+          { type: 'content', file: 'server.js', pattern: 'Demo App' },
+        ],
+        config: {
+          appDir,
+          gates: noDockerGates,
+        },
+        invariants: [
+          verifySucceeded('symlink hash should equal target file hash'),
+          filesystemGateRan(),
+          filesystemGatePassed(),
+        ],
+        requiresDocker: false,
+      });
+    } catch { /* symlink creation may fail */ }
+  }
+
+  // ── FS-12/FS-13: Missing field edge cases (harness robustness) ──
+  // These test that the gate doesn't crash when predicates have missing fields
+
+  scenarios.push({
+    id: nextId('H', 'fs12_missing_path'),
+    family: 'H',
+    generator: 'fs12_missing_path',
+    description: 'FS-12: filesystem_exists with no file/path field — should fail gracefully',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'filesystem_exists', description: 'Missing path field' } as any,
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: { ...noDockerGates, grounding: false },
+    },
+    invariants: [
+      shouldNotCrash('missing path should not crash'),
+      filesystemGateRan(),
+      filesystemGateFailed('missing file/path field'),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  scenarios.push({
+    id: nextId('H', 'fs12_missing_hash'),
+    family: 'H',
+    generator: 'fs12_missing_hash',
+    description: 'FS-12: filesystem_unchanged with no hash field — should fail gracefully',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'filesystem_unchanged', file: 'test-data/sample.txt', description: 'Missing hash field' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: { ...noDockerGates, grounding: false },
+    },
+    invariants: [
+      shouldNotCrash('missing hash should not crash'),
+      filesystemGateRan(),
+      filesystemGateFailed('missing hash field'),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  scenarios.push({
+    id: nextId('H', 'fs12_missing_count'),
+    family: 'H',
+    generator: 'fs12_missing_count',
+    description: 'FS-12: filesystem_count with no count field — should fail gracefully',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'filesystem_count', path: 'test-data', description: 'Missing count field' } as any,
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: { ...noDockerGates, grounding: false },
+    },
+    invariants: [
+      shouldNotCrash('missing count should not crash'),
+      filesystemGateRan(),
+      filesystemGateFailed('missing count field'),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // ── FS-15: Count includes hidden/dot files ──
+  // Create a dotfile to test whether count includes it
+
+  const dotFile = join(bomFixtureDir, '.hidden');
+  writeFileSync(dotFile, 'hidden content\n');
+  // Count should include all entries: sample.txt, bom-sample.txt, crlf-sample.txt,
+  // binary-sample.bin, nul-sample.txt, empty.txt, .hidden = 7 (+ link if non-windows)
+  const expectedEntries = readdirSync(bomFixtureDir);
+
+  scenarios.push({
+    id: nextId('H', 'fs15_count_includes_dotfiles'),
+    family: 'H',
+    generator: 'fs15_dotfile_count',
+    description: 'FS-15: filesystem_count includes hidden/dot files in count',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'filesystem_count', path: 'test-data', count: expectedEntries.length, description: `test-data should have ${expectedEntries.length} entries including dotfiles` },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: noDockerGates,
+    },
+    invariants: [
+      verifySucceeded('count should include dotfiles'),
+      filesystemGateRan(),
+      filesystemGatePassed(),
+    ],
+    requiresDocker: false,
+  });
+
+  // Count WITHOUT dotfiles would be wrong
+  scenarios.push({
+    id: nextId('H', 'fs15_count_excludes_dotfiles_fails'),
+    family: 'H',
+    generator: 'fs15_dotfile_miscount',
+    description: 'FS-15: Wrong count (excluding dotfile) should fail',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'filesystem_count', path: 'test-data', count: expectedEntries.length - 1, description: 'Off-by-one (excluding dotfile) should fail' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: noDockerGates,
+    },
+    invariants: [
+      verifyFailedAt('filesystem', 'off-by-one count should fail'),
+      filesystemGateRan(),
+      filesystemGateFailed('count mismatch when dotfile excluded'),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // H7: filesystem_count — passes with correct count (relocated after all fixture creation)
+  const h7ActualCount = readdirSync(fsFixtureDir).length;
+  scenarios.push({
+    id: nextId('H', 'fs_count_pass'),
+    family: 'H',
+    generator: 'fs_count_pass',
+    description: 'filesystem_count passes when directory entry count matches',
+    edits: [
+      { file: 'server.js', search: "Powered by Node.js", replace: "Powered by Node.js" },
+    ],
+    predicates: [
+      { type: 'filesystem_count', path: 'test-data', count: h7ActualCount, description: `test-data has ${h7ActualCount} entries` },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, invariants: false },
+    },
+    invariants: [
+      verifySucceeded('filesystem_count should pass with correct count'),
+      filesystemGateRan(),
+      filesystemGatePassed(),
+    ],
+    requiresDocker: false,
+  });
+
+  // ── K5 learning: filesystem failure seeds constraint ──
+
+  scenarios.push({
+    id: nextId('H', 'fs_k5_constraint_seeded'),
+    family: 'H',
+    generator: 'fs_k5_seed',
+    description: 'Filesystem gate failure seeds K5 constraint for learning',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'filesystem_exists', file: 'does-not-exist.xyz', description: 'Missing file' },
+    ],
+    config: {
+      appDir,
+      gates: { ...noDockerGates, grounding: false },
+    },
+    invariants: [
+      verifyFailedAt('filesystem', 'missing file triggers failure'),
+      narrowingPresent(),
+      constraintSeededOnFailure(),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
   });
 
   return scenarios;

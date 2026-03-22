@@ -154,16 +154,27 @@ function validateFilesystemPredicate(
           actual: 'file not found',
         };
       }
-      const currentHash = hashFile(fullPath);
-      const matched = currentHash === pred.hash;
-      return {
-        predicateIndex: index,
-        type: pred.type,
-        path: relativePath,
-        passed: matched,
-        expected: `unchanged (hash: ${pred.hash.slice(0, 12)}...)`,
-        actual: matched ? 'unchanged' : `modified (hash: ${currentHash.slice(0, 12)}...)`,
-      };
+      try {
+        const currentHash = hashFile(fullPath);
+        const matched = currentHash === pred.hash;
+        return {
+          predicateIndex: index,
+          type: pred.type,
+          path: relativePath,
+          passed: matched,
+          expected: `unchanged (hash: ${pred.hash.slice(0, 12)}...)`,
+          actual: matched ? 'unchanged' : `modified (hash: ${currentHash.slice(0, 12)}...)`,
+        };
+      } catch {
+        return {
+          predicateIndex: index,
+          type: pred.type,
+          path: relativePath,
+          passed: false,
+          expected: `unchanged (hash: ${pred.hash.slice(0, 12)}...)`,
+          actual: 'not a regular file or read error',
+        };
+      }
     }
 
     case 'filesystem_count': {
