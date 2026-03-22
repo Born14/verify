@@ -79,6 +79,17 @@ export class Ledger {
       else byFamily[fam].dirty++;
     }
 
+    // Failure class coverage
+    const failureClassCoverage: Record<string, { scenarios: number; clean: number; dirty: number }> = {};
+    for (const entry of this.entries) {
+      const fc = entry.scenario.failureClass;
+      if (!fc) continue;
+      if (!failureClassCoverage[fc]) failureClassCoverage[fc] = { scenarios: 0, clean: 0, dirty: 0 };
+      failureClassCoverage[fc].scenarios++;
+      if (entry.clean) failureClassCoverage[fc].clean++;
+      else failureClassCoverage[fc].dirty++;
+    }
+
     const topViolations = [...violationCounts.entries()]
       .sort((a, b) => b[1].count - a[1].count)
       .slice(0, 10)
@@ -108,6 +119,7 @@ export class Ledger {
       info,
       byFamily,
       topViolations,
+      failureClassCoverage: Object.keys(failureClassCoverage).length > 0 ? failureClassCoverage : undefined,
       oneLiner,
     };
   }

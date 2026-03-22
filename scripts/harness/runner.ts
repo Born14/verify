@@ -225,6 +225,7 @@ async function runScenario(scenario: VerifyScenario, config: RunConfig): Promise
       predicateCount: scenario.predicates.length,
       editCount: scenario.edits.length,
       requiresDocker: scenario.requiresDocker,
+      failureClass: scenario.failureClass,
     },
     result: {
       success: isError ? null : result.success,
@@ -422,6 +423,7 @@ async function runMultiStepScenario(scenario: VerifyScenario, config: RunConfig)
       predicateCount: scenario.steps.reduce((s, step) => s + step.predicates.length, 0),
       editCount: scenario.steps.reduce((s, step) => s + step.edits.length, 0),
       requiresDocker: scenario.requiresDocker,
+      failureClass: scenario.failureClass,
     },
     result: {
       success: priorResults.length > 0 ? priorResults[priorResults.length - 1].success : null,

@@ -1912,6 +1912,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs01_edit_creates_missing'),
     family: 'H',
     generator: 'fs01_edit_fail_no_create',
+    failureClass: 'FS-01',
     description: 'FS-01: Edit meant to create file fails, filesystem_exists catches absence',
     edits: [
       // This edit won't apply — search string doesn't exist
@@ -1938,6 +1939,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs02_leftover_artifact'),
     family: 'H',
     generator: 'fs02_leftover',
+    failureClass: 'FS-02',
     description: 'FS-02: Leftover file (server.js) should be absent but exists',
     edits: [noopEdit],
     predicates: [
@@ -1963,6 +1965,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs03_dir_vs_file'),
     family: 'H',
     generator: 'fs03_dir_file_mismatch',
+    failureClass: 'FS-03',
     description: 'FS-03: filesystem_unchanged on a directory (not a file) — should fail hash',
     edits: [noopEdit],
     predicates: [
@@ -1985,6 +1988,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs03_count_on_file'),
     family: 'H',
     generator: 'fs03_count_on_file',
+    failureClass: 'FS-03',
     description: 'FS-03: filesystem_count on a file (not a directory) — should fail',
     edits: [noopEdit],
     predicates: [
@@ -2010,6 +2014,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs04_dotslash_path'),
     family: 'H',
     generator: 'fs04_dotslash',
+    failureClass: 'FS-04',
     description: 'FS-04: Path with ./ prefix resolves correctly',
     edits: [noopEdit],
     predicates: [
@@ -2032,6 +2037,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs04_dotdot_traversal'),
     family: 'H',
     generator: 'fs04_dotdot',
+    failureClass: 'FS-04',
     description: 'FS-04: Path with ../ traversal — fails in staging (temp dir isolation)',
     edits: [noopEdit],
     predicates: [
@@ -2060,6 +2066,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs07_edit_changes_hash'),
     family: 'H',
     generator: 'fs07_content_mismatch',
+    failureClass: 'FS-07',
     description: 'FS-07: Edit changes file content, filesystem_unchanged detects hash drift',
     edits: [
       { file: 'test-data/sample.txt', search: 'hello world', replace: 'goodbye world' },
@@ -2098,6 +2105,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs08_bom_hash_match'),
     family: 'H',
     generator: 'fs08_bom_encoding',
+    failureClass: 'FS-08',
     description: 'FS-08: UTF-8 BOM file — hash includes BOM bytes (raw byte comparison)',
     edits: [noopEdit],
     predicates: [
@@ -2122,6 +2130,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs08_bom_hash_mismatch'),
     family: 'H',
     generator: 'fs08_bom_mismatch',
+    failureClass: 'FS-08',
     description: 'FS-08: UTF-8 BOM file — hash without BOM bytes does NOT match (encoding-aware failure)',
     edits: [noopEdit],
     predicates: [
@@ -2154,6 +2163,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs09_crlf_hash_match'),
     family: 'H',
     generator: 'fs09_crlf_match',
+    failureClass: 'FS-09',
     description: 'FS-09: CRLF file hashes correctly when hash was captured from CRLF',
     edits: [noopEdit],
     predicates: [
@@ -2176,6 +2186,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs09_crlf_lf_mismatch'),
     family: 'H',
     generator: 'fs09_crlf_lf_mismatch',
+    failureClass: 'FS-09',
     description: 'FS-09: LF hash does not match CRLF file (line ending sensitivity)',
     edits: [noopEdit],
     predicates: [
@@ -2207,6 +2218,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs10_binary_hash'),
     family: 'H',
     generator: 'fs10_binary_hash',
+    failureClass: 'FS-10',
     description: 'FS-10: Binary file hashes correctly (no text misinterpretation)',
     edits: [noopEdit],
     predicates: [
@@ -2229,6 +2241,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs10_binary_exists'),
     family: 'H',
     generator: 'fs10_binary_exists',
+    failureClass: 'FS-10',
     description: 'FS-10: Binary file exists check works for non-text files',
     edits: [noopEdit],
     predicates: [
@@ -2257,6 +2270,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs11_nul_bytes'),
     family: 'H',
     generator: 'fs11_nul_bytes',
+    failureClass: 'FS-11',
     description: 'FS-11: File with NUL bytes hashes correctly (no truncation)',
     edits: [noopEdit],
     predicates: [
@@ -2281,6 +2295,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs11_nul_stripped_mismatch'),
     family: 'H',
     generator: 'fs11_nul_stripped',
+    failureClass: 'FS-11',
     description: 'FS-11: NUL-stripped hash does not match NUL-containing file',
     edits: [noopEdit],
     predicates: [
@@ -2310,6 +2325,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs14_empty_exists'),
     family: 'H',
     generator: 'fs14_empty_exists',
+    failureClass: 'FS-14',
     description: 'FS-14: Empty file (0 bytes) passes filesystem_exists',
     edits: [noopEdit],
     predicates: [
@@ -2332,6 +2348,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs14_empty_unchanged'),
     family: 'H',
     generator: 'fs14_empty_unchanged',
+    failureClass: 'FS-14',
     description: 'FS-14: Empty file (0 bytes) has stable hash for filesystem_unchanged',
     edits: [noopEdit],
     predicates: [
@@ -2354,6 +2371,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs14_empty_nonempty_hash'),
     family: 'H',
     generator: 'fs14_empty_nonempty_mismatch',
+    failureClass: 'FS-14',
     description: 'FS-14: Non-empty hash does not match empty file',
     edits: [noopEdit],
     predicates: [
@@ -2387,6 +2405,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
         id: nextId('H', 'fs05_symlink_exists'),
         family: 'H',
         generator: 'fs05_symlink_exists',
+        failureClass: 'FS-05',
         description: 'FS-05: Symlink target exists — filesystem_exists follows symlink',
         edits: [noopEdit],
         predicates: [
@@ -2409,6 +2428,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
         id: nextId('H', 'fs05_symlink_hash'),
         family: 'H',
         generator: 'fs05_symlink_hash',
+        failureClass: 'FS-05',
         description: 'FS-05: Symlink hash matches target file hash (follows symlink)',
         edits: [noopEdit],
         predicates: [
@@ -2436,6 +2456,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs12_missing_path'),
     family: 'H',
     generator: 'fs12_missing_path',
+    failureClass: 'FS-12',
     description: 'FS-12: filesystem_exists with no file/path field — should fail gracefully',
     edits: [noopEdit],
     predicates: [
@@ -2459,6 +2480,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs12_missing_hash'),
     family: 'H',
     generator: 'fs12_missing_hash',
+    failureClass: 'FS-12',
     description: 'FS-12: filesystem_unchanged with no hash field — should fail gracefully',
     edits: [noopEdit],
     predicates: [
@@ -2482,6 +2504,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs12_missing_count'),
     family: 'H',
     generator: 'fs12_missing_count',
+    failureClass: 'FS-12',
     description: 'FS-12: filesystem_count with no count field — should fail gracefully',
     edits: [noopEdit],
     predicates: [
@@ -2514,6 +2537,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs15_count_includes_dotfiles'),
     family: 'H',
     generator: 'fs15_dotfile_count',
+    failureClass: 'FS-15',
     description: 'FS-15: filesystem_count includes hidden/dot files in count',
     edits: [noopEdit],
     predicates: [
@@ -2537,6 +2561,7 @@ function generateFamilyH(appDir: string): VerifyScenario[] {
     id: nextId('H', 'fs15_count_excludes_dotfiles_fails'),
     family: 'H',
     generator: 'fs15_dotfile_miscount',
+    failureClass: 'FS-15',
     description: 'FS-15: Wrong count (excluding dotfile) should fail',
     edits: [noopEdit],
     predicates: [

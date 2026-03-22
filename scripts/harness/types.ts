@@ -26,6 +26,8 @@ export interface VerifyScenario {
   steps?: VerifyScenario[];
   /** Expected verify() outcome (if known) */
   expectedSuccess?: boolean;
+  /** Failure class from FAILURE-TAXONOMY.md (e.g., 'FS-03', 'CSS-01') */
+  failureClass?: string;
   /**
    * Setup hook: runs before verify() with access to the shared stateDir.
    * Used by B scenarios to directly seed/manipulate constraints.
@@ -85,6 +87,7 @@ export interface LedgerEntry {
     predicateCount: number;
     editCount: number;
     requiresDocker: boolean;
+    failureClass?: string;
   };
   result: {
     success: boolean | null; // null = crashed
@@ -129,6 +132,7 @@ export interface LedgerSummary {
   info: number;
   byFamily: Record<string, { total: number; clean: number; dirty: number }>;
   topViolations: Array<{ invariant: string; count: number; severity: Severity; examples: string[] }>;
+  failureClassCoverage?: Record<string, { scenarios: number; clean: number; dirty: number }>;
   oneLiner: string;
 }
 

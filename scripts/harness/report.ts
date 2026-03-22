@@ -59,6 +59,19 @@ export function printSummary(summary: LedgerSummary): void {
   }
   console.log('');
 
+  // Failure class coverage
+  if (summary.failureClassCoverage && Object.keys(summary.failureClassCoverage).length > 0) {
+    const entries = Object.entries(summary.failureClassCoverage).sort(([a], [b]) => a.localeCompare(b));
+    const totalClasses = entries.length;
+    const cleanClasses = entries.filter(([, d]) => d.dirty === 0).length;
+    console.log(`  ${BOLD}Failure Class Coverage:${RESET} ${cleanClasses}/${totalClasses} clean`);
+    for (const [fc, data] of entries) {
+      const status = data.dirty === 0 ? `${GREEN}✓${RESET}` : `${SEVERITY_COLORS.bug}✗${RESET}`;
+      console.log(`    ${status} ${fc}: ${data.scenarios} scenarios (${data.clean} clean, ${data.dirty} dirty)`);
+    }
+    console.log('');
+  }
+
   // Top violations
   if (summary.topViolations.length > 0) {
     console.log(`  ${BOLD}Top Violations:${RESET}`);
