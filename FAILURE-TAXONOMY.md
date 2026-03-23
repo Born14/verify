@@ -1061,16 +1061,14 @@ Priority-ordered by ROI (shapes closed per engineering hour). Each phase builds 
 
 *Wave 3 total: ~60 shapes covered. Coverage: 49% → 55%.*
 
-### Phase 3: `fs` Predicate Spec (Immediate Next)
+### Phase 3: `fs` Predicate Spec — COMPLETE
 
-The filesystem is the most deterministic reality surface — no browser, no network, no timing. Design the `fs` predicate type first because:
-- **Strongest K5 learning signal** — binary pass/fail, no normalization ambiguity
-- **Zero infrastructure** — works on any OS, no Docker, no browser
-- **Perfect grounding** — file system is the ground truth, not a proxy for it
-- **Fast verification** — `stat()`, `readFile()`, `readdir()` are sub-millisecond
-- **Broadest applicability** — every app has files; not every app has a browser or DB
-
-Spec design happens in the next session. Target: `packages/verify/src/predicates/fs.ts` with types in `src/types.ts`.
+Filesystem predicates shipped as 4 types (`filesystem_exists`, `filesystem_absent`, `filesystem_unchanged`, `filesystem_count`). Implemented across:
+- **Types:** `src/types.ts` (Predicate union type + `count`/`hash` fields)
+- **Gate:** `src/gates/filesystem.ts` (244 LOC, pure fs reads, no Docker)
+- **Grounding:** `src/gates/grounding.ts` (existence validation, hash/count field enforcement)
+- **Containment:** `src/gates/containment.ts` (fingerprinting for all 4 types)
+- **Scenarios:** 22/34 failure shapes covered (FS-01 through FS-05, FS-07 through FS-12, FS-14 through FS-24, FS-32, FS-34)
 
 ### Phase 4: Browser Predicate Types (After fs)
 
