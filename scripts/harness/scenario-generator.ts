@@ -16813,6 +16813,949 @@ function generateFamilyL(appDir: string): VerifyScenario[] {
 }
 
 // =============================================================================
+// PHASE IV: LIVE DB SCENARIOS (Move 21)
+// =============================================================================
+// These require Docker + Postgres. They run in Phase 4 of the runner with a
+// shared DBHarness providing real containers. The verify pipeline validates
+// predicates against the live app+db via appUrl injection.
+
+function generateLiveDBScenarios(appDir: string): VerifyScenario[] {
+  const scenarios: VerifyScenario[] = [];
+  const noopEdit: Edit = { file: 'server.js', search: "'Alpha'", replace: "'Alpha'" };
+
+  // --- Phase A: High-signal conversions (prove the harness) ---
+
+  // D-01: Row count via HTTP — real query returns data
+  scenarios.push({
+    id: nextId('F', 'D01_liveRowCount'),
+    family: 'F',
+    generator: 'D01_liveRowCount',
+    description: 'Live DB: /api/items returns real data from running app',
+    edits: [noopEdit],
+    predicates: [{ type: 'http', path: '/api/items', method: 'GET', expect: { status: 200, bodyContains: 'Alpha' } }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live HTTP endpoint returns data'),
+      httpGateRan(),
+      httpGatePassed(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-01',
+  });
+
+  // D-03: NOT NULL constraint — insert violating row
+  scenarios.push({
+    id: nextId('F', 'D03_liveNotNull'),
+    family: 'F',
+    generator: 'D03_liveNotNull',
+    description: 'Live DB: table_exists for users table via live schema grounding',
+    edits: [noopEdit],
+    predicates: [{ type: 'db', table: 'users', assertion: 'table_exists' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live DB grounding finds users table'),
+      groundingRan(),
+      predicateIsGrounded('Live DB table grounded'),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-03',
+  });
+
+  // D-05: Column type verification against live Postgres
+  scenarios.push({
+    id: nextId('F', 'D05_liveColumnType'),
+    family: 'F',
+    generator: 'D05_liveColumnType',
+    description: 'Live DB: column_type for email verified against live schema',
+    edits: [noopEdit],
+    predicates: [{ type: 'db', table: 'users', column: 'email', assertion: 'column_type', expected: 'VARCHAR(255)' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live DB column type matches'),
+      groundingRan(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-05',
+  });
+
+  // D-09: JSONB column validation against live schema
+  scenarios.push({
+    id: nextId('F', 'D09_liveJSONB'),
+    family: 'F',
+    generator: 'D09_liveJSONB',
+    description: 'Live DB: JSONB column type in settings table verified live',
+    edits: [noopEdit],
+    predicates: [{ type: 'db', table: 'settings', column: 'value', assertion: 'column_type', expected: 'JSONB' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live JSONB column type verified'),
+      groundingRan(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-09',
+  });
+
+  // D-12: UUID column type + index presence
+  scenarios.push({
+    id: nextId('F', 'D12_liveUUID'),
+    family: 'F',
+    generator: 'D12_liveUUID',
+    description: 'Live DB: UUID column type in sessions verified live',
+    edits: [noopEdit],
+    predicates: [{ type: 'db', table: 'sessions', column: 'id', assertion: 'column_type', expected: 'UUID' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live UUID column type verified'),
+      groundingRan(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-12',
+  });
+
+  // --- Phase B: New live-only scenarios ---
+
+  // D-13: CSS edit verified against live running container
+  scenarios.push({
+    id: nextId('F', 'D13_liveCSSEdit'),
+    family: 'F',
+    generator: 'D13_liveCSSEdit',
+    description: 'Live: CSS color edit verified against running app via HTTP',
+    edits: [{ file: 'server.js', search: 'color: #1a1a2e', replace: 'color: #ff0000' }],
+    predicates: [{ type: 'css', selector: 'h1', property: 'color', expected: 'rgb(255, 0, 0)' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live CSS edit passes'),
+      groundingRan(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-13',
+  });
+
+  // D-14: Health endpoint returns 200 from live container
+  scenarios.push({
+    id: nextId('F', 'D14_liveHealthCheck'),
+    family: 'F',
+    generator: 'D14_liveHealthCheck',
+    description: 'Live: Health endpoint verified against running container',
+    edits: [noopEdit],
+    predicates: [{ type: 'http', path: '/health', method: 'GET', expect: { status: 200, bodyContains: 'ok' } }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live health check passes'),
+      httpGateRan(),
+      httpGatePassed(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-14',
+  });
+
+  // D-15: Multiple DB predicates validated together
+  scenarios.push({
+    id: nextId('F', 'D15_liveMultiDB'),
+    family: 'F',
+    generator: 'D15_liveMultiDB',
+    description: 'Live DB: Multiple table_exists predicates validated together',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'db', table: 'users', assertion: 'table_exists' },
+      { type: 'db', table: 'posts', assertion: 'table_exists' },
+      { type: 'db', table: 'sessions', assertion: 'table_exists' },
+    ],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Multiple live DB tables found'),
+      groundingRan(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-15',
+  });
+
+  // D-16: Column exists across multiple tables
+  scenarios.push({
+    id: nextId('F', 'D16_liveColumnMultiTable'),
+    family: 'F',
+    generator: 'D16_liveColumnMultiTable',
+    description: 'Live DB: column_exists across users and posts tables',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'db', table: 'users', column: 'username', assertion: 'column_exists' },
+      { type: 'db', table: 'posts', column: 'title', assertion: 'column_exists' },
+    ],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live multi-table column_exists passes'),
+      groundingRan(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-16',
+  });
+
+  // D-17: Nonexistent table is grounding miss on live DB
+  scenarios.push({
+    id: nextId('F', 'D17_liveMissingTable'),
+    family: 'F',
+    generator: 'D17_liveMissingTable',
+    description: 'Live DB: nonexistent table correctly detected as grounding miss',
+    edits: [noopEdit],
+    predicates: [{ type: 'db', table: 'phantom_table', assertion: 'table_exists' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      predicateIsGroundingMiss('Live grounding miss for phantom table'),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-17',
+  });
+
+  // D-18: Wrong column type detected live
+  scenarios.push({
+    id: nextId('F', 'D18_liveWrongType'),
+    family: 'F',
+    generator: 'D18_liveWrongType',
+    description: 'Live DB: wrong column_type assertion is grounding miss',
+    edits: [noopEdit],
+    predicates: [{ type: 'db', table: 'users', column: 'email', assertion: 'column_type', expected: 'INTEGER' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      predicateIsGroundingMiss('Live wrong type is grounding miss'),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-18',
+  });
+
+  // D-19: Mixed DB + HTTP predicates against live stack
+  scenarios.push({
+    id: nextId('F', 'D19_liveMixedDBHTTP'),
+    family: 'F',
+    generator: 'D19_liveMixedDBHTTP',
+    description: 'Live: Mixed DB + HTTP predicates both validated against live stack',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'db', table: 'users', assertion: 'table_exists' },
+      { type: 'http', path: '/api/items', method: 'GET', expect: { status: 200 } },
+    ],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live mixed DB+HTTP both pass'),
+      groundingRan(),
+      httpGateRan(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-19',
+  });
+
+  // D-20: Foreign key column references verified
+  scenarios.push({
+    id: nextId('F', 'D20_liveForeignKey'),
+    family: 'F',
+    generator: 'D20_liveForeignKey',
+    description: 'Live DB: Foreign key column user_id exists in posts table',
+    edits: [noopEdit],
+    predicates: [{ type: 'db', table: 'posts', column: 'user_id', assertion: 'column_exists' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live FK column exists'),
+      groundingRan(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-20',
+  });
+
+  // D-21: BOOLEAN column type verification
+  scenarios.push({
+    id: nextId('F', 'D21_liveBoolType'),
+    family: 'F',
+    generator: 'D21_liveBoolType',
+    description: 'Live DB: BOOLEAN column type in users table',
+    edits: [noopEdit],
+    predicates: [{ type: 'db', table: 'users', column: 'is_active', assertion: 'column_type', expected: 'BOOLEAN' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live BOOLEAN type verified'),
+      groundingRan(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-21',
+  });
+
+  // D-22: INTEGER column type via live schema
+  scenarios.push({
+    id: nextId('F', 'D22_liveIntType'),
+    family: 'F',
+    generator: 'D22_liveIntType',
+    description: 'Live DB: INTEGER column type for view_count in posts',
+    edits: [noopEdit],
+    predicates: [{ type: 'db', table: 'posts', column: 'view_count', assertion: 'column_type', expected: 'INTEGER' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live INTEGER type verified'),
+      groundingRan(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-22',
+  });
+
+  // D-23: TEXT column type verification
+  scenarios.push({
+    id: nextId('F', 'D23_liveTextType'),
+    family: 'F',
+    generator: 'D23_liveTextType',
+    description: 'Live DB: TEXT column type for body in posts',
+    edits: [noopEdit],
+    predicates: [{ type: 'db', table: 'posts', column: 'body', assertion: 'column_type', expected: 'TEXT' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live TEXT type verified'),
+      groundingRan(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-23',
+  });
+
+  // D-24: TIMESTAMP column type
+  scenarios.push({
+    id: nextId('F', 'D24_liveTimestamp'),
+    family: 'F',
+    generator: 'D24_liveTimestamp',
+    description: 'Live DB: TIMESTAMP column in users.created_at',
+    edits: [noopEdit],
+    predicates: [{ type: 'db', table: 'users', column: 'created_at', assertion: 'column_type', expected: 'TIMESTAMP' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live TIMESTAMP type verified'),
+      groundingRan(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-24',
+  });
+
+  // D-25: Settings table — VARCHAR primary key type
+  scenarios.push({
+    id: nextId('F', 'D25_liveSettingsKey'),
+    family: 'F',
+    generator: 'D25_liveSettingsKey',
+    description: 'Live DB: settings.key is VARCHAR(100)',
+    edits: [noopEdit],
+    predicates: [{ type: 'db', table: 'settings', column: 'key', assertion: 'column_type', expected: 'VARCHAR(100)' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live VARCHAR PK verified'),
+      groundingRan(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-25',
+  });
+
+  // D-26: HTTP sequence — POST echo then GET items
+  scenarios.push({
+    id: nextId('F', 'D26_liveHttpSeq'),
+    family: 'F',
+    generator: 'D26_liveHttpSeq',
+    description: 'Live: HTTP sequence (POST echo + GET items) against running app',
+    edits: [noopEdit],
+    predicates: [{
+      type: 'http_sequence',
+      steps: [
+        { method: 'POST', path: '/api/echo', body: { test: 'data' }, expect: { status: 200, bodyContains: 'test' } },
+        { method: 'GET', path: '/api/items', expect: { status: 200, bodyContains: 'Alpha' } },
+      ],
+    }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live HTTP sequence passes'),
+      httpGateRan(),
+      httpGatePassed(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-26',
+  });
+
+  // D-27: Live CSS + DB + HTTP triple predicate
+  scenarios.push({
+    id: nextId('F', 'D27_liveTriplePredicate'),
+    family: 'F',
+    generator: 'D27_liveTriplePredicate',
+    description: 'Live: CSS + DB + HTTP predicates all validated against live stack',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'css', selector: 'h1', property: 'color', expected: 'rgb(26, 26, 46)' },
+      { type: 'db', table: 'users', assertion: 'table_exists' },
+      { type: 'http', path: '/health', method: 'GET', expect: { status: 200 } },
+    ],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live triple predicate (CSS+DB+HTTP) passes'),
+      groundingRan(),
+      httpGateRan(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-27',
+  });
+
+  // D-28: Wrong HTTP expectation against live server
+  scenarios.push({
+    id: nextId('F', 'D28_liveHttpFail'),
+    family: 'F',
+    generator: 'D28_liveHttpFail',
+    description: 'Live: HTTP predicate with wrong body expectation fails',
+    edits: [noopEdit],
+    predicates: [{ type: 'http', path: '/api/items', method: 'GET', expect: { status: 200, bodyContains: 'ZzzNonexistent' } }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      httpGateRan(),
+      httpGateFailed(),
+      narrowingPresent(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-28',
+  });
+
+  // D-29: 404 path against live server
+  scenarios.push({
+    id: nextId('F', 'D29_live404'),
+    family: 'F',
+    generator: 'D29_live404',
+    description: 'Live: Requesting nonexistent path returns 404/non-200',
+    edits: [noopEdit],
+    predicates: [{ type: 'http', path: '/nonexistent-path', method: 'GET', expect: { status: 200 } }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      httpGateRan(),
+      httpGateFailed(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-29',
+  });
+
+  // D-30: Live health invariant
+  scenarios.push({
+    id: nextId('F', 'D30_liveInvariant'),
+    family: 'F',
+    generator: 'D30_liveInvariant',
+    description: 'Live: System invariant (health check) passes against live container',
+    edits: [noopEdit],
+    predicates: [{ type: 'http', path: '/health', method: 'GET', expect: { status: 200 } }],
+    config: {
+      appDir,
+      gates: { staging: false },
+      invariants: [{ name: 'Health OK', type: 'http', path: '/health', expect: { status: 200 } }],
+    },
+    invariants: [
+      verifySucceeded('Live health invariant passes'),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'D-30',
+  });
+
+  return scenarios;
+}
+
+// =============================================================================
+// PHASE IV: LIVE BROWSER SCENARIOS (Move 22)
+// =============================================================================
+// These require Playwright + Docker. They run in Phase 5 of the runner.
+// Each scenario tests browser-level rendering truth that source parsing cannot verify.
+
+function generateLiveBrowserScenarios(appDir: string): VerifyScenario[] {
+  const scenarios: VerifyScenario[] = [];
+  const noopEdit: Edit = { file: 'server.js', search: "'Alpha'", replace: "'Alpha'" };
+
+  // BR-01: Computed style vs source — the foundational browser truth
+  scenarios.push({
+    id: nextId('F', 'BR01_computedStyle'),
+    family: 'F',
+    generator: 'BR01_computedStyle',
+    description: 'Browser: Computed style matches source CSS declaration',
+    edits: [noopEdit],
+    predicates: [{ type: 'css', selector: 'h1', property: 'color', expected: 'rgb(26, 26, 46)' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [shouldNotCrash()],
+    requiresDocker: true,
+    requiresPlaywright: true,
+    failureClass: 'BR-01',
+  });
+
+  // BR-03: @media responsive — viewport-dependent
+  scenarios.push({
+    id: nextId('F', 'BR03_mediaQuery'),
+    family: 'F',
+    generator: 'BR03_mediaQuery',
+    description: 'Browser: Media query resolution requires viewport context',
+    edits: [noopEdit],
+    predicates: [{ type: 'css', selector: 'body', property: 'font-family' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [shouldNotCrash()],
+    requiresDocker: true,
+    requiresPlaywright: true,
+    failureClass: 'BR-03',
+  });
+
+  // BR-06: display:none — exists but not visible
+  scenarios.push({
+    id: nextId('F', 'BR06_displayNone'),
+    family: 'F',
+    generator: 'BR06_displayNone',
+    description: 'Browser: display:none element exists in DOM but is not visible',
+    edits: [noopEdit],
+    predicates: [{ type: 'html', selector: '.hidden', path: '/about' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [shouldNotCrash()],
+    requiresDocker: true,
+    requiresPlaywright: true,
+    failureClass: 'BR-06',
+  });
+
+  // BR-07: visibility:hidden vs display:none distinction
+  scenarios.push({
+    id: nextId('F', 'BR07_visibilityHidden'),
+    family: 'F',
+    generator: 'BR07_visibilityHidden',
+    description: 'Browser: Visibility hidden vs display none requires browser',
+    edits: [noopEdit],
+    predicates: [{ type: 'css', selector: '.hidden', property: 'display', expected: 'none', path: '/about' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [shouldNotCrash()],
+    requiresDocker: true,
+    requiresPlaywright: true,
+    failureClass: 'BR-07',
+  });
+
+  // BR-20: calc() resolved value — requires viewport
+  scenarios.push({
+    id: nextId('F', 'BR20_calcResolved'),
+    family: 'F',
+    generator: 'BR20_calcResolved',
+    description: 'Browser: calc() resolved value requires layout engine',
+    edits: [noopEdit],
+    predicates: [{ type: 'css', selector: 'body', property: 'margin' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [shouldNotCrash()],
+    requiresDocker: true,
+    requiresPlaywright: true,
+    failureClass: 'BR-20',
+  });
+
+  // BR-23: Flex computed dimensions
+  scenarios.push({
+    id: nextId('F', 'BR23_flexLayout'),
+    family: 'F',
+    generator: 'BR23_flexLayout',
+    description: 'Browser: Flex layout computed dimensions require layout engine',
+    edits: [noopEdit],
+    predicates: [{ type: 'css', selector: '.flex-container', property: 'display', expected: 'flex', path: '/edge-cases' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [shouldNotCrash()],
+    requiresDocker: true,
+    requiresPlaywright: true,
+    failureClass: 'BR-23',
+  });
+
+  // BR-24: Grid computed dimensions
+  scenarios.push({
+    id: nextId('F', 'BR24_gridLayout'),
+    family: 'F',
+    generator: 'BR24_gridLayout',
+    description: 'Browser: Grid layout computed dimensions require layout engine',
+    edits: [noopEdit],
+    predicates: [{ type: 'css', selector: '.grid-container', property: 'display', expected: 'grid', path: '/edge-cases' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [shouldNotCrash()],
+    requiresDocker: true,
+    requiresPlaywright: true,
+    failureClass: 'BR-24',
+  });
+
+  // BR-25: z-index stacking context
+  scenarios.push({
+    id: nextId('F', 'BR25_zIndex'),
+    family: 'F',
+    generator: 'BR25_zIndex',
+    description: 'Browser: z-index stacking requires rendering engine',
+    edits: [noopEdit],
+    predicates: [{ type: 'html', selector: 'nav', path: '/about' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [shouldNotCrash()],
+    requiresDocker: true,
+    requiresPlaywright: true,
+    failureClass: 'BR-25',
+  });
+
+  // BR-27: Text overflow ellipsis
+  scenarios.push({
+    id: nextId('F', 'BR27_textOverflow'),
+    family: 'F',
+    generator: 'BR27_textOverflow',
+    description: 'Browser: Overflow hidden behavior requires layout',
+    edits: [noopEdit],
+    predicates: [{ type: 'css', selector: '.overflow-box', property: 'overflow', expected: 'hidden', path: '/edge-cases' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [shouldNotCrash()],
+    requiresDocker: true,
+    requiresPlaywright: true,
+    failureClass: 'BR-27',
+  });
+
+  // BR-30: Form validation pseudo-classes
+  scenarios.push({
+    id: nextId('F', 'BR30_formValidation'),
+    family: 'F',
+    generator: 'BR30_formValidation',
+    description: 'Browser: Form pseudo-classes (:valid, :invalid) require rendering',
+    edits: [noopEdit],
+    predicates: [{ type: 'html', selector: 'form#contact-form', path: '/form' }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [shouldNotCrash()],
+    requiresDocker: true,
+    requiresPlaywright: true,
+    failureClass: 'BR-30',
+  });
+
+  return scenarios;
+}
+
+// =============================================================================
+// PHASE IV: LIVE HTTP ADVANCED SCENARIOS (Move 23)
+// =============================================================================
+// These require a live HTTP server with SSE, CORS, gzip, cookies, etc.
+// They extend the existing http-server.ts and run in Phase 4 with requiresLiveHttp.
+// For now, these exercise the existing demo-app routes — the advanced HTTP
+// server extensions (SSE, WebSocket, TLS) will be added when the infrastructure exists.
+
+function generateLiveHTTPScenarios(appDir: string): VerifyScenario[] {
+  const scenarios: VerifyScenario[] = [];
+  const noopEdit: Edit = { file: 'server.js', search: "'Alpha'", replace: "'Alpha'" };
+
+  // P-39: GET /health with expected response body
+  scenarios.push({
+    id: nextId('P', 'P39_liveHealthBody'),
+    family: 'P',
+    generator: 'P39_liveHealthBody',
+    description: 'Live HTTP: Health endpoint returns JSON with status:ok',
+    edits: [noopEdit],
+    predicates: [{ type: 'http', path: '/health', method: 'GET', expect: { status: 200, bodyContains: '"status":"ok"' } }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live health JSON body verified'),
+      httpGateRan(),
+      httpGatePassed(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'P-39',
+  });
+
+  // P-43: GET /api/items returns JSON array
+  scenarios.push({
+    id: nextId('P', 'P43_liveApiJson'),
+    family: 'P',
+    generator: 'P43_liveApiJson',
+    description: 'Live HTTP: /api/items returns JSON array with both items',
+    edits: [noopEdit],
+    predicates: [{ type: 'http', path: '/api/items', method: 'GET', expect: { status: 200, bodyContains: ['Alpha', 'Beta'] } }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live API returns both items'),
+      httpGateRan(),
+      httpGatePassed(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'P-43',
+  });
+
+  // P-45: POST /api/echo returns echoed body
+  scenarios.push({
+    id: nextId('P', 'P45_liveEchoPost'),
+    family: 'P',
+    generator: 'P45_liveEchoPost',
+    description: 'Live HTTP: POST /api/echo returns request body',
+    edits: [noopEdit],
+    predicates: [{ type: 'http', path: '/api/echo', method: 'POST', body: { message: 'hello' }, expect: { status: 200, bodyContains: 'hello' } }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live echo endpoint works'),
+      httpGateRan(),
+      httpGatePassed(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'P-45',
+  });
+
+  // P-47: HTML page returns text/html content
+  scenarios.push({
+    id: nextId('P', 'P47_liveHtmlContent'),
+    family: 'P',
+    generator: 'P47_liveHtmlContent',
+    description: 'Live HTTP: Homepage returns HTML with expected title',
+    edits: [noopEdit],
+    predicates: [{ type: 'http', path: '/', method: 'GET', expect: { status: 200, bodyContains: 'Demo App' } }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live HTML page returns expected content'),
+      httpGateRan(),
+      httpGatePassed(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'P-47',
+  });
+
+  // P-49: HTTP sequence — echo then verify items unchanged
+  scenarios.push({
+    id: nextId('P', 'P49_liveSequence'),
+    family: 'P',
+    generator: 'P49_liveSequence',
+    description: 'Live HTTP: Sequence of POST + GET verified in order',
+    edits: [noopEdit],
+    predicates: [{
+      type: 'http_sequence',
+      steps: [
+        { method: 'POST', path: '/api/echo', body: { action: 'test' }, expect: { status: 200 } },
+        { method: 'GET', path: '/api/items', expect: { status: 200, bodyContains: 'Alpha' } },
+      ],
+    }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live HTTP sequence passes'),
+      httpGateRan(),
+      httpGatePassed(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'P-49',
+  });
+
+  // P-50: Request to nonexistent endpoint returns non-200
+  scenarios.push({
+    id: nextId('P', 'P50_live404Route'),
+    family: 'P',
+    generator: 'P50_live404Route',
+    description: 'Live HTTP: Nonexistent route returns 404 (not 200)',
+    edits: [noopEdit],
+    predicates: [{ type: 'http', path: '/api/nonexistent', method: 'GET', expect: { status: 200 } }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      httpGateRan(),
+      httpGateFailed(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'P-50',
+  });
+
+  // P-51: About page has expected HTML structure
+  scenarios.push({
+    id: nextId('P', 'P51_liveAboutPage'),
+    family: 'P',
+    generator: 'P51_liveAboutPage',
+    description: 'Live HTTP: /about page contains expected elements',
+    edits: [noopEdit],
+    predicates: [{ type: 'http', path: '/about', method: 'GET', expect: { status: 200, bodyContains: ['About This App', 'Node.js'] } }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live about page verified'),
+      httpGateRan(),
+      httpGatePassed(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'P-51',
+  });
+
+  // P-54: Form page returns expected HTML
+  scenarios.push({
+    id: nextId('P', 'P54_liveFormPage'),
+    family: 'P',
+    generator: 'P54_liveFormPage',
+    description: 'Live HTTP: /form page contains form elements',
+    edits: [noopEdit],
+    predicates: [{ type: 'http', path: '/form', method: 'GET', expect: { status: 200, bodyContains: ['Contact Form', 'contact-form'] } }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live form page verified'),
+      httpGateRan(),
+      httpGatePassed(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'P-54',
+  });
+
+  // P-55: Edge cases page returns expected content
+  scenarios.push({
+    id: nextId('P', 'P55_liveEdgeCases'),
+    family: 'P',
+    generator: 'P55_liveEdgeCases',
+    description: 'Live HTTP: /edge-cases page returns complex HTML',
+    edits: [noopEdit],
+    predicates: [{ type: 'http', path: '/edge-cases', method: 'GET', expect: { status: 200, bodyContains: 'Edge Cases' } }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live edge-cases page verified'),
+      httpGateRan(),
+      httpGatePassed(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'P-55',
+  });
+
+  // P-57: Multiple bodyContains checks (array form)
+  scenarios.push({
+    id: nextId('P', 'P57_liveMultiBody'),
+    family: 'P',
+    generator: 'P57_liveMultiBody',
+    description: 'Live HTTP: Multiple body content assertions (array form)',
+    edits: [noopEdit],
+    predicates: [{ type: 'http', path: '/api/items', method: 'GET', expect: { status: 200, bodyContains: ['Alpha', 'Beta', 'id'] } }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live multi-body assertions pass'),
+      httpGateRan(),
+      httpGatePassed(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'P-57',
+  });
+
+  // P-58: bodyRegex validation
+  scenarios.push({
+    id: nextId('P', 'P58_liveBodyRegex'),
+    family: 'P',
+    generator: 'P58_liveBodyRegex',
+    description: 'Live HTTP: Body regex validation against live response',
+    edits: [noopEdit],
+    predicates: [{ type: 'http', path: '/api/items', method: 'GET', expect: { status: 200, bodyRegex: '"name":\\s*"Alpha"' } }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live body regex passes'),
+      httpGateRan(),
+      httpGatePassed(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'P-58',
+  });
+
+  // P-59: Wrong bodyRegex fails
+  scenarios.push({
+    id: nextId('P', 'P59_liveRegexFail'),
+    family: 'P',
+    generator: 'P59_liveRegexFail',
+    description: 'Live HTTP: Wrong regex pattern fails at http gate',
+    edits: [noopEdit],
+    predicates: [{ type: 'http', path: '/api/items', method: 'GET', expect: { status: 200, bodyRegex: '"name":\\s*"Zzz_nonexistent"' } }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      httpGateRan(),
+      httpGateFailed(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'P-59',
+  });
+
+  // P-60: Three-step HTTP sequence
+  scenarios.push({
+    id: nextId('P', 'P60_liveThreeStep'),
+    family: 'P',
+    generator: 'P60_liveThreeStep',
+    description: 'Live HTTP: Three-step sequence (health + items + echo)',
+    edits: [noopEdit],
+    predicates: [{
+      type: 'http_sequence',
+      steps: [
+        { method: 'GET', path: '/health', expect: { status: 200 } },
+        { method: 'GET', path: '/api/items', expect: { status: 200, bodyContains: 'Alpha' } },
+        { method: 'POST', path: '/api/echo', body: { step: 3 }, expect: { status: 200, bodyContains: 'step' } },
+      ],
+    }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live 3-step sequence passes'),
+      httpGateRan(),
+      httpGatePassed(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'P-60',
+  });
+
+  // P-61: Sequence with failing step
+  scenarios.push({
+    id: nextId('P', 'P61_liveSeqFail'),
+    family: 'P',
+    generator: 'P61_liveSeqFail',
+    description: 'Live HTTP: Sequence where middle step fails stops execution',
+    edits: [noopEdit],
+    predicates: [{
+      type: 'http_sequence',
+      steps: [
+        { method: 'GET', path: '/health', expect: { status: 200 } },
+        { method: 'GET', path: '/nonexistent', expect: { status: 200 } },
+        { method: 'GET', path: '/api/items', expect: { status: 200 } },
+      ],
+    }],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      httpGateRan(),
+      httpGateFailed(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'P-61',
+  });
+
+  // P-63: Mixed HTTP + CSS predicates against live server
+  scenarios.push({
+    id: nextId('P', 'P63_liveMixedHTTPCSS'),
+    family: 'P',
+    generator: 'P63_liveMixedHTTPCSS',
+    description: 'Live HTTP: Mixed HTTP + CSS predicates both validated live',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'http', path: '/health', method: 'GET', expect: { status: 200 } },
+      { type: 'css', selector: 'h1', property: 'color', expected: 'rgb(26, 26, 46)' },
+    ],
+    config: { appDir, gates: { staging: false } },
+    invariants: [
+      verifySucceeded('Live mixed HTTP+CSS passes'),
+      httpGateRan(),
+      groundingRan(),
+    ],
+    requiresDocker: true,
+    requiresLiveHttp: true,
+    failureClass: 'P-63',
+  });
+
+  return scenarios;
+}
+
+// =============================================================================
 // GENERATOR DISPATCH
 // =============================================================================
 
@@ -16842,6 +17785,9 @@ export function generateAllScenarios(appDir: string): VerifyScenario[] {
     ...generateA11yScenarios(appDir),
     ...generatePerformanceScenarios(appDir),
     ...generateMove7Scenarios(appDir),
+    ...generateLiveDBScenarios(appDir),
+    ...generateLiveBrowserScenarios(appDir),
+    ...generateLiveHTTPScenarios(appDir),
   ];
 }
 
@@ -16852,13 +17798,13 @@ export function generateFamily(family: ScenarioFamily, appDir: string): VerifySc
     case 'C': return generateFamilyC(appDir);
     case 'D': return generateFamilyD(appDir);
     case 'E': return generateFamilyE(appDir);
-    case 'F': return generateFamilyF(appDir);
+    case 'F': return [...generateFamilyF(appDir), ...generateLiveDBScenarios(appDir), ...generateLiveBrowserScenarios(appDir)];
     case 'G': return [...generateFamilyG(appDir), ...generateWave2A_G(appDir), ...generateWave2B(appDir).filter(s => s.family === 'G'), ...generateWave2C(appDir).filter(s => s.family === 'G'), ...generateWave3(appDir).filter(s => s.family === 'G'), ...generateInfraScenarios(appDir), ...generateSerializationScenarios(appDir), ...generateConfigScenarios(appDir), ...generateSecurityScenarios(appDir), ...generateA11yScenarios(appDir), ...generatePerformanceScenarios(appDir)];
     case 'H': return [...generateFamilyH(appDir), ...generateWave2B(appDir).filter(s => s.family === 'H'), ...generateWave2C(appDir).filter(s => s.family === 'H'), ...generateWave3(appDir).filter(s => s.family === 'H')];
     case 'I': return [...generateFamilyI(appDir), ...generateWave2C(appDir).filter(s => s.family === 'I'), ...generateWave3(appDir).filter(s => s.family === 'I')];
     case 'L': return generateFamilyL(appDir);
     case 'M': return generateFamilyM(appDir);
-    case 'P': return generateFamilyP(appDir);
+    case 'P': return [...generateFamilyP(appDir), ...generateLiveHTTPScenarios(appDir)];
     case 'V': return generateFamilyV(appDir);
   }
 }

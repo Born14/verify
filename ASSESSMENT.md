@@ -30,7 +30,7 @@ The pipeline + convergence loop — without the improve loop, without the chaos 
 
 ### 3. The Self-Test Harness (The Proof)
 
-753 scenarios across 14 families (A-H, I, L, M, P, V, B, UV) plus external fault-derived scenarios. 376 failure classes covered. 349 decomposition rules across 24 domains. The harness is deterministic — no LLM calls, no network, no flakiness. When someone installs verify and runs `npx @sovereign-labs/verify self-test`, they see 753 green checks in under 90 seconds. That's the demo. That's the credibility.
+783 scenarios across 14 families (A-H, I, L, M, P, V, B, UV) plus external fault-derived scenarios. 376 failure classes covered. 349 decomposition rules across 24 domains. The harness is deterministic — no LLM calls, no network, no flakiness. When someone installs verify and runs `npx @sovereign-labs/verify self-test`, they see 738 green checks in under 90 seconds (pure tier). With Docker: 783 scenarios including live DB and HTTP validation against real containers. That's the demo. That's the credibility.
 
 The harness is frozen — the improve loop cannot edit it. It is the constitution. Verify is the governed subject.
 
@@ -120,9 +120,10 @@ Do not hedge on the loop's value to appear "balanced." The loop works. It has pr
 
 | Component | Status | Confidence |
 |-----------|--------|------------|
-| Pipeline (17 gates) | Shipped v0.3.1 on npm | High |
+| Pipeline (17 gates) | Shipped v0.4.0 on npm | High |
 | `govern()` convergence loop | Shipped, 15 scenarios, convergence detection proven | High |
-| Self-test harness (753 scenarios, 14 families) | Shipped, deterministic, <90s, 3 known bugs | High |
+| Self-test harness (783 scenarios, 14 families) | Shipped, deterministic, <90s pure / ~5min live, 3 known bugs | High |
+| Tiered self-test (Phase IV) | Pure (738) + Live Docker (45) + Playwright (10, placeholder) | High |
 | Decomposition engine (349 rules, 24 domains) | 376/603 failure classes covered (63%) | High |
 | Failure taxonomy (603 shapes, 27 domains) | Complete algebra, 349 with decomposition rules | High |
 | External scenarios (21 custom) | Working, loaded from `.verify/custom-scenarios.json` | High |
@@ -131,6 +132,27 @@ Do not hedge on the loop's value to appear "balanced." The loop works. It has pr
 | Fault ledger | Built, wired, govern() integration | High |
 | Grounding gate | Working, CRLF normalization fixed | High |
 | Quality surface gates (security, a11y, performance) | 16 static scanners, 16 shapes | High |
+
+### Phase IV: Live Infrastructure Testing (March 24, 2026)
+
+Phase IV broke through the 63% coverage ceiling by adding live infrastructure scenarios — real Docker containers, real Postgres, real HTTP endpoints. The harness now has three tiers:
+
+```bash
+bun run self-test              # Tier 0: Pure only (738 scenarios, ~20s)
+bun run self-test --live       # Tier 1: Pure + Docker (783 scenarios, ~5min)
+bun run self-test --full       # Tier 2: Everything incl. Playwright (793 scenarios, ~10min)
+```
+
+**What was built:**
+- **Runner tiering (Move 20):** `--live` and `--full` CLI flags, Docker/Playwright detection at startup, clean skip reporting
+- **Live DB scenarios (Move 21):** 20 scenarios validating DB predicates, HTTP predicates, and CSS predicates against a real Postgres + demo-app container stack via `DBHarness`
+- **Live browser scenarios (Move 22):** 10 Playwright scenarios (placeholder — harness infrastructure exists, Playwright runner not yet wired)
+- **Live HTTP scenarios (Move 23):** 15 scenarios validating HTTP predicates (status, body, regex, sequences) against the live demo-app container
+- **Move 24 (nightly campaign):** Deferred — requires live tier running on the Lenovo first
+
+**Key design decision:** Live scenarios inject `dbHarness.getAppUrl()` into the verify config as `appUrl`. When `appUrl` is present, staging is skipped and all gates validate directly against the running container. This means the live tier tests verify's gates against real infrastructure, not simulated patterns.
+
+**Infrastructure detection:** Docker availability checked via `docker info` at startup. Playwright via `npx playwright --version`. Missing infrastructure → clean skip with count ("Skipped 63 Docker scenarios (Docker not available)").
 
 ### Known Gaps in the Improve Loop (10 total)
 

@@ -18,7 +18,7 @@ import { groundInReality } from './gates/grounding.js';
 import { isDockerAvailable, hasDockerCompose } from './runners/docker-runner.js';
 import { parseDiff } from './parsers/git-diff.js';
 import type { Edit, Predicate, VerifyConfig } from './types.js';
-import type { ScenarioFamily } from '../scripts/harness/types.js';
+import type { ScenarioFamily, LiveTier } from '../scripts/harness/types.js';
 import { FaultLedger } from './store/fault-ledger.js';
 import type { FaultClassification } from './store/fault-ledger.js';
 import { runCampaignCLI } from '../scripts/campaign/campaign.js';
@@ -333,31 +333,47 @@ async function runSelfTestCommand() {
   }
 
   // Parse self-test args
+  const ALL_FAMILIES = 'ABCDEFGHILMPV';
   const families: ScenarioFamily[] = [];
   const familiesArg = args.find(a => a.startsWith('--families='));
   if (familiesArg) {
     const letters = familiesArg.split('=')[1].split(',');
     for (const l of letters) {
       const upper = l.trim().toUpperCase();
-      if ('ABCDEFG'.includes(upper)) {
+      if (ALL_FAMILIES.includes(upper)) {
         families.push(upper as ScenarioFamily);
       }
     }
   }
 
+  // Tier: --live (Docker) or --full (Docker + Playwright)
+  let liveTier: LiveTier = 'pure';
+  if (args.includes('--full')) {
+    liveTier = 'full';
+  } else if (args.includes('--live')) {
+    liveTier = 'live';
+  }
+
+  // Legacy --docker flag implies at least 'live' tier
   const dockerEnabled = args.includes('--docker=true') || args.includes('--docker');
+  if (dockerEnabled && liveTier === 'pure') {
+    liveTier = 'live';
+  }
+
   const failOnBug = args.includes('--fail-on-bug');
 
+  const tierLabel = liveTier === 'pure' ? 'pure' : liveTier === 'live' ? 'live (Docker)' : 'full (Docker + Playwright)';
   console.log(`\nRunning self-test from ${appDir}`);
   if (families.length > 0) console.log(`  Families: ${families.join(', ')}`);
-  console.log(`  Docker: ${dockerEnabled ? 'enabled' : 'disabled (pure-only)'}`);
+  console.log(`  Tier: ${tierLabel}`);
   console.log(`  Fail on bug: ${failOnBug}\n`);
 
   const result = await runSelfTest({
     appDir,
     families: families.length > 0 ? families : undefined,
-    dockerEnabled,
+    dockerEnabled: liveTier !== 'pure',
     failOnBug,
+    liveTier,
   });
 
   process.exit(result.exitCode);
@@ -818,7 +834,7 @@ Commands:
   check [file]      Run verification (default: .verify/check.json)
   ground [dir]      Print grounding context (CSS, HTML, routes)
   doctor            Check Docker + Playwright availability
-  self-test         Run the verification harness (66 scenarios, 8 families)
+  self-test         Run the verification harness (753+ scenarios, 9 families)
   faults            Manage the gate fault ledger (discovered verify bugs)
   campaign          Run autonomous fault discovery campaign
   improve           Run the evidence-centric improvement loop
@@ -859,6 +875,8 @@ Examples:
   npx @sovereign-labs/verify ground ./my-app
   npx @sovereign-labs/verify doctor
   npx @sovereign-labs/verify self-test
+  npx @sovereign-labs/verify self-test --live              # Include Docker scenarios
+  npx @sovereign-labs/verify self-test --full              # Include Docker + Playwright
   npx @sovereign-labs/verify self-test --families=A,B --fail-on-bug
   npx @sovereign-labs/verify faults inbox
   npx @sovereign-labs/verify faults log --app=myapp --goal="change color" --class=false_positive --reason="health 500"

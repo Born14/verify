@@ -8,14 +8,19 @@ Verification gate for AI agent actions. Every edit gets a fair trial before it t
 
 In v0.1.1, HTTP predicates with different `bodyContains` values produced identical fingerprints — K5 couldn't tell them apart. A human caught it by reading the code.
 
-Now 753 automated scenarios across 14 families catch it in under 90 seconds:
+Now 783 automated scenarios across 14 families catch it — 738 pure in under 90 seconds, 45 more against live Docker containers:
 
 ```bash
 npx @sovereign-labs/verify self-test
 
-#   0 bugs | 753 scenarios | 0 unexpected | A: clean, ..., L: clean, ..., P: clean, B: clean
+#   0 bugs | 738 scenarios | 0 unexpected | A: clean, ..., L: clean, ..., P: clean, B: clean
 #   Failure Class Coverage: 376/376 clean
 #   ALL CLEAN — No invariant violations detected.
+
+npx @sovereign-labs/verify self-test --live
+
+#   Skipped 63 Docker scenarios (Docker not available)  # or runs them if Docker is present
+#   0 bugs | 783 scenarios | ...
 ```
 
 The test that catches the v0.1.1 bug is scenario A10. It will never regress again.
@@ -222,11 +227,14 @@ Add to your agent's MCP config:
 753 scenarios across 14 families exercise the verification pipeline's invariants — including 14 filesystem, 29 CSS (value normalization + shorthand), 8 content pattern, 10 F9 syntax gate, 8 fingerprinting/K5, 10 attribution error, 43 HTTP gate (mock server + Docker), 28 cross-predicate interaction (including 6 product compositions and 3 temporal compositions), 14 communication/message gate (including topic trust enforcement and epoch-based evidence staleness), 18 DB schema grounding (type aliases, fabricated references, case sensitivity), 18 infrastructure (The Alexei Gate — Terraform/Pulumi/CloudFormation state file verification), 8 serialization (JSON schema validation), 6 configuration (.env + JSON config parsing), 11 security (XSS, injection, CSP, CORS, eval, prototype pollution, path traversal, deserialization, open redirect, rate limiting), 11 accessibility (heading hierarchy, landmarks, ARIA, alt text, form labels, link text, lang attr, autoplay, skip nav), 11 performance (bundle size, image optimization, lazy loading, unminified assets, render blocking, DOM depth, cache headers, duplicate deps), 15 convergence loop (govern() with shape tracking, constraint propagation, convergence detection), 28 universal full-pipeline integration, and 9 HTML predicate failure classes tracked by the [failure taxonomy](FAILURE-TAXONOMY.md). A decomposition engine (`decomposeFailure()`) maps observations to taxonomy shape IDs — 349 shape rules across 24 domains (including drift, identity, and scope boundary), pure functions, zero LLM, with diagnostics (`computeDecompositionDiagnostics()`), composition operators (product ×, temporal ⊗), and round-trip decomposition verification. Run them to prove your install works, or use `--fail-on-bug` in CI.
 
 ```bash
-# Pure-only (~2s, no Docker needed)
+# Pure-only (738 scenarios, ~20s, no Docker needed)
 npx @sovereign-labs/verify self-test
 
-# Full suite with Docker (~80s)
-npx @sovereign-labs/verify self-test --docker
+# Pure + live Docker scenarios (783 scenarios, ~5min)
+npx @sovereign-labs/verify self-test --live
+
+# Everything including Playwright browser tests (~10min)
+npx @sovereign-labs/verify self-test --full
 
 # Specific families
 npx @sovereign-labs/verify self-test --families=A,B,G
@@ -242,17 +250,17 @@ npx @sovereign-labs/verify self-test --fail-on-bug
 | **C** | 7 | Gate sequencing and consistency | No |
 | **D** | 23 | G5 containment attribution + attribution errors (AT-01–AT-10) | No |
 | **E** | 114 | Grounding: CSS normalization/shorthand + content patterns + edge cases (C-01–C-67, N-04–N-17, X-01–X-47) | No |
-| **F** | 6 | Full Docker pipeline (build → stage → verify) | Yes |
+| **F** | 6 + 20 live DB + 10 browser | Full Docker pipeline + live DB/browser scenarios | Yes |
 | **G** | 407 | Edge cases, F9 syntax, HTML (H-01–H-48), content (N-03–N-17), CSS selectors deep (C-34–C-68), HTTP deep (P-10–P-35), scope/identity (SC-01–SC-10, ID-01–ID-11), cross-cutting (X-05–X-100), invariants (INV-01–INV-12), DB grounding (D-01–D-12), infrastructure (INFRA-01–INFRA-12, The Alexei Gate), serialization (SER-01–SER-09), config (CFG-01–CFG-08), security (SEC-01–SEC-12), a11y (A11Y-01–A11Y-11), performance (PERF-01–PERF-10), temporal/concurrency/observer/drift (DR-01–DR-11) + universal scenarios | No |
 | **H** | 47 | Filesystem gate — 22 failure classes (FS-01 through FS-34) | No |
 | **L** | 15 | Convergence loop (govern()) — shape tracking, constraint propagation, convergence detection | No |
 | **I** | 28 | Cross-predicate interactions + product/temporal compositions (I-01–I-12, I-05×–I-10×, I-T01–T03) | No |
 | **M** | 21 | Message gate — 14 failure classes (MSG-01 through MSG-14) | No |
-| **P** | 43 | HTTP gate — status, body, regex, content-type, sequence, mock server + Docker (P-01–P-35) | Mixed |
+| **P** | 43 + 15 live HTTP | HTTP gate — status, body, regex, content-type, sequence, mock server + live Docker (P-01–P-35) | Mixed |
 | **V** | 14 | Vision + triangulation (3-authority verdict) | No |
 | **UV** | 28 | Universal full-pipeline integration (color normalization, multi-predicate, F9 rejection, HTML predicates) | No |
 
-738 pure scenarios + 15 multi-step K5 scenarios = 753 total. 28 universal scenarios test cross-gate integration including HTML predicates. 24 need Docker (6 F + 18 P). 376 failure classes covered across 603 known failure shapes (63% atomic coverage). Decomposition engine maps observations to taxonomy shape IDs — 349 shape rules across 24 domains (48 CSS, 31 HTML, 18 HTTP, 14 content, 12 DB, 12 infrastructure, 12 serialization, 12 security, 11 configuration, 11 accessibility, 10 performance, 10 interaction, 52 cross-cutting, 8 attribution, 12 filesystem, 4 drift, 3 identity, 3 scope boundary, 3 vision, 7 invariant, 6 temporal, 6 observer, 6 concurrency, 5 staging, 1 message), with Phase 2 hardening: minimal basis enforcement, deterministic sort, decomposition scoring, claim-type driven decomposition, temporal mode integration, and composition operators (product ×, temporal ⊗) with round-trip verification. DB grounding validates predicates against init.sql schema with type alias normalization (serial→integer, varchar(N)→varchar, bool→boolean). Infrastructure grounding validates predicates against Terraform/Pulumi/CloudFormation state files (resource existence, attribute values, manifest drift). Quality surface gates (serialization, config, security, a11y, performance) perform pure static analysis — no Docker, no network. 333 unit tests, 11,539+ assertions. Plus external fault-derived scenarios from `.verify/custom-scenarios.json` when testing against a real app. The harness is deterministic — no LLM calls, no network, no flakiness.
+738 pure scenarios + 45 live Docker scenarios = 783 total. 28 universal scenarios test cross-gate integration including HTML predicates. Tiered: pure (738, ~20s), live (783 with Docker, ~5min), full (793 with Playwright, ~10min). 376 failure classes covered across 603 known failure shapes (63% atomic coverage). Decomposition engine maps observations to taxonomy shape IDs — 349 shape rules across 24 domains (48 CSS, 31 HTML, 18 HTTP, 14 content, 12 DB, 12 infrastructure, 12 serialization, 12 security, 11 configuration, 11 accessibility, 10 performance, 10 interaction, 52 cross-cutting, 8 attribution, 12 filesystem, 4 drift, 3 identity, 3 scope boundary, 3 vision, 7 invariant, 6 temporal, 6 observer, 6 concurrency, 5 staging, 1 message), with Phase 2 hardening: minimal basis enforcement, deterministic sort, decomposition scoring, claim-type driven decomposition, temporal mode integration, and composition operators (product ×, temporal ⊗) with round-trip verification. DB grounding validates predicates against init.sql schema with type alias normalization (serial→integer, varchar(N)→varchar, bool→boolean). Infrastructure grounding validates predicates against Terraform/Pulumi/CloudFormation state files (resource existence, attribute values, manifest drift). Quality surface gates (serialization, config, security, a11y, performance) perform pure static analysis — no Docker, no network. 333 unit tests, 11,539+ assertions. Plus external fault-derived scenarios from `.verify/custom-scenarios.json` when testing against a real app. The harness is deterministic — no LLM calls, no network, no flakiness.
 
 ## Gates
 

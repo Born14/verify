@@ -1,6 +1,6 @@
 {
   "name": "@sovereign-labs/verify",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Verification gate for AI agent actions. Deterministic predicates, browser-level visual checks, constraint learning from failures. Every edit gets a fair trial before it touches your users.",
   "type": "module",
   "main": "./src/index.ts",
@@ -22,7 +22,10 @@
   "scripts": {
     "test": "bun test tests/",
     "test:unit": "bun test tests/unit/",
-    "test:integration": "bun test tests/integration/ --timeout 120000"
+    "test:integration": "bun test tests/integration/ --timeout 120000",
+    "self-test": "bun run src/cli.ts self-test",
+    "self-test:live": "bun run src/cli.ts self-test --live",
+    "self-test:full": "bun run src/cli.ts self-test --full"
   },
   "files": [
     "src/",

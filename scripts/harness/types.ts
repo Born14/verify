@@ -22,8 +22,12 @@ export interface VerifyScenario {
   config: Partial<VerifyConfig>;
   invariants: InvariantCheck[];
   requiresDocker: boolean;
+  /** Requires Playwright browser for live rendering verification */
+  requiresPlaywright?: boolean;
   /** Requires the local HTTP mock server (P family) */
   requiresHttpMock?: boolean;
+  /** Requires a live HTTP server (not mock — real server for SSE, CORS, TLS, etc.) */
+  requiresLiveHttp?: boolean;
   /** For multi-step scenarios (B family), ordered steps */
   steps?: VerifyScenario[];
   /** Expected verify() outcome (if known) */
@@ -171,6 +175,8 @@ export interface LedgerSummary {
 // RUNNER
 // =============================================================================
 
+export type LiveTier = 'pure' | 'live' | 'full';
+
 export interface RunConfig {
   appDir: string;
   families?: ScenarioFamily[];
@@ -179,6 +185,8 @@ export interface RunConfig {
   parallelBatch?: number;
   ledgerPath?: string;
   failOnBug?: boolean;
+  /** Tier 0: pure only (default). Tier 1: pure + Docker. Tier 2: pure + Docker + Playwright. */
+  liveTier?: LiveTier;
 }
 
 // =============================================================================

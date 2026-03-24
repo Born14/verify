@@ -1458,20 +1458,23 @@ Serialization predicates assert that data format and structure comply with decla
 - **376 have generators** — up from 289 (+87 shapes across Moves 5-19)
 - **2 have individual scenarios** (no generator)
 - **225 have zero coverage** (37% of the known taxonomy — down from 50%)
-- **Current scenario count: 753** (738 non-Docker + 15 Docker, across 12 families + 28 universal scenarios)
+- **Current scenario count: 783** (738 pure + 45 live Docker, across 14 families + 28 universal scenarios)
+  - Pure tier (default): 738 scenarios, ~20s, no Docker needed
+  - Live tier (`--live`): +20 live DB + 15 live HTTP = 45 scenarios against real containers
+  - Full tier (`--full`): +10 Playwright browser scenarios (placeholder — harness exists, runner not yet wired)
 - **Decomposition engine:** 349 shape rules across 24 domains, pure functions (`decomposeFailure()`, `decomposeObservation()`), zero LLM. DOMINANCE map prevents false co-occurrence. Composition operators: product (`productComposition`), temporal (`temporalComposition`), round-trip verification. DB grounding: `parseInitSQL()`, `normalizeDBType()`, `findAndParseSchema()`. Docker DB harness for live Postgres testing. Staging lifecycle shapes (STG-01 through STG-15). Cross-cutting runtime: temporal (TO-*), observer effect (OE-*), concurrency (CO-*). New domains: drift (DR-*), identity (ID-*), scope boundary (SC-*).
 
 ### What full coverage looks like
 
 If every remaining shape gets a generator producing ~2 scenarios average:
 - 225 uncovered shapes × 2 = **~450 new scenarios**
-- Plus existing 753 = **~1,203 total**
-- Self-test runtime at 2ms/scenario: **~2 seconds**
+- Plus existing 783 = **~1,233 total**
+- Self-test runtime at 2ms/scenario pure, ~60s/scenario live
 
 The remaining 225 shapes are concentrated in:
-- **Browser (35)** — requires Playwright + live DOM (not achievable without headless browser)
-- **HTTP (31)** — requires real server/proxy (SSE, WebSocket, CORS, TLS)
-- **DB (20)** — requires Docker Postgres (partially covered by Docker harness)
+- **Browser (35)** — requires Playwright + live DOM (Phase IV Move 22 added 10 placeholder scenarios, harness infrastructure exists)
+- **HTTP (31)** — requires real server/proxy (Phase IV Move 23 covered 15 live HTTP shapes against real containers)
+- **DB (20)** — requires Docker Postgres (Phase IV Move 21 covered 20 live DB shapes with real Postgres)
 - **Cross-cutting (36)** — gate pipeline edge cases needing expanded fixtures
 - **Quality surfaces (15)** — Config, A11y, Performance, Security need richer fixtures
 

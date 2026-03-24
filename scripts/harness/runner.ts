@@ -5,7 +5,14 @@
  * Phase 1:   Pure scenarios (Families A, B, C, G) — no Docker
  * Phase 1.5: HTTP mock scenarios (Family P) — local mock server
  * Phase 2:   Multi-step scenarios (Family B) — constraint store state
- * Phase 3:   Docker scenarios (Family F) — sequential
+ * Phase 3:   Docker scenarios (Family F) — sequential, pattern-simulated
+ * Phase 4:   Live Docker scenarios (--live) — real Postgres + app container
+ * Phase 5:   Playwright scenarios (--full) — real browser rendering
+ *
+ * Tiers:
+ *   pure (default) — Phases 1-3 only (~753 scenarios, ~20s)
+ *   live (--live)  — Phases 1-4 (~800+ scenarios, ~5min)
+ *   full (--full)  — Phases 1-5 (~900+ scenarios, ~10min)
  */
 
 import { mkdirSync, rmSync, existsSync, copyFileSync, readdirSync } from 'fs';
@@ -13,7 +20,8 @@ import { inflateSync } from 'zlib';
 import { join, dirname } from 'path';
 import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
-import type { VerifyScenario, RunConfig, LedgerEntry, OracleContext, Severity } from './types.js';
+import { spawn } from 'child_process';
+import type { VerifyScenario, RunConfig, LedgerEntry, OracleContext, Severity, LiveTier } from './types.js';
 import type { VerifyResult } from '../../src/types.js';
 import { verify } from '../../src/verify.js';
 import { ConstraintStore, predicateFingerprint } from '../../src/store/constraint-store.js';
@@ -25,7 +33,89 @@ import { loadExternalScenarios, loadUniversalScenarios } from './external-scenar
 import { startMockServer, stopMockServer, type MockServer } from '../../fixtures/http-server.js';
 
 const MAX_SCENARIO_TIMEOUT = 10 * 60 * 1000; // 10 min
+const MAX_LIVE_SCENARIO_TIMEOUT = 60 * 1000; // 60s for live scenarios
 const MAX_TOTAL_TIMEOUT = 4 * 60 * 60 * 1000; // 4 hours
+
+// ---------------------------------------------------------------------------
+// AVAILABILITY DETECTION
+// ---------------------------------------------------------------------------
+
+interface InfraStatus {
+  docker: boolean;
+  dockerVersion?: string;
+  playwright: boolean;
+  playwrightVersion?: string;
+}
+
+async function detectInfrastructure(): Promise<InfraStatus> {
+  const [docker, playwright] = await Promise.all([
+    detectDocker(),
+    detectPlaywright(),
+  ]);
+  return { ...docker, ...playwright };
+}
+
+async function detectDocker(): Promise<{ docker: boolean; dockerVersion?: string }> {
+  try {
+    const result = await runCommand('docker', ['info', '--format', '{{.ServerVersion}}']);
+    if (result.exitCode === 0 && result.stdout.trim()) {
+      return { docker: true, dockerVersion: result.stdout.trim() };
+    }
+    return { docker: false };
+  } catch {
+    return { docker: false };
+  }
+}
+
+async function detectPlaywright(): Promise<{ playwright: boolean; playwrightVersion?: string }> {
+  try {
+    const result = await runCommand('npx', ['playwright', '--version']);
+    if (result.exitCode === 0 && result.stdout.trim()) {
+      return { playwright: true, playwrightVersion: result.stdout.trim() };
+    }
+    return { playwright: false };
+  } catch {
+    return { playwright: false };
+  }
+}
+
+function runCommand(cmd: string, args: string[]): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+  return new Promise((resolve) => {
+    const child = spawn(cmd, args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      shell: process.platform === 'win32',
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout?.on('data', (d: Buffer) => { stdout += d.toString(); });
+    child.stderr?.on('data', (d: Buffer) => { stderr += d.toString(); });
+    const timer = setTimeout(() => { child.kill('SIGTERM'); }, 15_000);
+    child.on('close', (code: number | null) => {
+      clearTimeout(timer);
+      resolve({ stdout, stderr, exitCode: code ?? 1 });
+    });
+    child.on('error', (err: Error) => {
+      clearTimeout(timer);
+      resolve({ stdout, stderr: err.message, exitCode: 1 });
+    });
+  });
+}
+
+function printInfraStatus(infra: InfraStatus, tier: LiveTier): void {
+  console.log('  Infrastructure:');
+  if (tier === 'pure') {
+    console.log('    Docker:     — (not needed for pure tier)');
+    console.log('    Playwright: — (not needed for pure tier)');
+  } else {
+    console.log(`    Docker:     ${infra.docker ? `✓ ${infra.dockerVersion ?? 'available'}` : '✗ not available'}`);
+    if (tier === 'full') {
+      console.log(`    Playwright: ${infra.playwright ? `✓ ${infra.playwrightVersion ?? 'available'}` : '✗ not available'}`);
+    } else {
+      console.log('    Playwright: — (not needed for live tier)');
+    }
+  }
+  console.log('');
+}
 
 // ---------------------------------------------------------------------------
 // Deterministic vision mock — analyzes solid-color PNG screenshots locally.
@@ -128,10 +218,13 @@ export async function runSelfTest(config: RunConfig): Promise<{ exitCode: number
   const dataDir = join(config.appDir, '..', '..', 'data');
   mkdirSync(dataDir, { recursive: true });
 
+  const tier: LiveTier = config.liveTier ?? 'pure';
   const ledgerPath = config.ledgerPath ?? join(dataDir, 'self-test-ledger.jsonl');
   const ledger = new Ledger(ledgerPath);
 
+  const tierLabel = tier === 'pure' ? 'pure' : tier === 'live' ? 'live (Docker)' : 'full (Docker + Playwright)';
   console.log(`\n  Verify Self-Test — ${identity.packageVersion} (${identity.gitCommit ?? 'no git'})`);
+  console.log(`  Tier: ${tierLabel}`);
   if (isCustomApp) {
     console.log(`  Target app: ${config.appDir}`);
     console.log(`  Built-in scenarios run against: ${fixtureDir}`);
@@ -139,6 +232,13 @@ export async function runSelfTest(config: RunConfig): Promise<{ exitCode: number
     console.log(`  App dir: ${config.appDir}`);
   }
   console.log('');
+
+  // Detect infrastructure availability for live/full tiers
+  let infra: InfraStatus = { docker: false, playwright: false };
+  if (tier !== 'pure') {
+    infra = await detectInfrastructure();
+    printInfraStatus(infra, tier);
+  }
 
   // Built-in scenarios always run against the fixture (demo-app)
   // They hardcode demo-app selectors/strings and would produce false failures on other apps
@@ -165,21 +265,62 @@ export async function runSelfTest(config: RunConfig): Promise<{ exitCode: number
     console.log(`  + ${external.length} fault-derived scenarios from ${isCustomApp ? config.appDir : 'custom-scenarios.json'}`);
   }
 
-  // Filter by Docker availability
-  if (config.dockerEnabled === false) {
+  // Filter by Docker availability (legacy flag — overridden by tier system)
+  if (config.dockerEnabled === false && tier === 'pure') {
     scenarios = scenarios.filter(s => !s.requiresDocker);
   }
+
+  // Tier-based filtering + skip counting
+  let skippedDocker = 0;
+  let skippedPlaywright = 0;
+  let skippedLiveHttp = 0;
+
+  if (tier === 'pure') {
+    // Pure: skip all Docker, Playwright, and live HTTP scenarios
+    const before = scenarios.length;
+    scenarios = scenarios.filter(s => !s.requiresDocker && !s.requiresPlaywright && !s.requiresLiveHttp);
+    skippedDocker = before - scenarios.length; // approximate — counts all non-pure
+  } else if (tier === 'live') {
+    // Live: include Docker scenarios, skip Playwright
+    if (!infra.docker) {
+      const dockerScenarios = scenarios.filter(s => s.requiresDocker);
+      skippedDocker = dockerScenarios.length;
+      scenarios = scenarios.filter(s => !s.requiresDocker);
+    }
+    const pwScenarios = scenarios.filter(s => s.requiresPlaywright);
+    skippedPlaywright = pwScenarios.length;
+    scenarios = scenarios.filter(s => !s.requiresPlaywright);
+  } else {
+    // Full: include everything available
+    if (!infra.docker) {
+      const dockerScenarios = scenarios.filter(s => s.requiresDocker || s.requiresPlaywright);
+      skippedDocker = dockerScenarios.filter(s => s.requiresDocker && !s.requiresPlaywright).length;
+      skippedPlaywright = dockerScenarios.filter(s => s.requiresPlaywright).length;
+      scenarios = scenarios.filter(s => !s.requiresDocker && !s.requiresPlaywright);
+    } else if (!infra.playwright) {
+      const pwScenarios = scenarios.filter(s => s.requiresPlaywright);
+      skippedPlaywright = pwScenarios.length;
+      scenarios = scenarios.filter(s => !s.requiresPlaywright);
+    }
+  }
+
+  // Report skipped scenarios
+  if (skippedDocker > 0) console.log(`  Skipped ${skippedDocker} Docker scenarios (Docker not available)`);
+  if (skippedPlaywright > 0) console.log(`  Skipped ${skippedPlaywright} Playwright scenarios (${tier === 'live' ? 'use --full' : 'Playwright not available'})`);
+  if (skippedLiveHttp > 0) console.log(`  Skipped ${skippedLiveHttp} live HTTP scenarios`);
 
   console.log(`  Running ${scenarios.length} scenarios...\n`);
 
   const totalStart = Date.now();
   const batchSize = config.parallelBatch ?? 10;
 
-  // Separate pure vs http-mock vs multi-step vs docker
-  const pure = scenarios.filter(s => !s.requiresDocker && !s.requiresHttpMock && !s.steps);
+  // Separate into phases
+  const pure = scenarios.filter(s => !s.requiresDocker && !s.requiresHttpMock && !s.requiresPlaywright && !s.requiresLiveHttp && !s.steps);
   const httpMock = scenarios.filter(s => s.requiresHttpMock && !s.requiresDocker);
   const multiStep = scenarios.filter(s => s.steps && s.steps.length > 0);
-  const docker = scenarios.filter(s => s.requiresDocker);
+  const docker = scenarios.filter(s => s.requiresDocker && !s.requiresPlaywright && !s.requiresLiveHttp);
+  const liveDocker = scenarios.filter(s => s.requiresDocker && s.requiresLiveHttp);
+  const playwright = scenarios.filter(s => s.requiresPlaywright);
 
   // Phase 1: Pure scenarios in parallel batches
   if (pure.length > 0) {
@@ -227,7 +368,7 @@ export async function runSelfTest(config: RunConfig): Promise<{ exitCode: number
     }
   }
 
-  // Phase 3: Docker scenarios (sequential — share Docker daemon)
+  // Phase 3: Docker scenarios — pattern-simulated (sequential)
   if (docker.length > 0) {
     const { isDockerAvailable } = await import('../../src/runners/docker-runner.js');
     const dockerAvailable = await isDockerAvailable();
@@ -241,6 +382,44 @@ export async function runSelfTest(config: RunConfig): Promise<{ exitCode: number
         ledger.append(entry);
         printProgress(entry);
       }
+    }
+  }
+
+  // Phase 4: Live Docker scenarios (--live tier) — real Postgres + app container
+  if (liveDocker.length > 0 && tier !== 'pure') {
+    if (!infra.docker) {
+      console.log(`\n  Phase 4: ${liveDocker.length} live Docker scenarios — SKIPPED (Docker not available)\n`);
+    } else {
+      console.log(`\n  Phase 4: ${liveDocker.length} live Docker scenarios (sequential, real containers)\n`);
+      const { DBHarness } = await import('./db-harness.js');
+      const dbHarness = new DBHarness(fixtureDir);
+      try {
+        console.log('    Starting containers...');
+        await dbHarness.start();
+        console.log(`    App running at ${dbHarness.getAppUrl()}\n`);
+        for (const scenario of liveDocker) {
+          if (Date.now() - totalStart > MAX_TOTAL_TIMEOUT) break;
+          const entry = await runScenario(scenario, config, undefined, dbHarness);
+          ledger.append(entry);
+          printProgress(entry);
+        }
+      } catch (err: any) {
+        console.log(`    Phase 4 infrastructure failure: ${err.message}\n`);
+      } finally {
+        await dbHarness.stop();
+      }
+    }
+  }
+
+  // Phase 5: Playwright scenarios (--full tier) — real browser rendering
+  if (playwright.length > 0 && tier === 'full') {
+    if (!infra.docker || !infra.playwright) {
+      const reason = !infra.docker ? 'Docker not available' : 'Playwright not available';
+      console.log(`\n  Phase 5: ${playwright.length} Playwright scenarios — SKIPPED (${reason})\n`);
+    } else {
+      console.log(`\n  Phase 5: ${playwright.length} Playwright scenarios (sequential, real browser)\n`);
+      // TODO (Move 22): Start demo-app container, run Playwright against it
+      console.log('    Playwright harness not yet implemented — skipping.\n');
     }
   }
 
@@ -260,7 +439,7 @@ export async function runSelfTest(config: RunConfig): Promise<{ exitCode: number
 // SINGLE SCENARIO EXECUTION
 // =============================================================================
 
-async function runScenario(scenario: VerifyScenario, config: RunConfig, mockServerUrl?: string): Promise<LedgerEntry> {
+async function runScenario(scenario: VerifyScenario, config: RunConfig, mockServerUrl?: string, dbHarness?: import('./db-harness.js').DBHarness): Promise<LedgerEntry> {
   const stateDir = join(tmpdir(), `verify-selftest-${scenario.id}`);
   const scenarioStart = Date.now();
 
@@ -289,12 +468,19 @@ async function runScenario(scenario: VerifyScenario, config: RunConfig, mockServ
       try { await fetch(`${mockServerUrl}/api/reset`, { method: 'POST' }); } catch { /* best effort */ }
     }
 
+    // Determine appUrl: mock server for mock scenarios, dbHarness for live Docker scenarios
+    let resolvedAppUrl: string | undefined;
+    if (mockServerUrl && scenario.requiresHttpMock) {
+      resolvedAppUrl = mockServerUrl;
+    } else if (dbHarness && dbHarness.isRunning()) {
+      resolvedAppUrl = dbHarness.getAppUrl();
+    }
+
     const mergedConfig = {
       ...scenario.config,
       appDir: scenario.config.appDir ?? config.appDir,
       stateDir,
-      // Inject mock server URL for HTTP mock scenarios
-      ...(mockServerUrl && scenario.requiresHttpMock ? { appUrl: mockServerUrl } : {}),
+      ...(resolvedAppUrl ? { appUrl: resolvedAppUrl } : {}),
     };
 
     // Substitute vision callback from environment when scenario uses placeholder
