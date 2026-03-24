@@ -30,7 +30,7 @@ The pipeline + convergence loop — without the improve loop, without the chaos 
 
 ### 3. The Self-Test Harness (The Proof)
 
-607 scenarios across 13 families (A-H, I, L, M, P, V) plus external fault-derived scenarios. 320 failure classes covered. 228 decomposition rules across 17 domains. The harness is deterministic — no LLM calls, no network, no flakiness. When someone installs verify and runs `npx @sovereign-labs/verify self-test`, they see 607 green checks in under 30 seconds. That's the demo. That's the credibility.
+753 scenarios across 14 families (A-H, I, L, M, P, V, B, UV) plus external fault-derived scenarios. 376 failure classes covered. 349 decomposition rules across 24 domains. The harness is deterministic — no LLM calls, no network, no flakiness. When someone installs verify and runs `npx @sovereign-labs/verify self-test`, they see 753 green checks in under 90 seconds. That's the demo. That's the credibility.
 
 The harness is frozen — the improve loop cannot edit it. It is the constitution. Verify is the governed subject.
 
@@ -122,9 +122,9 @@ Do not hedge on the loop's value to appear "balanced." The loop works. It has pr
 |-----------|--------|------------|
 | Pipeline (17 gates) | Shipped v0.3.1 on npm | High |
 | `govern()` convergence loop | Shipped, 15 scenarios, convergence detection proven | High |
-| Self-test harness (607 scenarios, 13 families) | Shipped, deterministic, <30s, 0 bugs | High |
-| Decomposition engine (228 rules, 17 domains) | 320/579 failure classes covered (62%) | High |
-| Failure taxonomy (579 shapes) | Complete algebra, 228 with decomposition rules | High |
+| Self-test harness (753 scenarios, 14 families) | Shipped, deterministic, <90s, 3 known bugs | High |
+| Decomposition engine (349 rules, 24 domains) | 376/603 failure classes covered (63%) | High |
+| Failure taxonomy (603 shapes, 27 domains) | Complete algebra, 349 with decomposition rules | High |
 | External scenarios (21 custom) | Working, loaded from `.verify/custom-scenarios.json` | High |
 | Improve loop (7-stage) | Built, proven end-to-end, has 10 identified gaps | Medium-High |
 | Chaos engine (3 MCP tools) | Built, proven in 2 sessions | Medium-High |

@@ -1425,51 +1425,55 @@ Serialization predicates assert that data format and structure comply with decla
 | Domain | Total Shapes | Generator | Scenario Only | No Coverage | Coverage % |
 |---|---|---|---|---|---|
 | CSS | 68 | 61 | 0 | 7 | 90% |
-| HTML | 48 | 37 | 0 | 11 | 77% |
-| Filesystem | 38 | 22 | 0 | 16 | 58% |
+| HTML | 48 | 40 | 0 | 8 | 83% |
+| Filesystem | 38 | 27 | 0 | 11 | 71% |
 | Content | 18 | 11 | 0 | 7 | 61% |
 | HTTP | 54 | 23 | 0 | 31 | 43% |
-| DB | 56 | 10 | 0 | 46 | 18% |
+| DB | 56 | 36 | 0 | 20 | 64% |
 | Browser | 38 | 3 | 0 | 35 | 8% |
-| Temporal | 15 | 3 | 0 | 12 | 20% |
+| Temporal | 15 | 10 | 0 | 5 | 67% |
 | Interaction | 16 | 10 | 0 | 6 | 63% |
-| Invariant | 14 | 5 | 0 | 9 | 36% |
-| Identity | 12 | 3 | 0 | 9 | 25% |
-| Observer Effects | 11 | 2 | 0 | 9 | 18% |
-| Concurrency | 11 | 2 | 0 | 9 | 18% |
-| Scope Boundary | 12 | 3 | 0 | 9 | 25% |
+| Invariant | 14 | 9 | 0 | 5 | 64% |
+| Identity | 12 | 5 | 0 | 7 | 42% |
+| Observer Effects | 11 | 6 | 0 | 5 | 55% |
+| Concurrency | 11 | 5 | 0 | 6 | 45% |
+| Scope Boundary | 12 | 4 | 0 | 8 | 33% |
 | Attribution | 10 | 10 | 0 | 0 | 100% |
-| Drift | 13 | 2 | 0 | 11 | 15% |
+| Drift | 13 | 5 | 0 | 8 | 38% |
 | Message | 14 | 14 | 0 | 0 | 100% |
-| Cross-cutting | 89 | 40 | 2 | 47 | 47% |
+| Cross-cutting | 89 | 51 | 2 | 36 | 60% |
+| Staging | 15 | 15 | 0 | 0 | 100% |
 | Configuration | 8 | 3 | 0 | 5 | 38% |
 | Accessibility | 8 | 3 | 0 | 5 | 38% |
 | Performance | 6 | 1 | 0 | 5 | 17% |
 | Security | 7 | 3 | 0 | 4 | 43% |
 | Serialization | 7 | 6 | 0 | 1 | 86% |
 | Infrastructure | 12 | 12 | 0 | 0 | 100% |
-| **Total** | **579** | **289** | **2** | **288** | **50%** |
+| Vision | 3 | 3 | 0 | 0 | 100% |
+| **Total** | **603** | **376** | **2** | **225** | **63%** |
 
 ### The numbers
 
-- **579 known failure shapes** across 24 domains
-- **289 have generators** (61 CSS + 40 cross-cutting + 37 HTML + 23 HTTP + 22 filesystem + 20 DB + 14 message + 12 infrastructure + 11 content + 10 attribution + 10 interaction + 6 serialization + 5 invariant + 3 browser + 3 config + 3 identity + 3 scope + 3 security + 3 temporal + 3 a11y + 2 concurrency + 2 drift + 2 observer + 1 performance)
+- **603 known failure shapes** across 27 domains (24 original + staging + vision + expanded cross-cutting)
+- **376 have generators** — up from 289 (+87 shapes across Moves 5-19)
 - **2 have individual scenarios** (no generator)
-- **288 have zero coverage** (50% of the known taxonomy)
-- **Current scenario count: 553** (across 12 families + 28 universal scenarios)
-- **Decomposition engine:** 118 shape rules across 17 domains (16 CSS, 6 HTML, 6 HTTP, 12 DB, 5 content, 7 filesystem, 11 cross-cutting, 6 interaction, 4 attribution, 6 serialization, 4 config, 6 security, 6 a11y, 5 performance, 12 infrastructure, plus staging/vision/invariant/message), pure functions (`decomposeFailure()`, `decomposeObservation()`), zero LLM. Phase 2 hardened: minimal basis enforcement (`minimizeShapes`), deterministic sort (`sortShapes`), decomposition scoring (`scoreDecomposition`), claim-type driven decomposition (`detectClaimType`, `decomposeByClaimType`), temporal mode integration (`detectTemporalMode`, `annotateTemporalMode`). Phase 3 shape expansion: +27 shapes across 8 domains with DOMINANCE map for false co-occurrence prevention. Composition operators: product (`productComposition`), temporal (`temporalComposition`), round-trip verification (`decomposeComposition`), enumeration (`getKnownCompositions`). DB grounding: `parseInitSQL()`, `normalizeDBType()`, `findAndParseSchema()` validate DB predicates against init.sql schema. 310 decomposition/composition tests, 1,249+ assertions.
+- **225 have zero coverage** (37% of the known taxonomy — down from 50%)
+- **Current scenario count: 753** (738 non-Docker + 15 Docker, across 12 families + 28 universal scenarios)
+- **Decomposition engine:** 349 shape rules across 24 domains, pure functions (`decomposeFailure()`, `decomposeObservation()`), zero LLM. DOMINANCE map prevents false co-occurrence. Composition operators: product (`productComposition`), temporal (`temporalComposition`), round-trip verification. DB grounding: `parseInitSQL()`, `normalizeDBType()`, `findAndParseSchema()`. Docker DB harness for live Postgres testing. Staging lifecycle shapes (STG-01 through STG-15). Cross-cutting runtime: temporal (TO-*), observer effect (OE-*), concurrency (CO-*). New domains: drift (DR-*), identity (ID-*), scope boundary (SC-*).
 
 ### What full coverage looks like
 
 If every remaining shape gets a generator producing ~2 scenarios average:
-- 288 uncovered shapes × 2 = **~576 new scenarios**
-- Plus existing 553 = **~1,129 total**
+- 225 uncovered shapes × 2 = **~450 new scenarios**
+- Plus existing 753 = **~1,203 total**
 - Self-test runtime at 2ms/scenario: **~2 seconds**
 
-The remaining 288 shapes are concentrated in:
-- Infrastructure-heavy domains (DB 46, Browser 35, HTTP 31) that need Docker/DB fixtures
-- Cross-cutting gate logic (47) that needs expanded pipeline testing
-- Quality surface expansion (Config 5, A11y 5, Performance 5, Security 4) that need richer fixtures
+The remaining 225 shapes are concentrated in:
+- **Browser (35)** — requires Playwright + live DOM (not achievable without headless browser)
+- **HTTP (31)** — requires real server/proxy (SSE, WebSocket, CORS, TLS)
+- **DB (20)** — requires Docker Postgres (partially covered by Docker harness)
+- **Cross-cutting (36)** — gate pipeline edge cases needing expanded fixtures
+- **Quality surfaces (15)** — Config, A11y, Performance, Security need richer fixtures
 
 ### Domain architecture
 

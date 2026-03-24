@@ -417,6 +417,120 @@ const CSS_SHAPES: ShapeRule[] = [
     confidence: 0.85,
   },
 
+  // --- Shorthand resolution continued (C-22 through C-29) ---
+  {
+    id: 'C-22', domain: 'css', name: 'flex → grow/shrink/basis components',
+    claimType: 'transformation', truthType: 'deterministic',
+    predicateType: 'css',
+    predicateMatch: (p, pred) => {
+      if (p.passed || !pred) return false;
+      const prop = pred.property?.toLowerCase() ?? '';
+      return prop.startsWith('flex-') && prop !== 'flex';
+    },
+    confidence: 0.85,
+  },
+  {
+    id: 'C-23', domain: 'css', name: 'grid → template/gap/area components',
+    claimType: 'transformation', truthType: 'deterministic',
+    predicateType: 'css',
+    predicateMatch: (p, pred) => {
+      if (p.passed || !pred) return false;
+      const prop = pred.property?.toLowerCase() ?? '';
+      return (prop.startsWith('grid-') && prop !== 'grid') || (prop === 'row-gap' || prop === 'column-gap');
+    },
+    confidence: 0.85,
+  },
+  {
+    id: 'C-26', domain: 'css', name: 'list-style → type/position/image components',
+    claimType: 'transformation', truthType: 'deterministic',
+    predicateType: 'css',
+    predicateMatch: (p, pred) => {
+      if (p.passed || !pred) return false;
+      const prop = pred.property?.toLowerCase() ?? '';
+      return prop.startsWith('list-style-') && prop !== 'list-style';
+    },
+    confidence: 0.85,
+  },
+  {
+    id: 'C-27', domain: 'css', name: 'text-decoration → line/color/style/thickness components',
+    claimType: 'transformation', truthType: 'deterministic',
+    predicateType: 'css',
+    predicateMatch: (p, pred) => {
+      if (p.passed || !pred) return false;
+      const prop = pred.property?.toLowerCase() ?? '';
+      return prop.startsWith('text-decoration-') && prop !== 'text-decoration';
+    },
+    confidence: 0.85,
+  },
+  {
+    id: 'C-29', domain: 'css', name: 'overflow → overflow-x/y components',
+    claimType: 'transformation', truthType: 'deterministic',
+    predicateType: 'css',
+    predicateMatch: (p, pred) => {
+      if (p.passed || !pred) return false;
+      const prop = pred.property?.toLowerCase() ?? '';
+      return (prop === 'overflow-x' || prop === 'overflow-y');
+    },
+    confidence: 0.85,
+  },
+
+  // --- Modern CSS features (C-63 through C-68) ---
+  {
+    id: 'C-63', domain: 'css', name: 'color-mix() / color() function resolution',
+    claimType: 'equality', truthType: 'contextual',
+    predicateType: 'css',
+    predicateMatch: (p, pred) => {
+      if (p.passed || !pred) return false;
+      const val = pred.expected?.toLowerCase() ?? '';
+      return val.includes('color-mix(') || val.includes('color(');
+    },
+    confidence: 0.7,
+  },
+  {
+    id: 'C-64', domain: 'css', name: 'CSS nesting (& syntax) selector flattening',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'css',
+    predicateMatch: (p, pred) => {
+      if (p.passed || !pred) return false;
+      const sel = pred.selector?.toLowerCase() ?? '';
+      return sel.includes('&') || (!!p.groundingMiss && sel.includes(' .'));
+    },
+    confidence: 0.65,
+  },
+  {
+    id: 'C-65', domain: 'css', name: '@property registered custom property types',
+    claimType: 'equality', truthType: 'contextual',
+    predicateType: 'css',
+    predicateMatch: (p, pred) => {
+      if (p.passed || !pred) return false;
+      const prop = pred.property?.toLowerCase() ?? '';
+      return prop.startsWith('--') && p.actual !== undefined && p.actual !== p.expected;
+    },
+    confidence: 0.6,
+  },
+  {
+    id: 'C-67', domain: 'css', name: 'clamp() / min() / max() context resolution',
+    claimType: 'equality', truthType: 'contextual',
+    predicateType: 'css',
+    predicateMatch: (p, pred) => {
+      if (p.passed || !pred) return false;
+      const val = pred.expected?.toLowerCase() ?? '';
+      return val.includes('clamp(') || val.includes('min(') || val.includes('max(');
+    },
+    confidence: 0.7,
+  },
+  {
+    id: 'C-68', domain: 'css', name: '@scope rule boundary scoping',
+    claimType: 'equality', truthType: 'contextual',
+    predicateType: 'css',
+    predicateMatch: (p) => {
+      if (p.passed) return false;
+      const detail = (p.detail ?? '').toLowerCase();
+      return detail.includes('@scope') || detail.includes('scope boundary');
+    },
+    confidence: 0.6,
+  },
+
   // --- Selector & structure (C-32 through C-43) ---
   {
     id: 'C-32', domain: 'css', name: 'Property not in selector source CSS',
@@ -788,6 +902,16 @@ const HTML_SHAPES: ShapeRule[] = [
     confidence: 0.8,
   },
   {
+    id: 'H-43', domain: 'html', name: 'Meta tag / Open Graph assertion',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'html',
+    predicateMatch: (p, pred) => {
+      const sel = pred?.selector?.toLowerCase() ?? '';
+      return sel.includes('meta[') || sel.includes('meta ') || sel === 'meta';
+    },
+    confidence: 0.8,
+  },
+  {
     id: 'H-17', domain: 'html', name: 'HTML attribute value mismatch',
     claimType: 'equality', truthType: 'deterministic',
     predicateType: 'html',
@@ -807,6 +931,24 @@ const HTML_SHAPES: ShapeRule[] = [
     predicateType: 'html',
     predicateMatch: (p) => !p.passed && !!p.groundingMiss,
     confidence: 0.8,
+  },
+  {
+    id: 'H-28', domain: 'html', name: 'Bidirectional text / RTL markers in content',
+    claimType: 'containment', truthType: 'deterministic',
+    detailPatterns: [/rtl|bidi|\\u200[feFE]|direction.*right|right-to-left/i],
+    confidence: 0.75,
+  },
+  {
+    id: 'H-44', domain: 'html', name: 'Form validation state mismatch',
+    claimType: 'equality', truthType: 'deterministic',
+    detailPatterns: [/form.*valid|validation.*state|required.*field|input.*invalid/i],
+    confidence: 0.75,
+  },
+  {
+    id: 'H-48', domain: 'html', name: 'Dialog open/closed state mismatch',
+    claimType: 'equality', truthType: 'deterministic',
+    detailPatterns: [/<dialog|dialog.*open|dialog.*closed|modal.*state/i],
+    confidence: 0.75,
   },
 ];
 
@@ -859,6 +1001,94 @@ const HTTP_SHAPES: ShapeRule[] = [
     confidence: 0.85,
   },
   // P-10 (body interpolation) is a passing scenario — not a failure shape.
+  {
+    id: 'P-10', domain: 'http', name: 'HTTP POST status mismatch (e.g., 201 vs 200)',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'http',
+    predicateMatch: (p) => !p.passed && /POST/i.test(p.expected ?? '') && /status/i.test(p.expected ?? ''),
+    confidence: 0.85,
+  },
+  {
+    id: 'P-11', domain: 'http', name: 'HTTP PUT/PATCH on non-existent resource (404)',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'http',
+    predicateMatch: (p) => !p.passed && /PUT|PATCH/i.test(p.expected ?? '') && /404/.test(p.actual ?? ''),
+    confidence: 0.85,
+  },
+  {
+    id: 'P-16', domain: 'http', name: 'CORS preflight response unexpected',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'http',
+    predicateMatch: (p) => !p.passed && /OPTIONS/i.test(p.expected ?? ''),
+    confidence: 0.8,
+  },
+  {
+    id: 'P-17', domain: 'http', name: 'Authentication status mismatch (401/403)',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'http',
+    predicateMatch: (p) => !p.passed && /40[13]/.test(p.actual ?? ''),
+    confidence: 0.9,
+  },
+  {
+    id: 'P-18', domain: 'http', name: 'Validation error response (422)',
+    claimType: 'containment', truthType: 'deterministic',
+    predicateType: 'http',
+    predicateMatch: (p) => !p.passed && /422/.test(p.actual ?? ''),
+    confidence: 0.85,
+  },
+  {
+    id: 'P-20', domain: 'http', name: 'Query parameter not reflected in response',
+    claimType: 'containment', truthType: 'deterministic',
+    predicateType: 'http',
+    predicateMatch: (p) => !p.passed && /\?/.test(p.expected ?? ''),
+    confidence: 0.75,
+  },
+  {
+    id: 'P-21', domain: 'http', name: 'Plain text content-type body mismatch',
+    claimType: 'containment', truthType: 'deterministic',
+    predicateType: 'http',
+    predicateMatch: (p) => !p.passed && /text\/plain/i.test(p.actual ?? ''),
+    confidence: 0.8,
+  },
+  {
+    id: 'P-22', domain: 'http', name: 'Echo endpoint body mismatch',
+    claimType: 'containment', truthType: 'deterministic',
+    predicateType: 'http',
+    predicateMatch: (p) => !p.passed && /echo/i.test(p.expected ?? ''),
+    confidence: 0.8,
+  },
+  {
+    id: 'P-24', domain: 'http', name: 'Stateful sequence failure (CRUD flow)',
+    claimType: 'ordering', truthType: 'deterministic',
+    predicateType: 'http_sequence',
+    predicateMatch: (p) => !p.passed && /create|delete|update/i.test(p.expected ?? ''),
+    confidence: 0.85,
+  },
+  {
+    id: 'P-25', domain: 'http', name: 'HTML page content mismatch',
+    claimType: 'containment', truthType: 'deterministic',
+    predicateType: 'http',
+    predicateMatch: (p) => !p.passed && /html/i.test(p.actual ?? ''),
+    confidence: 0.8,
+  },
+  {
+    id: 'P-26', domain: 'http', name: 'Combined assertion failure (status + body + regex)',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'http',
+    predicateMatch: (p) => !p.passed && /regex/i.test(p.expected ?? '') && /body/i.test(p.expected ?? ''),
+    confidence: 0.85,
+  },
+  {
+    id: 'P-27', domain: 'http', name: 'Multi-predicate HTTP failure (one of N fails)',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'http',
+    predicateMatch: (p) => !p.passed,
+    resultMatch: (r) => {
+      const httpGate = r.gates.find(g => g.gate === 'http');
+      return !!httpGate && !httpGate.passed && /\d+ of \d+/i.test(httpGate.detail);
+    },
+    confidence: 0.85,
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -954,6 +1184,37 @@ const CONTENT_SHAPES: ShapeRule[] = [
       return /<[a-z][\s>]/i.test(pat); // HTML tag pattern
     },
     confidence: 0.6,
+  },
+  {
+    id: 'N-13', domain: 'content', name: 'JSON structure assertion with key path',
+    claimType: 'containment', truthType: 'deterministic',
+    predicateType: 'content',
+    predicateMatch: (p) => {
+      const pat = p.expected ?? '';
+      // Pattern looks like a JSON key path (dotted or bracket notation)
+      return /[\w]+\.[\w]+/.test(pat) || /[\w]+\[/.test(pat);
+    },
+    confidence: 0.6,
+  },
+  {
+    id: 'N-16', domain: 'content', name: 'Import/require graph assertion',
+    claimType: 'containment', truthType: 'deterministic',
+    predicateType: 'content',
+    predicateMatch: (p) => {
+      const pat = p.expected ?? '';
+      return /require\s*\(/.test(pat) || /import\s+/.test(pat) || /from\s+['"]/.test(pat);
+    },
+    confidence: 0.65,
+  },
+  {
+    id: 'N-17', domain: 'content', name: 'BOM (Byte Order Mark) offset detection',
+    claimType: 'containment', truthType: 'deterministic',
+    predicateType: 'content',
+    predicateMatch: (p) => {
+      const pat = p.expected ?? '';
+      return pat.includes('\uFEFF') || pat.includes('\\uFEFF') || (p.detail ?? '').toLowerCase().includes('bom');
+    },
+    confidence: 0.7,
   },
   {
     id: 'N-26', domain: 'content', name: 'Pattern appears multiple times (ambiguous)',
@@ -1091,6 +1352,231 @@ const DB_SHAPES: ShapeRule[] = [
     },
     confidence: 0.8,
   },
+
+  // --- Data assertion shapes (D-13 through D-17) — require live DB ---
+  {
+    id: 'D-13', domain: 'db', name: 'Row count mismatch',
+    claimType: 'threshold', truthType: 'deterministic',
+    predicateType: 'db',
+    predicateMatch: (p, pred) => {
+      const assertion = pred?.assertion as string | undefined;
+      return !p.passed && (assertion === 'row_count') && !!p.actual && !!p.expected;
+    },
+    confidence: 0.9,
+  },
+  {
+    id: 'D-14', domain: 'db', name: 'Row value mismatch',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'db',
+    predicateMatch: (p, pred) => {
+      const assertion = pred?.assertion as string | undefined;
+      return !p.passed && assertion === 'row_value' && !!p.actual;
+    },
+    confidence: 0.9,
+  },
+  {
+    id: 'D-15', domain: 'db', name: 'Sequence/auto-increment state mismatch',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'db',
+    predicateMatch: (p, pred) => {
+      const assertion = pred?.assertion as string | undefined;
+      return !p.passed && (assertion === 'sequence_value' || /sequence|auto.?increment|nextval/i.test(p.expected ?? ''));
+    },
+    confidence: 0.8,
+  },
+  {
+    id: 'D-16', domain: 'db', name: 'Empty table vs missing table',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'db',
+    predicateMatch: (p, pred) => {
+      // Table exists (grounding passed) but row count is 0
+      return p.passed && pred?.assertion === 'table_exists' && p.actual === '0 rows';
+    },
+    confidence: 0.75,
+  },
+  {
+    id: 'D-17', domain: 'db', name: 'Transaction isolation visibility',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'db',
+    predicateMatch: (p, pred) => {
+      const assertion = pred?.assertion as string | undefined;
+      return !p.passed && /isolation|phantom|uncommitted|serializable/i.test(p.expected ?? '') ||
+        assertion === 'isolation_check';
+    },
+    confidence: 0.7,
+  },
+
+  // --- Cross-DB portability shapes (D-18 through D-21) ---
+  {
+    id: 'D-19', domain: 'db', name: 'Identifier quoting mismatch',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'db',
+    predicateMatch: (p, pred) => {
+      if (!pred?.table && !pred?.column) return false;
+      const name = pred?.table ?? pred?.column ?? '';
+      return /["'`]/.test(name) || /reserved/i.test(p.expected ?? '');
+    },
+    confidence: 0.75,
+  },
+  {
+    id: 'D-21', domain: 'db', name: 'Date/timestamp format mismatch',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'db',
+    predicateMatch: (p, pred) => {
+      const assertion = pred?.assertion as string | undefined;
+      return !p.passed && (assertion === 'column_type' || assertion === 'row_value') &&
+        /timestamp|date|time/i.test(pred?.expected ?? p.expected ?? '');
+    },
+    confidence: 0.75,
+  },
+
+  // --- Schema structure shapes (D-23 through D-30) ---
+  {
+    id: 'D-23', domain: 'db', name: 'Schema-qualified name mismatch',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'db',
+    predicateMatch: (p, pred) => {
+      const table = pred?.table ?? '';
+      return table.includes('.'); // e.g., "public.users"
+    },
+    confidence: 0.8,
+  },
+  {
+    id: 'D-24', domain: 'db', name: 'Generated/computed column',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'db',
+    predicateMatch: (p, pred) => {
+      return /generated|computed|virtual/i.test(p.expected ?? '') ||
+        pred?.assertion === 'column_type' && /generated/i.test(pred?.expected ?? '');
+    },
+    confidence: 0.7,
+  },
+  {
+    id: 'D-26', domain: 'db', name: 'Partial/expression index',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'db',
+    predicateMatch: (p, pred) => {
+      const assertion = pred?.assertion as string | undefined;
+      return (assertion === 'index_exists' || assertion === 'constraint_exists') &&
+        /partial|where|expression/i.test(p.expected ?? '');
+    },
+    confidence: 0.75,
+  },
+  {
+    id: 'D-27', domain: 'db', name: 'Composite key mismatch',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'db',
+    predicateMatch: (p, pred) => {
+      const assertion = pred?.assertion as string | undefined;
+      return (assertion === 'constraint_exists' || assertion === 'index_exists') &&
+        /composite|multi.?column|compound/i.test(p.expected ?? '');
+    },
+    confidence: 0.75,
+  },
+  {
+    id: 'D-28', domain: 'db', name: 'Column order assumption',
+    claimType: 'ordering', truthType: 'deterministic',
+    predicateType: 'db',
+    predicateMatch: (p, pred) => {
+      return /column.?order|ordinal|position/i.test(p.expected ?? '') ||
+        pred?.assertion === 'column_order';
+    },
+    confidence: 0.7,
+  },
+  {
+    id: 'D-30', domain: 'db', name: 'View vs table ambiguity',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'db',
+    predicateMatch: (p, pred) => {
+      return /view|materialized/i.test(p.expected ?? '') ||
+        pred?.assertion === 'table_exists' && /view/i.test(p.actual ?? '');
+    },
+    confidence: 0.7,
+  },
+
+  // --- Runtime shapes (D-33 through D-44) ---
+  {
+    id: 'D-33', domain: 'db', name: 'NULL comparison semantics',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'db',
+    predicateMatch: (p, pred) => {
+      return !p.passed && (p.actual === 'null' || p.actual === 'NULL' || p.expected === 'null' ||
+        /null.?semantic|is.?null/i.test(p.expected ?? ''));
+    },
+    confidence: 0.85,
+  },
+  {
+    id: 'D-34', domain: 'db', name: 'Floating-point precision mismatch',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'db',
+    predicateMatch: (p, pred) => {
+      if (!p.actual || !p.expected) return false;
+      const actual = parseFloat(p.actual);
+      const expected = parseFloat(p.expected);
+      return !isNaN(actual) && !isNaN(expected) && actual !== expected &&
+        Math.abs(actual - expected) < 0.01;
+    },
+    confidence: 0.85,
+  },
+  {
+    id: 'D-35', domain: 'db', name: 'Timezone-aware vs naive timestamp',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'db',
+    predicateMatch: (p, pred) => {
+      return !p.passed && pred?.assertion === 'column_type' &&
+        /timestamptz|timestamp.*tz|timezone/i.test(pred?.expected ?? p.expected ?? '');
+    },
+    confidence: 0.8,
+  },
+  {
+    id: 'D-36', domain: 'db', name: 'Default value only visible on insert path',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'db',
+    predicateMatch: (p, pred) => {
+      return /default|auto|generated/i.test(p.expected ?? '') &&
+        (pred?.assertion === 'row_value' || pred?.assertion === 'column_type');
+    },
+    confidence: 0.7,
+  },
+  {
+    id: 'D-39', domain: 'db', name: 'Row ordering not guaranteed',
+    claimType: 'ordering', truthType: 'deterministic',
+    predicateType: 'db',
+    predicateMatch: (p, pred) => {
+      return /order|sort|position|first|last/i.test(p.expected ?? '') &&
+        (pred?.assertion === 'row_value' || pred?.assertion === 'row_count');
+    },
+    confidence: 0.7,
+  },
+  {
+    id: 'D-44', domain: 'db', name: 'Reserved keyword as identifier',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'db',
+    predicateMatch: (p, pred) => {
+      const RESERVED = /^(user|order|group|select|table|index|key|value|type|name|status|role|check|comment|limit|offset|column|row|level|trigger|grant)$/i;
+      return RESERVED.test(pred?.table ?? '') || RESERVED.test(pred?.column ?? '');
+    },
+    confidence: 0.8,
+  },
+  {
+    id: 'D-47', domain: 'db', name: 'Function/procedure existence',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'db',
+    predicateMatch: (p, pred) => {
+      return /function|procedure|routine/i.test(p.expected ?? '') ||
+        pred?.assertion === 'function_exists';
+    },
+    confidence: 0.75,
+  },
+  {
+    id: 'D-53', domain: 'db', name: 'JSON/JSONB path query failure',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'db',
+    predicateMatch: (p, pred) => {
+      return /jsonb?|->|#>/i.test(p.expected ?? '') || pred?.assertion === 'json_path';
+    },
+    confidence: 0.75,
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -1154,6 +1640,36 @@ const FS_SHAPES: ShapeRule[] = [
       return !isNaN(exp) && !isNaN(act) && act > exp;
     },
     confidence: 0.9,
+  },
+  {
+    id: 'FS-13', domain: 'filesystem', name: 'Compressed or encoded content not readable as text',
+    claimType: 'containment', truthType: 'deterministic',
+    detailPatterns: [/compressed|encoded|binary|gzip|\.gz|base64.*content/i],
+    confidence: 0.8,
+  },
+  {
+    id: 'FS-35', domain: 'filesystem', name: 'Source file matches but build artifact differs',
+    claimType: 'equality', truthType: 'deterministic',
+    detailPatterns: [/source.*match.*artifact|build.*differ|minif|artifact.*mismatch/i],
+    confidence: 0.8,
+  },
+  {
+    id: 'FS-36', domain: 'filesystem', name: '.gitignore hides file from verification glob',
+    claimType: 'existence', truthType: 'deterministic',
+    detailPatterns: [/gitignore.*hid|ignored.*by.*git|glob.*exclud|verification.*miss.*gitignore/i],
+    confidence: 0.8,
+  },
+  {
+    id: 'FS-37', domain: 'filesystem', name: 'Lock file stale after dependency change',
+    claimType: 'invariance', truthType: 'deterministic',
+    detailPatterns: [/lock.*stale|lockfile.*outdated|package-lock.*mismatch|dependency.*drift/i],
+    confidence: 0.8,
+  },
+  {
+    id: 'FS-38', domain: 'filesystem', name: 'Temp file left from failed write',
+    claimType: 'absence', truthType: 'deterministic',
+    detailPatterns: [/temp.*file|\.tmp.*left|partial.*write|orphan.*temp/i],
+    confidence: 0.75,
   },
 ];
 
@@ -1352,6 +1868,72 @@ const GENERAL_CROSS_CUTTING_SHAPES: ShapeRule[] = [
     detailPatterns: [/regex|special char|parenthes|bracket/i],
     confidence: 0.75,
   },
+  {
+    id: 'X-90', domain: 'cross-cutting', name: 'Serialization round-trip fingerprint instability',
+    claimType: 'invariance', truthType: 'deterministic',
+    detailPatterns: [/round.?trip|serializ.*deserializ|JSON.*parse.*stringify.*differ/i],
+    confidence: 0.8,
+  },
+  {
+    id: 'X-91', domain: 'cross-cutting', name: 'Unicode in fingerprint input changes hash',
+    claimType: 'equality', truthType: 'deterministic',
+    detailPatterns: [/unicode.*fingerprint|non.ascii.*hash|cjk.*fingerprint/i],
+    confidence: 0.8,
+  },
+  {
+    id: 'X-92', domain: 'cross-cutting', name: 'Skipped vs absent vs disabled gate confusion',
+    claimType: 'equality', truthType: 'deterministic',
+    detailPatterns: [/skipped.*absent|disabled.*gate|gate.*not.*run.*report.*pass/i],
+    confidence: 0.75,
+  },
+  {
+    id: 'X-93', domain: 'cross-cutting', name: 'All three authorities disagree (triangulation deadlock)',
+    claimType: 'causal', truthType: 'evaluative',
+    detailPatterns: [/three.*author.*disagree|triangulat.*deadlock|no.*majority/i],
+    confidence: 0.7,
+  },
+  {
+    id: 'X-94', domain: 'cross-cutting', name: 'Grounding finds selector in dead code / comment',
+    claimType: 'existence', truthType: 'deterministic',
+    detailPatterns: [/grounding.*comment|dead.*code.*ground|selector.*in.*comment/i],
+    confidence: 0.75,
+  },
+  {
+    id: 'X-95', domain: 'cross-cutting', name: 'Unicode grapheme boundaries break search',
+    claimType: 'containment', truthType: 'deterministic',
+    detailPatterns: [/grapheme|surrogate.*pair|multi.*codepoint|emoji.*split/i],
+    confidence: 0.75,
+  },
+  {
+    id: 'X-96', domain: 'cross-cutting', name: 'Authority weighting bug in final verdict',
+    claimType: 'causal', truthType: 'deterministic',
+    detailPatterns: [/authority.*weight|verdict.*wrong|majority.*calcul/i],
+    confidence: 0.7,
+  },
+  {
+    id: 'X-97', domain: 'cross-cutting', name: 'Attestation string omits failed gate detail',
+    claimType: 'containment', truthType: 'deterministic',
+    detailPatterns: [/attestation.*omit|missing.*gate.*detail|receipt.*incomplete/i],
+    confidence: 0.8,
+  },
+  {
+    id: 'X-98', domain: 'cross-cutting', name: 'Predicate passes all gates but wrong semantic target',
+    claimType: 'causal', truthType: 'deterministic',
+    detailPatterns: [/wrong.*route|wrong.*page|predicate.*semantic.*mismatch|correct.*wrong.*target/i],
+    confidence: 0.7,
+  },
+  {
+    id: 'X-99', domain: 'cross-cutting', name: 'Deferred predicate never validated post-deploy',
+    claimType: 'existence', truthType: 'deterministic',
+    detailPatterns: [/deferred.*never.*validated|deferred.*skipped|validation.*mode.*deferred.*miss/i],
+    confidence: 0.8,
+  },
+  {
+    id: 'X-100', domain: 'cross-cutting', name: 'Predicate fingerprint changes across pipeline stages',
+    claimType: 'equality', truthType: 'deterministic',
+    detailPatterns: [/fingerprint.*change.*stage|fingerprint.*instab|different.*fingerprint.*same.*pred/i],
+    confidence: 0.85,
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -1474,6 +2056,64 @@ const K5_SHAPES: ShapeRule[] = [
     detailPatterns: [/harness.*fault|infrastructure.*error|dns.*resolution/i],
     confidence: 0.7,
   },
+  {
+    id: 'X-22', domain: 'cross-cutting', name: 'Narrowing from wrong gate (misattributed feedback)',
+    claimType: 'causal', truthType: 'deterministic',
+    // Narrowing hint references a gate that wasn't the source of failure
+    resultMatch: (r) => {
+      if (!r.narrowing?.constraints?.length) return false;
+      const failedGate = r.gates.find(g => !g.passed)?.gate;
+      return r.narrowing.constraints.some(c => c.gate !== undefined && c.gate !== failedGate);
+    },
+    confidence: 0.6,
+  },
+  {
+    id: 'X-28', domain: 'cross-cutting', name: 'Predicate unresolvable in extracted scope',
+    claimType: 'equality', truthType: 'deterministic',
+    // Predicate type doesn't match any available gate
+    resultMatch: (r) => {
+      const predicateTypes = new Set(r.predicateResults?.map(p => p.type) ?? []);
+      const gateNames = new Set(r.gates.map(g => g.gate));
+      // Content predicates without file scope
+      return predicateTypes.has('content') && !gateNames.has('content');
+    },
+    confidence: 0.5,
+  },
+  {
+    id: 'X-29', domain: 'cross-cutting', name: 'Cascading failure from prior gate (temporal dependency)',
+    claimType: 'causal', truthType: 'deterministic',
+    // Multiple gates fail and the later gate's detail references the earlier gate
+    resultMatch: (r) => {
+      const failures = r.gates.filter(g => !g.passed);
+      if (failures.length < 2) return false;
+      const firstFail = failures[0].gate;
+      return failures.slice(1).some(f => (f.detail ?? '').toLowerCase().includes(firstFail));
+    },
+    confidence: 0.65,
+  },
+  {
+    id: 'X-36', domain: 'cross-cutting', name: 'Maximum predicate cap enforced (overflow dropped)',
+    claimType: 'invariance', truthType: 'deterministic',
+    // Verify returns fewer predicateResults than originally submitted
+    resultMatch: (r) => {
+      const resultCount = r.predicateResults?.length ?? 0;
+      // More than 8 results (cap) suggests cap was reached, or detail mentions cap
+      return (r.gates.some(g => (g.detail ?? '').includes('cap')) || resultCount >= 8);
+    },
+    confidence: 0.5,
+  },
+  {
+    id: 'X-49', domain: 'cross-cutting', name: 'Comment vs code detection failure',
+    claimType: 'containment', truthType: 'deterministic',
+    // Content predicate matches text inside a comment (// or /* */ or <!-- -->)
+    resultMatch: (r) => {
+      return r.predicateResults?.some(p =>
+        p.passed && p.type === 'content' && (p.detail ?? '').includes('comment')
+      ) ?? false;
+    },
+    detailPatterns: [/comment|\/\*|\/\/|<!--/],
+    confidence: 0.55,
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -1580,6 +2220,114 @@ const STAGING_SHAPES: ShapeRule[] = [
     claimType: 'existence', truthType: 'deterministic',
     detailPatterns: [/eaddrinuse|port.*in use/i],
     confidence: 0.95,
+  },
+
+  // --- Staging lifecycle shapes (Move 17) ---
+
+  // Container startup timeout — container starts but never becomes healthy
+  {
+    id: 'STG-01', domain: 'staging', name: 'Container startup timeout',
+    claimType: 'existence', truthType: 'deterministic',
+    detailPatterns: [/startup.*timeout|failed to become healthy|container.*timeout/i],
+    confidence: 0.9,
+  },
+  // Dockerfile missing or invalid
+  {
+    id: 'STG-02', domain: 'staging', name: 'Dockerfile not found or invalid',
+    claimType: 'existence', truthType: 'deterministic',
+    detailPatterns: [/dockerfile.*not found|no.*dockerfile|cannot locate.*dockerfile/i],
+    confidence: 0.95,
+  },
+  // Docker compose file missing or malformed
+  {
+    id: 'STG-03', domain: 'staging', name: 'Compose file missing or malformed',
+    claimType: 'existence', truthType: 'deterministic',
+    detailPatterns: [/compose.*not found|invalid.*compose|yaml.*parse.*error/i],
+    confidence: 0.95,
+  },
+  // OOM kill during build or start
+  {
+    id: 'STG-04', domain: 'staging', name: 'OOM kill during staging',
+    claimType: 'existence', truthType: 'deterministic',
+    detailPatterns: [/oom|out of memory|killed.*137|exit.*code.*137/i],
+    confidence: 0.95,
+  },
+  // Container exits immediately after start (crash loop)
+  {
+    id: 'STG-05', domain: 'staging', name: 'Container immediate exit (crash)',
+    claimType: 'existence', truthType: 'deterministic',
+    detailPatterns: [/container.*exit|exited.*with.*code|restart.*loop|crash.*loop/i],
+    confidence: 0.85,
+  },
+  // Missing dependency in container (npm install failure, missing module)
+  {
+    id: 'STG-06', domain: 'staging', name: 'Missing dependency in container',
+    claimType: 'existence', truthType: 'deterministic',
+    detailPatterns: [/cannot find module|module not found|npm.*err|dependency.*fail/i],
+    confidence: 0.9,
+  },
+  // Permission denied in container filesystem
+  {
+    id: 'STG-07', domain: 'staging', name: 'Permission denied in container',
+    claimType: 'existence', truthType: 'deterministic',
+    detailPatterns: [/permission denied|eacces|eperm/i],
+    confidence: 0.85,
+  },
+  // Docker daemon not running or unreachable
+  {
+    id: 'STG-08', domain: 'staging', name: 'Docker daemon unreachable',
+    claimType: 'existence', truthType: 'deterministic',
+    detailPatterns: [/docker.*daemon.*not running|cannot connect.*docker|docker.*not available/i],
+    confidence: 0.95,
+  },
+  // Image pull failure (network or registry issue)
+  {
+    id: 'STG-09', domain: 'staging', name: 'Docker image pull failure',
+    claimType: 'existence', truthType: 'deterministic',
+    detailPatterns: [/pull.*fail|image.*not found|manifest.*not found|registry.*error/i],
+    confidence: 0.9,
+  },
+  // Volume mount failure
+  {
+    id: 'STG-10', domain: 'staging', name: 'Volume mount failure',
+    claimType: 'existence', truthType: 'deterministic',
+    detailPatterns: [/volume.*mount|bind.*mount.*fail|mount.*denied/i],
+    confidence: 0.85,
+  },
+  // Service dependency not ready (db not ready when app starts)
+  {
+    id: 'STG-11', domain: 'staging', name: 'Service dependency not ready',
+    claimType: 'existence', truthType: 'deterministic',
+    detailPatterns: [/connection refused.*db|econnrefused.*5432|depends_on.*not ready/i],
+    confidence: 0.85,
+  },
+  // Build cache invalidation — unexpected full rebuild
+  {
+    id: 'STG-12', domain: 'staging', name: 'Build cache miss (unexpected rebuild)',
+    claimType: 'causal', truthType: 'deterministic',
+    detailPatterns: [/cache.*miss|no.*cache|layer.*rebuild|full.*rebuild/i],
+    confidence: 0.7,
+  },
+  // Container network isolation — app cannot reach external service
+  {
+    id: 'STG-13', domain: 'staging', name: 'Container network isolation',
+    claimType: 'existence', truthType: 'deterministic',
+    detailPatterns: [/network.*unreachable|no.*route.*host|connect.*refused.*external/i],
+    confidence: 0.8,
+  },
+  // Entrypoint / CMD misconfigured
+  {
+    id: 'STG-14', domain: 'staging', name: 'Entrypoint or CMD misconfigured',
+    claimType: 'existence', truthType: 'deterministic',
+    detailPatterns: [/exec.*format error|entrypoint.*not found|cmd.*not found|no.*such.*file.*node/i],
+    confidence: 0.9,
+  },
+  // Multi-stage build copy failure
+  {
+    id: 'STG-15', domain: 'staging', name: 'Multi-stage build COPY failure',
+    claimType: 'existence', truthType: 'deterministic',
+    detailPatterns: [/copy.*failed|source.*path.*not found|multi.*stage.*error/i],
+    confidence: 0.85,
   },
 ];
 
@@ -1700,6 +2448,30 @@ const INVARIANT_SHAPES: ShapeRule[] = [
     claimType: 'invariance', truthType: 'deterministic',
     resultMatch: (r) => r.gates.some(g => g.gate === 'invariants' && !g.passed),
     confidence: 0.9,
+  },
+  {
+    id: 'INV-05', domain: 'invariant', name: 'Command output parsing mismatch',
+    claimType: 'equality', truthType: 'deterministic',
+    detailPatterns: [/command.*output.*pars|output.*format.*unexpected|pg_isready.*format/i],
+    confidence: 0.8,
+  },
+  {
+    id: 'INV-10', domain: 'invariant', name: 'Invariant budget exceeded before completion',
+    claimType: 'threshold', truthType: 'deterministic',
+    detailPatterns: [/budget.*exceeded|invariant.*timeout|30s.*budget|too many invariants/i],
+    confidence: 0.85,
+  },
+  {
+    id: 'INV-11', domain: 'invariant', name: 'Invariant order-dependent (later depends on earlier)',
+    claimType: 'ordering', truthType: 'deterministic',
+    detailPatterns: [/order.*dependent|depends.*previous|sequential.*invariant/i],
+    confidence: 0.75,
+  },
+  {
+    id: 'INV-12', domain: 'invariant', name: 'Command exit 0 but stdout contains error text',
+    claimType: 'containment', truthType: 'deterministic',
+    detailPatterns: [/exit.*0.*error|success.*exit.*warning|stdout.*error.*exit.*0/i],
+    confidence: 0.8,
   },
 ];
 
@@ -2294,6 +3066,300 @@ const PERF_SHAPES: ShapeRule[] = [
 // MASTER CATALOG
 // =============================================================================
 
+// ---------------------------------------------------------------------------
+// TEMPORAL SHAPES (TO-*) — Move 18
+// Time-dependent failures where verification timing affects outcome.
+// ---------------------------------------------------------------------------
+const TEMPORAL_SHAPES: ShapeRule[] = [
+  {
+    id: 'TO-01', domain: 'temporal', name: 'State not yet settled when evaluated',
+    claimType: 'existence', truthType: 'eventual',
+    detailPatterns: [/not.*settled|async.*init|loading|pending.*state/i],
+    confidence: 0.8,
+  },
+  {
+    id: 'TO-02', domain: 'temporal', name: 'Transient pass followed by regression',
+    claimType: 'equality', truthType: 'eventual',
+    detailPatterns: [/transient|regression.*after|pass.*then.*fail/i],
+    confidence: 0.7,
+  },
+  {
+    id: 'TO-03', domain: 'temporal', name: 'Non-deterministic retry outcome',
+    claimType: 'equality', truthType: 'eventual',
+    detailPatterns: [/flaky|intermittent|non.*deterministic|retry.*different/i],
+    confidence: 0.7,
+  },
+  {
+    id: 'TO-04', domain: 'temporal', name: 'Split-time observation (hydration gap)',
+    claimType: 'equality', truthType: 'eventual',
+    detailPatterns: [/hydration|pre.*render|server.*side.*differ/i],
+    confidence: 0.75,
+  },
+  {
+    id: 'TO-05', domain: 'temporal', name: 'Cached state causes stale result',
+    claimType: 'equality', truthType: 'deterministic',
+    detailPatterns: [/cache|stale|not.*updated|old.*value/i],
+    confidence: 0.8,
+  },
+  {
+    id: 'TO-06', domain: 'temporal', name: 'Debounce/throttle timing false negative',
+    claimType: 'existence', truthType: 'eventual',
+    detailPatterns: [/debounce|throttle|delayed.*visible|timing/i],
+    confidence: 0.7,
+  },
+  {
+    id: 'TO-07', domain: 'temporal', name: 'Animation/transition midpoint sampled',
+    claimType: 'equality', truthType: 'eventual',
+    detailPatterns: [/animation|transition|midpoint|between.*states/i],
+    confidence: 0.7,
+  },
+  {
+    id: 'TO-08', domain: 'temporal', name: 'Eventual consistency stale read',
+    claimType: 'equality', truthType: 'eventual',
+    detailPatterns: [/eventual.*consist|read.*after.*write|stale.*read/i],
+    confidence: 0.75,
+  },
+  {
+    id: 'TO-09', domain: 'temporal', name: 'Background job not finished before check',
+    claimType: 'existence', truthType: 'eventual',
+    detailPatterns: [/background.*job|worker.*processing|queue.*pending/i],
+    confidence: 0.7,
+  },
+  {
+    id: 'TO-10', domain: 'temporal', name: 'Time-dependent logic changes outcome',
+    claimType: 'equality', truthType: 'eventual',
+    detailPatterns: [/time.*dependent|date.*change|clock|expires/i],
+    confidence: 0.75,
+  },
+  {
+    id: 'TO-11', domain: 'temporal', name: 'Timezone-dependent rendering',
+    claimType: 'equality', truthType: 'eventual',
+    detailPatterns: [/timezone|utc|local.*time|tz/i],
+    confidence: 0.7,
+  },
+  {
+    id: 'TO-14', domain: 'temporal', name: 'Locale-dependent date formatting',
+    claimType: 'equality', truthType: 'eventual',
+    detailPatterns: [/locale|toLocaleDate|date.*format/i],
+    confidence: 0.7,
+  },
+  {
+    id: 'TO-15', domain: 'temporal', name: 'TTL expiry between check and use',
+    claimType: 'existence', truthType: 'eventual',
+    detailPatterns: [/ttl|expir|session.*expired|token.*expired/i],
+    confidence: 0.75,
+  },
+];
+
+// ---------------------------------------------------------------------------
+// OBSERVER EFFECT SHAPES (OE-*) — Move 18
+// Verification act itself changes the observed system.
+// ---------------------------------------------------------------------------
+const OBSERVER_SHAPES: ShapeRule[] = [
+  {
+    id: 'OE-01', domain: 'observer', name: 'HTTP verification call mutates state',
+    claimType: 'causal', truthType: 'deterministic',
+    detailPatterns: [/verification.*mutate|check.*side.*effect|get.*creates/i],
+    confidence: 0.8,
+  },
+  {
+    id: 'OE-02', domain: 'observer', name: 'DB read triggers lazy load/materialization',
+    claimType: 'causal', truthType: 'deterministic',
+    detailPatterns: [/lazy.*load|materiali|trigger.*read/i],
+    confidence: 0.7,
+  },
+  {
+    id: 'OE-03', domain: 'observer', name: 'Browser evaluation triggers layout/script',
+    claimType: 'causal', truthType: 'deterministic',
+    detailPatterns: [/layout.*recalc|reflow|getComputedStyle.*trigger/i],
+    confidence: 0.7,
+  },
+  {
+    id: 'OE-04', domain: 'observer', name: 'File read triggers watcher/rebuild',
+    claimType: 'causal', truthType: 'deterministic',
+    detailPatterns: [/watcher|hot.*reload|file.*change.*trigger/i],
+    confidence: 0.75,
+  },
+  {
+    id: 'OE-05', domain: 'observer', name: 'Rate limit triggered by verification probes',
+    claimType: 'causal', truthType: 'deterministic',
+    detailPatterns: [/rate.*limit|429|too.*many.*request/i],
+    confidence: 0.85,
+  },
+  {
+    id: 'OE-06', domain: 'observer', name: 'Verification order changes outcome',
+    claimType: 'causal', truthType: 'deterministic',
+    detailPatterns: [/order.*dependent|sequence.*matter|check.*order/i],
+    confidence: 0.7,
+  },
+  {
+    id: 'OE-07', domain: 'observer', name: 'Repeated verification degrades system',
+    claimType: 'causal', truthType: 'deterministic',
+    detailPatterns: [/memory.*leak|connection.*pool|exhaust|repeated.*check/i],
+    confidence: 0.7,
+  },
+  {
+    id: 'OE-10', domain: 'observer', name: 'Verification creates resource that satisfies predicate',
+    claimType: 'causal', truthType: 'deterministic',
+    detailPatterns: [/creates.*default|auto.*create|verification.*artifact/i],
+    confidence: 0.8,
+  },
+];
+
+// ---------------------------------------------------------------------------
+// CONCURRENCY SHAPES (CO-*) — Move 18
+// Race conditions, lock contention, parallel execution conflicts.
+// ---------------------------------------------------------------------------
+const CONCURRENCY_SHAPES: ShapeRule[] = [
+  {
+    id: 'CO-01', domain: 'concurrency', name: 'Concurrent edits to same file',
+    claimType: 'causal', truthType: 'deterministic',
+    detailPatterns: [/concurrent.*edit|simultaneous.*write|conflict.*file/i],
+    confidence: 0.8,
+  },
+  {
+    id: 'CO-02', domain: 'concurrency', name: 'Overlapping verification runs',
+    claimType: 'causal', truthType: 'deterministic',
+    detailPatterns: [/overlapping.*run|parallel.*verify|concurrent.*verif/i],
+    confidence: 0.75,
+  },
+  {
+    id: 'CO-03', domain: 'concurrency', name: 'Background job modifies state during verification',
+    claimType: 'causal', truthType: 'eventual',
+    detailPatterns: [/background.*modif|cron.*change|worker.*altered/i],
+    confidence: 0.7,
+  },
+  {
+    id: 'CO-04', domain: 'concurrency', name: 'DB transaction interference',
+    claimType: 'causal', truthType: 'eventual',
+    detailPatterns: [/phantom.*read|lock.*contention|deadlock|transaction.*interfere/i],
+    confidence: 0.75,
+  },
+  {
+    id: 'CO-05', domain: 'concurrency', name: 'Last-write-wins race',
+    claimType: 'causal', truthType: 'deterministic',
+    detailPatterns: [/last.*write.*wins|race.*condition|overwrite/i],
+    confidence: 0.7,
+  },
+  {
+    id: 'CO-06', domain: 'concurrency', name: 'Lock contention / deadlock',
+    claimType: 'causal', truthType: 'deterministic',
+    detailPatterns: [/deadlock|lock.*timeout|mutex|semaphore/i],
+    confidence: 0.8,
+  },
+  {
+    id: 'CO-07', domain: 'concurrency', name: 'Partial visibility across concurrent readers',
+    claimType: 'causal', truthType: 'eventual',
+    detailPatterns: [/partial.*read|torn.*read|inconsistent.*snapshot/i],
+    confidence: 0.7,
+  },
+  {
+    id: 'CO-08', domain: 'concurrency', name: 'Container restart during verification',
+    claimType: 'causal', truthType: 'deterministic',
+    detailPatterns: [/container.*restart.*during|process.*died.*mid.*check/i],
+    confidence: 0.8,
+  },
+  {
+    id: 'CO-09', domain: 'concurrency', name: 'Constraint store concurrent access',
+    claimType: 'causal', truthType: 'deterministic',
+    detailPatterns: [/constraint.*concurrent|store.*race|parallel.*seed/i],
+    confidence: 0.75,
+  },
+  {
+    id: 'CO-10', domain: 'concurrency', name: 'Parallel gate evaluation inconsistent snapshot',
+    claimType: 'causal', truthType: 'eventual',
+    detailPatterns: [/parallel.*gate|inconsistent.*snapshot|different.*version/i],
+    confidence: 0.7,
+  },
+  {
+    id: 'CO-11', domain: 'concurrency', name: 'Hot reload triggered by edit during verification',
+    claimType: 'causal', truthType: 'deterministic',
+    detailPatterns: [/hot.*reload.*during|file.*watcher.*fires|rebuild.*mid.*check/i],
+    confidence: 0.75,
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Drift Domain (DR-*)
+// ---------------------------------------------------------------------------
+
+const DRIFT_SHAPES: ShapeRule[] = [
+  {
+    id: 'DR-05', domain: 'drift', name: 'Runtime version drift',
+    claimType: 'equality', truthType: 'contextual',
+    detailPatterns: [/runtime.*version|node.*version.*drift|\.nvmrc.*mismatch|engine.*incompatible/i],
+    confidence: 0.8,
+  },
+  {
+    id: 'DR-06', domain: 'drift', name: 'Container base image update changed behavior',
+    claimType: 'equality', truthType: 'contextual',
+    detailPatterns: [/base.*image.*updat|FROM.*changed|alpine.*version|image.*drift/i],
+    confidence: 0.75,
+  },
+  {
+    id: 'DR-11', domain: 'drift', name: 'Docker base image layer changes silently',
+    claimType: 'invariance', truthType: 'contextual',
+    detailPatterns: [/image.*layer.*chang|digest.*mismatch|unpinned.*image|sha256.*differ/i],
+    confidence: 0.75,
+  },
+  {
+    id: 'DR-02', domain: 'drift', name: 'CSS cascade specificity drift',
+    claimType: 'equality', truthType: 'deterministic',
+    detailPatterns: [/specificity.*drift|cascade.*order|!important.*override.*drift/i],
+    confidence: 0.8,
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Identity Domain (ID-*)
+// ---------------------------------------------------------------------------
+
+const IDENTITY_SHAPES: ShapeRule[] = [
+  {
+    id: 'ID-04', domain: 'identity', name: 'Object identity vs value equality in JSON',
+    claimType: 'equality', truthType: 'deterministic',
+    detailPatterns: [/object.*identity.*value|JSON.*equal.*not.*identical|deep.*equal.*referenc/i],
+    confidence: 0.8,
+  },
+  {
+    id: 'ID-11', domain: 'identity', name: 'Fingerprint collision (different predicates same hash)',
+    claimType: 'equality', truthType: 'deterministic',
+    detailPatterns: [/fingerprint.*collision|hash.*collision|different.*predicate.*same.*finger/i],
+    confidence: 0.85,
+  },
+  {
+    id: 'ID-02', domain: 'identity', name: 'Alias vs canonical path confusion',
+    claimType: 'equality', truthType: 'deterministic',
+    detailPatterns: [/alias.*canonical|path.*alias|symlink.*resolv|different.*path.*same.*file/i],
+    confidence: 0.8,
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Scope Boundary Domain (SC-*)
+// ---------------------------------------------------------------------------
+
+const SCOPE_BOUNDARY_SHAPES: ShapeRule[] = [
+  {
+    id: 'SC-01', domain: 'scope_boundary', name: 'Local success but global failure',
+    claimType: 'containment', truthType: 'contextual',
+    detailPatterns: [/local.*pass.*global.*fail|staging.*pass.*prod.*fail|scope.*mismatch/i],
+    confidence: 0.8,
+  },
+  {
+    id: 'SC-07', domain: 'scope_boundary', name: 'Module boundary — correct export, wrong import',
+    claimType: 'equality', truthType: 'deterministic',
+    detailPatterns: [/module.*boundary|export.*import.*mismatch|wrong.*import|named.*default.*export/i],
+    confidence: 0.75,
+  },
+  {
+    id: 'SC-10', domain: 'scope_boundary', name: 'Blast radius underestimated',
+    claimType: 'threshold', truthType: 'evaluative',
+    detailPatterns: [/blast.*radius|scope.*wider|unexpected.*side.*effect|collateral.*damage/i],
+    confidence: 0.75,
+  },
+];
+
 const ALL_SHAPES: ShapeRule[] = [
   ...CSS_SHAPES,
   ...HTML_SHAPES,
@@ -2317,6 +3383,12 @@ const ALL_SHAPES: ShapeRule[] = [
   ...VISION_SHAPES,
   ...INVARIANT_SHAPES,
   ...MESSAGE_SHAPES,
+  ...TEMPORAL_SHAPES,
+  ...OBSERVER_SHAPES,
+  ...CONCURRENCY_SHAPES,
+  ...DRIFT_SHAPES,
+  ...IDENTITY_SHAPES,
+  ...SCOPE_BOUNDARY_SHAPES,
 ];
 
 // =============================================================================
@@ -2707,7 +3779,7 @@ const DOMINANCE: Record<string, string[]> = {
     'C-11', 'C-12', 'C-13', 'C-14', 'C-16', 'C-44', 'C-45', 'C-46', 'C-47', 'C-48',
     'C-49', 'C-50', 'C-52', 'C-17', 'C-18', 'C-19', 'C-20', 'C-21'],
   // Specific shorthand shapes dominate generic C-17 shorthand mismatch
-  'C-17': ['C-18', 'C-19', 'C-20', 'C-21'],
+  'C-17': ['C-18', 'C-19', 'C-20', 'C-21', 'C-22', 'C-23', 'C-26', 'C-27', 'C-29'],
   // Generic CSS groundingMiss shapes — C-32 (property miss) and C-40 (inherited) are
   // more specific than C-15 (new property)
   'C-15': ['C-32', 'C-40'],
@@ -2717,7 +3789,7 @@ const DOMINANCE: Record<string, string[]> = {
   'C-42': ['C-33'],
   // Generic HTML element not found — H-03 (wrong tag) is same signal, H-01 dominates
   // Specific HTML shapes dominate generic H-01 (not found) and H-02 (wrong content)
-  'H-01': ['H-06', 'H-15', 'H-16', 'H-22', 'H-24', 'H-31', 'H-34', 'H-35', 'H-40'],
+  'H-01': ['H-06', 'H-15', 'H-16', 'H-22', 'H-24', 'H-31', 'H-34', 'H-35', 'H-40', 'H-43'],
   'H-02': ['H-04', 'H-05', 'H-08', 'H-09', 'H-10', 'H-13', 'H-18', 'H-21', 'H-32', 'H-38'],
   'H-03': ['H-01'],
   // Generic HTTP body missing is dominated by error page match
@@ -2746,6 +3818,34 @@ const DOMINANCE: Record<string, string[]> = {
   // Cross-cutting: X-05 (empty predicates) dominates X-30 (zero edits with predicates)
   // since empty predicates is a more fundamental issue
   'X-55': ['X-57'],
+  // DB: D-01 (table missing) dominated by D-07 (fabricated table) when grounding caught it
+  'D-01': ['D-07', 'D-16'],
+  // DB: D-02 (column missing) dominated by D-08 (fabricated column)
+  'D-02': ['D-08'],
+  // DB: D-03 (type mismatch) dominated by D-09 (type mismatch after normalization) and D-06 (alias)
+  'D-03': ['D-09', 'D-06', 'D-35'],
+  // DB: D-10 (row count stub) dominated by D-13 (row count mismatch with actual/expected)
+  'D-10': ['D-13'],
+  // DB: D-11 (row value stub) dominated by D-14 (row value mismatch with actual)
+  'D-11': ['D-14'],
+  // DB: D-12 (constraint exists) dominated by D-26 (partial index) and D-27 (composite key)
+  'D-12': ['D-26', 'D-27'],
+  // Staging: generic I-01 (build failure) dominated by specific staging shapes
+  'I-01': ['STG-04', 'STG-06', 'STG-09', 'STG-14', 'STG-15'],
+  // Staging: generic I-02 (health check) dominated by specific startup/dependency shapes
+  'I-02': ['STG-01', 'STG-05', 'STG-11'],
+  // Staging: generic I-03 (DNS) dominated by network isolation
+  'I-03': ['STG-13'],
+  // Staging: STG-05 (crash) dominated by specific crash causes
+  'STG-05': ['STG-04', 'STG-06', 'STG-14'],
+  // Temporal: TO-01 (not settled) dominated by specific temporal variants
+  'TO-01': ['TO-04', 'TO-06', 'TO-07'],
+  // Temporal: TO-05 (cache stale) dominated by DB eventual consistency
+  'TO-05': ['TO-08'],
+  // Observer: OE-01 (verification mutates) dominated by specific mutation types
+  'OE-01': ['OE-02', 'OE-10'],
+  // Concurrency: CO-01 (concurrent edit) dominated by specific race variants
+  'CO-01': ['CO-05', 'CO-07'],
 };
 
 /**

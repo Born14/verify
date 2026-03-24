@@ -89,6 +89,7 @@ export async function verify(
       appDir: config.appDir,
       dockerAvailable: dockerPlausible,
       edits,
+      appUrl: config.appUrl,
     });
     const fingerprints = groundedPredicates.map(p => predicateFingerprint(p));
 
@@ -431,6 +432,52 @@ export async function verify(
       if (gateConfig.invariants !== false && invariants.length > 0) {
         log('[invariants] Running system health checks...');
         const invResult = await runInvariantsGate(ctx, invariants, runner);
+        gates.push(invResult);
+
+        if (!invResult.passed) {
+          log(`[invariants] FAILED: ${invResult.detail}`);
+          return buildResult({
+            gates, config, store, sessionId, totalStart, logs,
+            failedGate: 'invariants', error: invResult.detail, edits, predicates: groundedPredicates,
+          });
+        }
+      }
+    } else if (config.appUrl) {
+      // Staging skipped but appUrl provided — run HTTP/browser/invariant gates directly
+      ctx.appUrl = config.appUrl;
+      log(`[staging] Skipped (appUrl provided: ${config.appUrl})`);
+      gates.push({
+        gate: 'staging',
+        passed: true,
+        detail: `Skipped: using provided appUrl ${config.appUrl}`,
+        durationMs: 0,
+      });
+
+      // HTTP gate
+      if (gateConfig.http !== false) {
+        const httpPredicates = groundedPredicates.filter(
+          p => p.type === 'http' || p.type === 'http_sequence'
+        );
+        if (httpPredicates.length > 0) {
+          log('[http] Running HTTP predicate validation...');
+          const httpResult = await runHttpGate(ctx);
+          gates.push(httpResult);
+
+          if (!httpResult.passed) {
+            log(`[http] FAILED: ${httpResult.detail}`);
+            return buildResult({
+              gates, config, store, sessionId, totalStart, logs,
+              failedGate: 'http', error: httpResult.detail, edits, predicates: groundedPredicates,
+            });
+          }
+        }
+      }
+
+      // Invariants gate
+      const invariants2 = config.invariants ?? loadInvariantsFile(config.appDir);
+      if (gateConfig.invariants !== false && invariants2.length > 0) {
+        log('[invariants] Running system health checks...');
+        const invResult = await runInvariantsGate(ctx, invariants2, runner);
         gates.push(invResult);
 
         if (!invResult.passed) {

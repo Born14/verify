@@ -228,6 +228,11 @@ export interface VerifyConfig {
 
   /** System invariants to check after staging */
   invariants?: Invariant[];
+
+  /** App URL for HTTP/browser gates when staging is skipped.
+   *  If provided and staging is disabled, this URL is used for HTTP predicates.
+   *  Example: 'http://localhost:4567' */
+  appUrl?: string;
 }
 
 

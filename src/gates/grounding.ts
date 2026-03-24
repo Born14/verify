@@ -188,7 +188,7 @@ export function validateAgainstGrounding<T extends {
 }>(
   predicates: T[],
   grounding: GroundingContext,
-  opts?: { appDir?: string; dockerAvailable?: boolean; edits?: Array<{ file: string; search: string; replace: string }> },
+  opts?: { appDir?: string; dockerAvailable?: boolean; edits?: Array<{ file: string; search: string; replace: string }>; appUrl?: string },
 ): T[] {
   return predicates.map(p => {
     // ── CSS predicates: check selector, property, value, and route scope ──
@@ -427,7 +427,8 @@ export function validateAgainstGrounding<T extends {
     }
 
     // ── HTTP predicates: validate claimed body content against source ──
-    if (p.type === 'http' && opts?.appDir) {
+    // Skip when appUrl is provided — the HTTP gate will validate against the real server
+    if (p.type === 'http' && opts?.appDir && !opts?.appUrl) {
       // Extract claimed body content from either expect.bodyContains or expected
       const claimedContent: string[] = [];
       if (p.expect?.bodyContains) {

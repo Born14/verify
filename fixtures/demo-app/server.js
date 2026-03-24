@@ -155,12 +155,99 @@ const server = http.createServer((req, res) => {
   return;
   }
 
+  // --- Edge-cases route: fixture terrain for Move 7 scenarios ---
+  if (req.url === '/edge-cases') {
+  const dynamicClass = 'status-' + (Date.now() % 2 === 0 ? 'active' : 'idle');
+  res.writeHead(200, { 'Content-Type': 'text/html' });
+  res.end(`<!DOCTYPE html>
+<html>
+<head>
+  <title>Edge Cases - Demo App</title>
+  <!-- Normal style block -->
+  <style>
+    .edge-hero { color: #2c3e50; font-size: 1.5rem; font-weight: bold; }
+    .edge-hero .edge-title { color: #e74c3c; text-transform: uppercase; }
+    .edge-card { background: #ecf0f1; padding: 1rem; margin: 0.5rem 0; border-radius: 4px; }
+    .edge-card .edge-label { font-weight: 600; color: #34495e; }
+    .duplicate-prop { color: red; color: blue; }
+    .shorthand-test { margin: 10px; border: 1px solid #ccc; padding: 5px 10px 15px 20px; }
+    .flex-container { display: flex; flex: 1 0 auto; gap: 10px; }
+    .flex-item { flex: 2 1 100px; }
+    .grid-container { display: grid; grid-template: 1fr 2fr / auto auto; gap: 8px 16px; }
+    .overflow-box { overflow: hidden; width: 200px; height: 100px; }
+    .overflow-scroll { overflow: auto auto; }
+    .text-deco { text-decoration: underline wavy red; }
+    .list-custom { list-style: square inside url('marker.png'); }
+    .nested-rule { color: red; & .child { color: blue; } }
+    .clamp-width { width: clamp(200px, 50%, 800px); }
+    .color-mix-test { color: color-mix(in srgb, red 50%, blue); }
+    .meta-test { content: 'meta'; }
+  </style>
+  <!-- Minified style block (no whitespace between rules) -->
+  <style>.minified{color:#ff6600;font-size:14px;}.minified .inner{background:#000;color:#fff;}.min-link{text-decoration:none;color:#3498db;font-weight:bold;}</style>
+  <!-- @media and @keyframes block -->
+  <style>
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+    @media (max-width: 768px) {
+      .edge-hero { font-size: 1rem; }
+      .responsive-only { display: block; color: #27ae60; }
+    }
+    .animated { animation: pulse 2s infinite; color: #9b59b6; }
+  </style>
+</head>
+<body>
+  <h1 class="edge-hero"><span class="edge-title">Edge Cases</span></h1>
+  <div class="edge-card"><span class="edge-label">Card One</span></div>
+  <div class="edge-card"><span class="edge-label">Card Two</span></div>
+  <!-- Inline styles (not in <style> block) -->
+  <p style="color: #e67e22; font-size: 18px;" class="inline-styled">This has inline styles only.</p>
+  <p style="background: lightblue; padding: 10px;" class="inline-bg">Inline background.</p>
+  <!-- Minified elements -->
+  <div class="minified"><span class="inner">Minified CSS target</span></div>
+  <a class="min-link" href="/about">Minified link</a>
+  <!-- Dynamic class from template literal -->
+  <div class="${dynamicClass}">Dynamic class element</div>
+  <!-- CSS-in-JS style string literal (not real CSS) -->
+  <script>
+    const styles = { color: '#ff0000', fontSize: '16px' };
+    const cssString = '.fake-selector { color: green; font-weight: bold; }';
+  </script>
+  <!-- Duplicate property test -->
+  <div class="duplicate-prop">Which color wins?</div>
+  <!-- Shorthand test -->
+  <div class="shorthand-test">Shorthand properties</div>
+  <!-- Flex / Grid / Overflow tests -->
+  <div class="flex-container"><div class="flex-item">Flex A</div><div class="flex-item">Flex B</div></div>
+  <div class="grid-container"><div>Grid 1</div><div>Grid 2</div></div>
+  <div class="overflow-box">Overflow hidden content that may be clipped</div>
+  <div class="overflow-scroll">Scroll content</div>
+  <span class="text-deco">Decorated text</span>
+  <ul class="list-custom"><li>Custom list item</li></ul>
+  <div class="nested-rule">Nested <span class="child">child</span></div>
+  <div class="clamp-width">Clamped width</div>
+  <div class="color-mix-test">Color mixed</div>
+  <!-- Animated element -->
+  <div class="animated">Pulsing element</div>
+  <footer>Edge cases page</footer>
+</body>
+</html>`);
+  return;
+  }
+
   if (req.url === '/' || !req.url) {
   res.writeHead(200, { 'Content-Type': 'text/html' });
   res.end(`<!DOCTYPE html>
 <html>
 <head>
   <title>Demo App</title>
+  <meta name="description" content="A demo application for testing verify pipelines" />
+  <meta property="og:title" content="Demo App" />
+  <meta property="og:type" content="website" />
+  <meta charset="utf-8" />
   <style>
     body { font-family: sans-serif; margin: 2rem; background: #ffffff; color: #333; }
     h1 { color: #1a1a2e; font-size: 2rem; }

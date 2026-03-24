@@ -1324,8 +1324,13 @@ export function httpGateDetailContains(expected: string): InvariantCheck {
       if (result instanceof Error) return { passed: true, severity: 'info' };
       const httpGate = result.gates.find(g => g.gate === 'http');
       if (!httpGate) return { passed: false, violation: 'HTTP gate not found', severity: 'bug' };
-      if (!httpGate.detail.includes(expected)) {
-        return { passed: false, violation: `HTTP gate detail "${httpGate.detail}" missing "${expected}"`, severity: 'unexpected' };
+      // Check top-level detail AND per-predicate result details
+      const topDetail = httpGate.detail;
+      const perPredDetails = ((httpGate as any).results ?? [])
+        .map((r: any) => r.detail ?? '').join(' ');
+      const combined = `${topDetail} ${perPredDetails}`;
+      if (!combined.includes(expected)) {
+        return { passed: false, violation: `HTTP gate details "${combined.trim()}" missing "${expected}"`, severity: 'unexpected' };
       }
       return { passed: true, severity: 'info' };
     },

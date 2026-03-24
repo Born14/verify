@@ -2,9 +2,10 @@
  * Runner — Orchestrates Scenario Execution
  * ==========================================
  *
- * Phase 1: Pure scenarios (Families A, B, C, G) — no Docker
- * Phase 2: Docker scenarios (Family F) — sequential
- * Phase 3: Multi-step scenarios (Family B) — constraint store state
+ * Phase 1:   Pure scenarios (Families A, B, C, G) — no Docker
+ * Phase 1.5: HTTP mock scenarios (Family P) — local mock server
+ * Phase 2:   Multi-step scenarios (Family B) — constraint store state
+ * Phase 3:   Docker scenarios (Family F) — sequential
  */
 
 import { mkdirSync, rmSync, existsSync, copyFileSync, readdirSync } from 'fs';
@@ -21,6 +22,7 @@ import { Ledger, collectRunIdentity } from './ledger.js';
 import { printProgress, printSummary, saveSummary } from './report.js';
 import { generateAllScenarios, generateFamily } from './scenario-generator.js';
 import { loadExternalScenarios, loadUniversalScenarios } from './external-scenario-loader.js';
+import { startMockServer, stopMockServer, type MockServer } from '../../fixtures/http-server.js';
 
 const MAX_SCENARIO_TIMEOUT = 10 * 60 * 1000; // 10 min
 const MAX_TOTAL_TIMEOUT = 4 * 60 * 60 * 1000; // 4 hours
@@ -173,8 +175,9 @@ export async function runSelfTest(config: RunConfig): Promise<{ exitCode: number
   const totalStart = Date.now();
   const batchSize = config.parallelBatch ?? 10;
 
-  // Separate pure vs multi-step vs docker
-  const pure = scenarios.filter(s => !s.requiresDocker && !s.steps);
+  // Separate pure vs http-mock vs multi-step vs docker
+  const pure = scenarios.filter(s => !s.requiresDocker && !s.requiresHttpMock && !s.steps);
+  const httpMock = scenarios.filter(s => s.requiresHttpMock && !s.requiresDocker);
   const multiStep = scenarios.filter(s => s.steps && s.steps.length > 0);
   const docker = scenarios.filter(s => s.requiresDocker);
 
@@ -188,6 +191,27 @@ export async function runSelfTest(config: RunConfig): Promise<{ exitCode: number
       for (const entry of results) {
         ledger.append(entry);
         printProgress(entry);
+      }
+    }
+  }
+
+  // Phase 1.5: HTTP mock scenarios (local server, parallel batches)
+  if (httpMock.length > 0) {
+    console.log(`\n  Phase 1.5: ${httpMock.length} HTTP mock scenarios\n`);
+    let mockServer: MockServer | null = null;
+    try {
+      mockServer = await startMockServer();
+      console.log(`  Mock server started on ${mockServer.url}\n`);
+      // Run sequentially — stateful routes (POST/DELETE) need isolation
+      for (const s of httpMock) {
+        if (Date.now() - totalStart > MAX_TOTAL_TIMEOUT) break;
+        const entry = await runScenario(s, config, mockServer!.url);
+        ledger.append(entry);
+        printProgress(entry);
+      }
+    } finally {
+      if (mockServer) {
+        await stopMockServer(mockServer);
       }
     }
   }
@@ -236,7 +260,7 @@ export async function runSelfTest(config: RunConfig): Promise<{ exitCode: number
 // SINGLE SCENARIO EXECUTION
 // =============================================================================
 
-async function runScenario(scenario: VerifyScenario, config: RunConfig): Promise<LedgerEntry> {
+async function runScenario(scenario: VerifyScenario, config: RunConfig, mockServerUrl?: string): Promise<LedgerEntry> {
   const stateDir = join(tmpdir(), `verify-selftest-${scenario.id}`);
   const scenarioStart = Date.now();
 
@@ -260,10 +284,17 @@ async function runScenario(scenario: VerifyScenario, config: RunConfig): Promise
     const store = new ConstraintStore(stateDir);
     constraintsBefore = store.getConstraintCount();
 
+    // Reset mock server state before each HTTP mock scenario (isolation)
+    if (mockServerUrl && scenario.requiresHttpMock) {
+      try { await fetch(`${mockServerUrl}/api/reset`, { method: 'POST' }); } catch { /* best effort */ }
+    }
+
     const mergedConfig = {
       ...scenario.config,
       appDir: scenario.config.appDir ?? config.appDir,
       stateDir,
+      // Inject mock server URL for HTTP mock scenarios
+      ...(mockServerUrl && scenario.requiresHttpMock ? { appUrl: mockServerUrl } : {}),
     };
 
     // Substitute vision callback from environment when scenario uses placeholder

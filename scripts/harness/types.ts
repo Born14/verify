@@ -22,6 +22,8 @@ export interface VerifyScenario {
   config: Partial<VerifyConfig>;
   invariants: InvariantCheck[];
   requiresDocker: boolean;
+  /** Requires the local HTTP mock server (P family) */
+  requiresHttpMock?: boolean;
   /** For multi-step scenarios (B family), ordered steps */
   steps?: VerifyScenario[];
   /** Expected verify() outcome (if known) */
