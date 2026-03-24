@@ -11,6 +11,7 @@
 
 import type { VerifyResult } from '../../src/types.js';
 import type { VerifyScenario, InvariantCheck, InvariantVerdict, OracleContext } from './types.js';
+import { predicateFingerprint } from '../../src/store/constraint-store.js';
 
 // =============================================================================
 // UNIVERSAL PRODUCT INVARIANTS — checked on every scenario
@@ -173,8 +174,6 @@ export function fingerprintDistinctness(
     category: 'fingerprint',
     layer: 'product',
     check: () => {
-      // Import dynamically to avoid circular deps
-      const { predicateFingerprint } = require('../../src/store/constraint-store.js');
       const fpA = predicateFingerprint(getA());
       const fpB = predicateFingerprint(getB());
       if (fpA === fpB) {
@@ -198,7 +197,6 @@ export function fingerprintDeterminism(name: string, getPredicate: () => object)
     category: 'fingerprint',
     layer: 'product',
     check: () => {
-      const { predicateFingerprint } = require('../../src/store/constraint-store.js');
       const pred = getPredicate();
       const fp1 = predicateFingerprint(pred);
       const fp2 = predicateFingerprint(pred);

@@ -54,6 +54,12 @@ export function loadUniversalScenarios(fixtureDir: string): VerifyScenario[] {
 function deserialize(s: SerializedScenario, appDir: string): VerifyScenario {
   const invariants = buildInvariants(s);
 
+  // When scenario explicitly says requiresDocker: false, disable staging/browser/http
+  // gates to prevent Docker staging from interfering on machines where Docker is available
+  const gates = s.gates ?? (s.requiresDocker === false
+    ? { staging: false, browser: false, http: false }
+    : undefined);
+
   return {
     id: s.id,
     family: 'G', // External scenarios go in family G (edge cases / misc)
@@ -63,7 +69,7 @@ function deserialize(s: SerializedScenario, appDir: string): VerifyScenario {
     predicates: s.predicates,
     config: {
       appDir,
-      gates: s.gates,
+      gates,
     },
     invariants,
     requiresDocker: s.requiresDocker,

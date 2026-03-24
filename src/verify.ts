@@ -354,7 +354,7 @@ export async function verify(
     // =========================================================================
     const dockerAvailable = await isDockerAvailable();
     const hasStagingCompose = hasDockerCompose(stageDir ?? config.appDir, config.docker?.composefile);
-    const shouldStage = gateConfig.staging !== false && dockerAvailable && hasStagingCompose;
+    const shouldStage = gateConfig.staging !== false && dockerAvailable && hasStagingCompose && !config.appUrl;
 
     if (shouldStage) {
       log('[staging] Starting Docker staging...');
