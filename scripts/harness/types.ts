@@ -10,7 +10,7 @@ import type { Edit, Predicate, VerifyConfig, VerifyResult } from '../../src/type
 // SCENARIO
 // =============================================================================
 
-export type ScenarioFamily = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'M' | 'P' | 'V';
+export type ScenarioFamily = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'L' | 'M' | 'P' | 'V';
 
 export interface VerifyScenario {
   id: string;
@@ -49,6 +49,23 @@ export interface VerifyScenario {
     policy: import('../../src/gates/message.js').MessagePolicy;
     evidenceProviders?: Record<string, import('../../src/gates/message.js').EvidenceProvider>;
     deniedPatterns?: Array<{ pattern: string; reason: string; timestamp: number }>;
+  };
+
+  /**
+   * Govern loop test data — for Family L scenarios.
+   * When present, runner calls govern() instead of verify().
+   * The GovernResult is converted to a VerifyResult shape for invariant checking.
+   * The full GovernResult is stashed as _governResult for invariant access.
+   */
+  governTest?: {
+    goal: string;
+    maxAttempts: number;
+    /** Agent plan function — receives (goal, context) on each attempt */
+    agent: import('../../src/govern.js').GovernAgent;
+    /** Optional approval gate */
+    onApproval?: (plan: import('../../src/govern.js').AgentPlan, context: import('../../src/govern.js').GovernContext) => Promise<boolean>;
+    /** Optional stuck handler */
+    onStuck?: (state: import('../../src/govern.js').ConvergenceState, context: import('../../src/govern.js').GovernContext) => 'continue' | 'stop';
   };
 }
 

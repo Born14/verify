@@ -23,7 +23,8 @@ import type { GateContext, GateResult, Predicate, PredicateResult } from '../typ
 // PERFORMANCE ANALYZERS
 // =============================================================================
 
-type PerfCheckType = 'response_time' | 'bundle_size' | 'image_optimization' | 'lazy_loading' | 'connection_count';
+type PerfCheckType = 'response_time' | 'bundle_size' | 'image_optimization' | 'lazy_loading' | 'connection_count'
+  | 'unminified_assets' | 'render_blocking' | 'dom_depth' | 'cache_headers' | 'duplicate_deps';
 
 /**
  * Measure total size of JS and CSS files in an app directory.
@@ -189,6 +190,191 @@ function countConnections(appDir: string): { count: number; details: string[] } 
   return { count: externalRefs.size, details: [...externalRefs] };
 }
 
+/**
+ * Check for unminified JS/CSS assets (files > 10KB without minification indicators).
+ */
+function checkUnminifiedAssets(appDir: string): Array<{ file: string; issue: string }> {
+  const BUNDLE_EXTS = new Set(['.js', '.css', '.mjs', '.cjs']);
+  const SKIP = new Set(['node_modules', '.git', '.next', 'dist', '.sovereign', '.verify']);
+  const issues: Array<{ file: string; issue: string }> = [];
+
+  function scan(dir: string, rel: string) {
+    try {
+      const entries = readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (SKIP.has(entry.name)) continue;
+        const fullPath = join(dir, entry.name);
+        if (entry.isDirectory()) {
+          scan(fullPath, rel ? `${rel}/${entry.name}` : entry.name);
+        } else if (BUNDLE_EXTS.has(extname(entry.name).toLowerCase())) {
+          // Skip already-minified files
+          if (/\.min\.(js|css)$/i.test(entry.name)) continue;
+          try {
+            const stats = statSync(fullPath);
+            if (stats.size > 10 * 1024) {
+              const content = readFileSync(fullPath, 'utf-8');
+              const lines = content.split('\n');
+              const avgLineLen = content.length / Math.max(lines.length, 1);
+              // Minified files typically have very long lines (avg > 200 chars)
+              if (avgLineLen < 120) {
+                issues.push({
+                  file: rel ? `${rel}/${entry.name}` : entry.name,
+                  issue: `Unminified asset (${(stats.size / 1024).toFixed(0)}KB, avg ${avgLineLen.toFixed(0)} chars/line)`,
+                });
+              }
+            }
+          } catch { /* skip */ }
+        }
+      }
+    } catch { /* skip */ }
+  }
+
+  scan(appDir, '');
+  return issues;
+}
+
+/**
+ * Check for render-blocking resources in HTML files.
+ */
+function checkRenderBlocking(files: Array<{ relativePath: string; content: string }>): Array<{ file: string; issue: string }> {
+  const issues: Array<{ file: string; issue: string }> = [];
+  for (const file of files) {
+    // Scripts in <head> without defer or async
+    const headMatch = file.content.match(/<head\b[^>]*>([\s\S]*?)<\/head>/i);
+    if (headMatch) {
+      const headContent = headMatch[1];
+      const scriptRegex = /<script\b[^>]*src\s*=[^>]*>/gi;
+      let match;
+      while ((match = scriptRegex.exec(headContent)) !== null) {
+        const tag = match[0];
+        if (!tag.includes('defer') && !tag.includes('async') && !tag.includes('type="module"')) {
+          issues.push({ file: file.relativePath, issue: 'Render-blocking script in <head> without defer/async' });
+        }
+      }
+    }
+    // Stylesheets without media query
+    const linkRegex = /<link\b[^>]*rel\s*=\s*['"]stylesheet['"][^>]*>/gi;
+    let linkMatch;
+    while ((linkMatch = linkRegex.exec(file.content)) !== null) {
+      const tag = linkMatch[0];
+      if (tag.includes('href=') && /https?:\/\//.test(tag) && !tag.includes('media=')) {
+        issues.push({ file: file.relativePath, issue: 'External stylesheet without media attribute may block rendering' });
+      }
+    }
+  }
+  return issues;
+}
+
+/**
+ * Check for excessive DOM depth in HTML files.
+ */
+function checkDomDepth(files: Array<{ relativePath: string; content: string }>): Array<{ file: string; issue: string; depth: number }> {
+  const issues: Array<{ file: string; issue: string; depth: number }> = [];
+  const MAX_DEPTH = 15;
+
+  for (const file of files) {
+    // Simple depth estimation via tag nesting
+    let depth = 0;
+    let maxDepth = 0;
+    const tagRegex = /<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*\/?>/g;
+    const VOID_ELEMENTS = new Set(['area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr']);
+    let match;
+    while ((match = tagRegex.exec(file.content)) !== null) {
+      const tag = match[0];
+      const tagName = match[1].toLowerCase();
+      if (VOID_ELEMENTS.has(tagName) || tag.endsWith('/>')) continue;
+      if (tag.startsWith('</')) {
+        depth = Math.max(0, depth - 1);
+      } else {
+        depth++;
+        maxDepth = Math.max(maxDepth, depth);
+      }
+    }
+    if (maxDepth > MAX_DEPTH) {
+      issues.push({ file: file.relativePath, issue: `DOM depth ${maxDepth} exceeds recommended max of ${MAX_DEPTH}`, depth: maxDepth });
+    }
+  }
+  return issues;
+}
+
+/**
+ * Check for missing cache headers configuration.
+ */
+function checkCacheHeaders(files: Array<{ relativePath: string; content: string }>): Array<{ file: string; issue: string }> {
+  const issues: Array<{ file: string; issue: string }> = [];
+  for (const file of files) {
+    // Check server files for static asset serving without cache headers
+    if (/\.(js|ts|mjs)$/i.test(file.relativePath)) {
+      if (/express\.static|serve-static|sendFile|createReadStream/i.test(file.content)) {
+        if (!/cache-control|maxAge|max-age|etag|last-modified/i.test(file.content)) {
+          issues.push({ file: file.relativePath, issue: 'Static file serving without cache headers configuration' });
+        }
+      }
+    }
+  }
+  return issues;
+}
+
+/**
+ * Check for duplicate dependency imports.
+ */
+function checkDuplicateDeps(appDir: string): Array<{ dep: string; issue: string }> {
+  const issues: Array<{ dep: string; issue: string }> = [];
+  try {
+    const pkgPath = join(appDir, 'package.json');
+    if (!existsSync(pkgPath)) return issues;
+    const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+    const deps = Object.keys(pkg.dependencies ?? {});
+    const devDeps = Object.keys(pkg.devDependencies ?? {});
+    // Check for deps in both dependencies and devDependencies
+    const overlap = deps.filter(d => devDeps.includes(d));
+    for (const dep of overlap) {
+      issues.push({ dep, issue: `"${dep}" appears in both dependencies and devDependencies` });
+    }
+    // Check for known duplicate-risk packages
+    const DUPLICATE_GROUPS = [
+      ['lodash', 'underscore'],
+      ['moment', 'dayjs', 'date-fns'],
+      ['axios', 'node-fetch', 'got', 'superagent'],
+    ];
+    const allDeps = new Set([...deps, ...devDeps]);
+    for (const group of DUPLICATE_GROUPS) {
+      const found = group.filter(d => allDeps.has(d));
+      if (found.length > 1) {
+        issues.push({ dep: found.join(', '), issue: `Duplicate utility libraries: ${found.join(', ')}` });
+      }
+    }
+  } catch { /* skip */ }
+  return issues;
+}
+
+// Helper: read HTML-like files for perf checks that need file content
+function readHTMLFiles(appDir: string): Array<{ relativePath: string; content: string }> {
+  const files: Array<{ relativePath: string; content: string }> = [];
+  const HTML_EXTS = new Set(['.html', '.htm', '.ejs', '.hbs', '.jsx', '.tsx', '.js', '.ts']);
+  const SKIP = new Set(['node_modules', '.git', '.next', 'dist', '.sovereign', '.verify']);
+
+  function scan(dir: string, rel: string) {
+    try {
+      const entries = readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (SKIP.has(entry.name)) continue;
+        const fullPath = join(dir, entry.name);
+        if (entry.isDirectory()) {
+          scan(fullPath, rel ? `${rel}/${entry.name}` : entry.name);
+        } else if (HTML_EXTS.has(extname(entry.name).toLowerCase())) {
+          try {
+            files.push({ relativePath: rel ? `${rel}/${entry.name}` : entry.name, content: readFileSync(fullPath, 'utf-8') });
+          } catch { /* skip */ }
+        }
+      }
+    } catch { /* skip */ }
+  }
+
+  scan(appDir, '');
+  return files;
+}
+
 // =============================================================================
 // PERFORMANCE GATE
 // =============================================================================
@@ -311,6 +497,79 @@ function validatePerformancePredicate(
         passed: true,
         expected: 'response time check (runtime — deferred)',
         actual: 'deferred to HTTP gate (requires running server)',
+        fingerprint,
+      };
+    }
+
+    case 'unminified_assets': {
+      const issues = checkUnminifiedAssets(appDir);
+      const passed = issues.length === 0;
+      return {
+        type: 'performance',
+        passed,
+        expected: 'assets minified',
+        actual: passed
+          ? 'all assets appear minified'
+          : `${issues.length} unminified asset(s): ${issues.slice(0, 3).map(i => i.issue).join('; ')}`,
+        fingerprint,
+      };
+    }
+
+    case 'render_blocking': {
+      const htmlFiles = readHTMLFiles(appDir);
+      const issues = checkRenderBlocking(htmlFiles);
+      const passed = issues.length === 0;
+      return {
+        type: 'performance',
+        passed,
+        expected: 'no render-blocking resources',
+        actual: passed
+          ? 'no render-blocking resources detected'
+          : `${issues.length} render-blocking issue(s): ${issues.slice(0, 3).map(i => i.issue).join('; ')}`,
+        fingerprint,
+      };
+    }
+
+    case 'dom_depth': {
+      const htmlFiles = readHTMLFiles(appDir);
+      const depthIssues = checkDomDepth(htmlFiles);
+      const passed = depthIssues.length === 0;
+      return {
+        type: 'performance',
+        passed,
+        expected: 'DOM depth ≤ 15',
+        actual: passed
+          ? 'DOM depth within limits'
+          : `${depthIssues.length} file(s) with excessive DOM depth: ${depthIssues.slice(0, 3).map(i => `${i.file} (depth ${i.depth})`).join('; ')}`,
+        fingerprint,
+      };
+    }
+
+    case 'cache_headers': {
+      const htmlFiles = readHTMLFiles(appDir);
+      const issues = checkCacheHeaders(htmlFiles);
+      const passed = issues.length === 0;
+      return {
+        type: 'performance',
+        passed,
+        expected: 'cache headers configured for static assets',
+        actual: passed
+          ? 'cache headers configured'
+          : `${issues.length} issue(s): ${issues.slice(0, 3).map(i => i.issue).join('; ')}`,
+        fingerprint,
+      };
+    }
+
+    case 'duplicate_deps': {
+      const issues = checkDuplicateDeps(appDir);
+      const passed = issues.length === 0;
+      return {
+        type: 'performance',
+        passed,
+        expected: 'no duplicate dependencies',
+        actual: passed
+          ? 'no duplicate dependencies found'
+          : `${issues.length} issue(s): ${issues.slice(0, 3).map(i => i.issue).join('; ')}`,
         fingerprint,
       };
     }

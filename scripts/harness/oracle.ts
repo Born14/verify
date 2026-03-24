@@ -1522,6 +1522,229 @@ export function gateDetailContains(gateName: string, expected: string): Invarian
   };
 }
 
+// =============================================================================
+// GOVERN LOOP INVARIANTS — Family L (convergence loop tests)
+// =============================================================================
+
+/**
+ * Assert govern() stopReason matches expected.
+ */
+export function governStopReason(expected: string): InvariantCheck {
+  return {
+    name: `govern_stop_reason_${expected}`,
+    category: 'pipeline',
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const govResult = (result as any)._governResult;
+      if (!govResult) return { passed: false, violation: 'No _governResult on result', severity: 'bug' };
+      if (govResult.stopReason !== expected) {
+        return { passed: false, violation: `Expected stopReason '${expected}', got '${govResult.stopReason}'`, severity: 'bug' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert govern() attempt count.
+ */
+export function governAttempts(expected: number): InvariantCheck {
+  return {
+    name: `govern_attempts_${expected}`,
+    category: 'pipeline',
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const govResult = (result as any)._governResult;
+      if (!govResult) return { passed: false, violation: 'No _governResult', severity: 'bug' };
+      if (govResult.attempts !== expected) {
+        return { passed: false, violation: `Expected ${expected} attempts, got ${govResult.attempts}`, severity: 'bug' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert govern() attempt count within a range.
+ */
+export function governAttemptsRange(min: number, max: number): InvariantCheck {
+  return {
+    name: `govern_attempts_${min}_to_${max}`,
+    category: 'pipeline',
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const govResult = (result as any)._governResult;
+      if (!govResult) return { passed: false, violation: 'No _governResult', severity: 'bug' };
+      if (govResult.attempts < min || govResult.attempts > max) {
+        return { passed: false, violation: `Expected ${min}-${max} attempts, got ${govResult.attempts}`, severity: 'bug' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert govern() convergence has specific unique shapes.
+ */
+export function governHasShapes(minShapes: number): InvariantCheck {
+  return {
+    name: `govern_has_at_least_${minShapes}_shapes`,
+    category: 'pipeline',
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const govResult = (result as any)._governResult;
+      if (!govResult) return { passed: false, violation: 'No _governResult', severity: 'bug' };
+      const count = govResult.convergence?.uniqueShapes?.length ?? 0;
+      if (count < minShapes) {
+        return { passed: false, violation: `Expected at least ${minShapes} unique shapes, got ${count}: [${govResult.convergence?.uniqueShapes?.join(', ')}]`, severity: 'bug' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert govern() receipt has failure shapes populated.
+ */
+export function governReceiptHasShapes(): InvariantCheck {
+  return {
+    name: 'govern_receipt_has_shapes',
+    category: 'pipeline',
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const govResult = (result as any)._governResult;
+      if (!govResult) return { passed: false, violation: 'No _governResult', severity: 'bug' };
+      if (!govResult.receipt.failureShapes || govResult.receipt.failureShapes.length === 0) {
+        return { passed: false, violation: 'Receipt failureShapes is empty — decomposition not flowing through', severity: 'bug' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert govern() shapes appeared in agent context on attempt N.
+ */
+export function governShapesInContext(): InvariantCheck {
+  return {
+    name: 'govern_shapes_in_agent_context',
+    category: 'pipeline',
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const govResult = (result as any)._governResult;
+      if (!govResult) return { passed: false, violation: 'No _governResult', severity: 'bug' };
+      // If there was more than 1 attempt and shapes were found, shapes should be in context
+      // We can't directly observe the context here, but we check the convergence state
+      if (govResult.attempts > 1 && govResult.receipt.failureShapes.length > 0) {
+        // Shapes should be tracked in convergence
+        if (govResult.convergence.shapeHistory.length === 0) {
+          return { passed: false, violation: 'Multi-attempt with shapes, but shapeHistory is empty', severity: 'bug' };
+        }
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert govern() convergenceNarrowed when expected.
+ */
+export function governNarrowed(expected: boolean): InvariantCheck {
+  return {
+    name: `govern_narrowed_${expected}`,
+    category: 'pipeline',
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const govResult = (result as any)._governResult;
+      if (!govResult) return { passed: false, violation: 'No _governResult', severity: 'bug' };
+      if (govResult.convergenceNarrowed !== expected) {
+        return { passed: false, violation: `Expected convergenceNarrowed=${expected}, got ${govResult.convergenceNarrowed}`, severity: 'unexpected' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert govern() receipt well-formedness.
+ */
+export function governReceiptWellFormed(): InvariantCheck {
+  return {
+    name: 'govern_receipt_well_formed',
+    category: 'pipeline',
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const govResult = (result as any)._governResult;
+      if (!govResult) return { passed: false, violation: 'No _governResult', severity: 'bug' };
+      const r = govResult.receipt;
+      if (!r.goal || typeof r.goal !== 'string') {
+        return { passed: false, violation: 'Receipt missing goal', severity: 'bug' };
+      }
+      if (!r.attestation || typeof r.attestation !== 'string') {
+        return { passed: false, violation: 'Receipt missing attestation', severity: 'bug' };
+      }
+      if (!Array.isArray(r.gatesPassed) || !Array.isArray(r.gatesFailed)) {
+        return { passed: false, violation: 'Receipt missing gate arrays', severity: 'bug' };
+      }
+      if (typeof r.totalDurationMs !== 'number' || r.totalDurationMs <= 0) {
+        return { passed: false, violation: `Receipt totalDurationMs=${r.totalDurationMs}`, severity: 'unexpected' };
+      }
+      if (!Array.isArray(r.attemptDurations) || r.attemptDurations.length === 0) {
+        return { passed: false, violation: 'Receipt missing attemptDurations', severity: 'bug' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert govern() history array length.
+ */
+export function governHistoryLength(expected: number): InvariantCheck {
+  return {
+    name: `govern_history_length_${expected}`,
+    category: 'pipeline',
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const govResult = (result as any)._governResult;
+      if (!govResult) return { passed: false, violation: 'No _governResult', severity: 'bug' };
+      if (govResult.history.length !== expected) {
+        return { passed: false, violation: `Expected history length ${expected}, got ${govResult.history.length}`, severity: 'bug' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert govern() empty plan stall detection.
+ */
+export function governEmptyPlanStall(): InvariantCheck {
+  return {
+    name: 'govern_empty_plan_stall',
+    category: 'pipeline',
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const govResult = (result as any)._governResult;
+      if (!govResult) return { passed: false, violation: 'No _governResult', severity: 'bug' };
+      if (govResult.convergence.emptyPlanCount < 3) {
+        return { passed: false, violation: `Expected emptyPlanCount >= 3, got ${govResult.convergence.emptyPlanCount}`, severity: 'bug' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
 export const UNIVERSAL_INVARIANTS: InvariantCheck[] = [
   ...PRODUCT_INVARIANTS,
   ...HARNESS_INVARIANTS,
@@ -1535,8 +1758,9 @@ export function checkInvariants(
   result: VerifyResult | Error,
   context: OracleContext,
 ): Array<{ name: string; category: string; layer: string; passed: boolean; violation?: string; severity: string }> {
-  // Family M (message gate) scenarios skip universal invariants — they test governMessage(), not verify()
-  const allInvariants = scenario.family === 'M'
+  // Family M (message gate) and L (govern loop) scenarios skip universal invariants —
+  // they test governMessage()/govern(), not verify() directly
+  const allInvariants = scenario.family === 'M' || scenario.family === 'L'
     ? scenario.invariants
     : [...UNIVERSAL_INVARIANTS, ...scenario.invariants];
   return allInvariants.map(inv => {

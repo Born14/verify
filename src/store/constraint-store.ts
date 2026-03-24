@@ -338,6 +338,12 @@ export class ConstraintStore {
 
       // --- FILE PATTERN / STRATEGY BAN ---
       if (c.type === 'forbidden_action') {
+        // If this constraint is a fingerprint-specific ban, it already checked above.
+        // Don't fall through to the blanket strategy ban.
+        if (c.requires.bannedPredicateFingerprints && c.requires.bannedPredicateFingerprints.length > 0) {
+          continue;
+        }
+
         // Empty surface = pure strategy ban (action class)
         if (c.surface.files.length === 0) {
           return {

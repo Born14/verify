@@ -368,11 +368,13 @@ export function validateAgainstGrounding<T extends {
       try {
         const filePath = join(opts.appDir, p.file);
         if (existsSync(filePath)) {
-          const content = readFileSync(filePath, 'utf-8');
-          if (!content.includes(p.pattern)) {
+          // Normalize line endings for cross-platform matching (CRLF → LF)
+          const content = readFileSync(filePath, 'utf-8').replace(/\r\n/g, '\n');
+          const normalizedPattern = p.pattern.replace(/\r\n/g, '\n');
+          if (!content.includes(normalizedPattern)) {
             // Check if any edit's replace string would introduce this pattern
             const editsWouldCreate = opts.edits?.some(
-              e => e.file === p.file && e.replace.includes(p.pattern!)
+              e => e.file === p.file && e.replace.replace(/\r\n/g, '\n').includes(normalizedPattern)
             );
             if (!editsWouldCreate) {
               return { ...p, groundingMiss: true, groundingReason: `Pattern "${p.pattern}" not found in file "${p.file}" and no edit would create it` };

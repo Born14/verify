@@ -30,6 +30,8 @@ export type {
   GovernContext,
   GovernAgent,
   AgentPlan,
+  ConvergenceState,
+  StopReason,
 } from './govern.js';
 
 // Types — everything a consumer needs

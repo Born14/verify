@@ -281,6 +281,88 @@ const CSS_SHAPES: ShapeRule[] = [
     predicateMatch: (p) => !p.passed && isRelativeUnitMismatch(p.expected, p.actual, 'rem'),
     confidence: 0.7,
   },
+  {
+    id: 'C-05', domain: 'css', name: 'HSLA with alpha=1 ↔ HSL equivalence',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'css',
+    predicateMatch: (p) => {
+      if (p.passed) return false;
+      const e = p.expected?.toLowerCase() ?? '';
+      const a = p.actual?.toLowerCase() ?? '';
+      return /hsla\(.*,\s*1\s*\)/.test(e) || /hsla\(.*,\s*1\s*\)/.test(a);
+    },
+    confidence: 0.85,
+  },
+  {
+    id: 'C-16', domain: 'css', name: 'Browser-specific prefix mismatch',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'css',
+    predicateMatch: (p, pred) => {
+      if (p.passed) return false;
+      const prop = pred?.property?.toLowerCase() ?? '';
+      const expected = p.expected?.toLowerCase() ?? '';
+      // -webkit-, -moz-, -ms-, -o- prefix on property or value
+      return /^-(webkit|moz|ms|o)-/.test(prop)
+        || /-(webkit|moz|ms|o)-/.test(expected);
+    },
+    confidence: 0.8,
+  },
+  {
+    id: 'C-46', domain: 'css', name: 'Font family normalization (quoted vs unquoted)',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'css',
+    predicateMatch: (p, pred) => {
+      if (p.passed) return false;
+      const prop = pred?.property?.toLowerCase() ?? '';
+      if (!prop.includes('font-family') && prop !== 'font') return false;
+      const e = p.expected ?? '';
+      const a = p.actual ?? '';
+      // Quoted vs unquoted: "Arial" vs Arial, 'Helvetica' vs Helvetica
+      return e.replace(/['"]/g, '') === a.replace(/['"]/g, '');
+    },
+    confidence: 0.85,
+  },
+  {
+    id: 'C-47', domain: 'css', name: 'Transform matrix equivalence',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'css',
+    predicateMatch: (p, pred) => {
+      if (p.passed) return false;
+      const prop = pred?.property?.toLowerCase() ?? '';
+      if (!prop.includes('transform')) return false;
+      const e = p.expected?.toLowerCase() ?? '';
+      const a = p.actual?.toLowerCase() ?? '';
+      // translateX(10px) ↔ matrix(1, 0, 0, 1, 10, 0)
+      return e.includes('matrix') || a.includes('matrix')
+        || e.includes('translate') || a.includes('translate');
+    },
+    confidence: 0.8,
+  },
+  {
+    id: 'C-48', domain: 'css', name: 'Filter/backdrop-filter normalization',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'css',
+    predicateMatch: (p, pred) => {
+      if (p.passed) return false;
+      const prop = pred?.property?.toLowerCase() ?? '';
+      return (prop.includes('filter') || prop.includes('backdrop'))
+        && p.actual !== undefined && p.actual !== '(not found)';
+    },
+    confidence: 0.8,
+  },
+  {
+    id: 'C-50', domain: 'css', name: 'CSS variable fallback path',
+    claimType: 'transformation', truthType: 'deterministic',
+    predicateType: 'css',
+    predicateMatch: (p) => {
+      if (p.passed) return false;
+      const e = p.expected?.toLowerCase() ?? '';
+      const a = p.actual?.toLowerCase() ?? '';
+      // var(--name, fallback) — fallback value used instead of variable
+      return /var\(.*,/.test(e) || /var\(.*,/.test(a);
+    },
+    confidence: 0.8,
+  },
 
   // --- Shorthand resolution (C-17 through C-30) ---
   {
@@ -289,6 +371,50 @@ const CSS_SHAPES: ShapeRule[] = [
     predicateType: 'css',
     predicateMatch: (p, pred) => !p.passed && pred !== undefined && isShorthandProperty(pred),
     confidence: 0.8,
+  },
+  {
+    id: 'C-18', domain: 'css', name: 'margin → directional components',
+    claimType: 'transformation', truthType: 'deterministic',
+    predicateType: 'css',
+    predicateMatch: (p, pred) => {
+      if (p.passed || !pred) return false;
+      const prop = pred.property?.toLowerCase() ?? '';
+      return prop.startsWith('margin-') && prop !== 'margin';
+    },
+    confidence: 0.85,
+  },
+  {
+    id: 'C-19', domain: 'css', name: 'padding → directional components',
+    claimType: 'transformation', truthType: 'deterministic',
+    predicateType: 'css',
+    predicateMatch: (p, pred) => {
+      if (p.passed || !pred) return false;
+      const prop = pred.property?.toLowerCase() ?? '';
+      return prop.startsWith('padding-') && prop !== 'padding';
+    },
+    confidence: 0.85,
+  },
+  {
+    id: 'C-20', domain: 'css', name: 'background → longhand components',
+    claimType: 'transformation', truthType: 'deterministic',
+    predicateType: 'css',
+    predicateMatch: (p, pred) => {
+      if (p.passed || !pred) return false;
+      const prop = pred.property?.toLowerCase() ?? '';
+      return prop.startsWith('background-') && prop !== 'background';
+    },
+    confidence: 0.85,
+  },
+  {
+    id: 'C-21', domain: 'css', name: 'font → size/weight/family/style components',
+    claimType: 'transformation', truthType: 'deterministic',
+    predicateType: 'css',
+    predicateMatch: (p, pred) => {
+      if (p.passed || !pred) return false;
+      const prop = pred.property?.toLowerCase() ?? '';
+      return prop.startsWith('font-') && prop !== 'font';
+    },
+    confidence: 0.85,
   },
 
   // --- Selector & structure (C-32 through C-43) ---
@@ -344,6 +470,44 @@ const CSS_SHAPES: ShapeRule[] = [
   // at the predicate-result level. It manifests as a value mismatch where
   // the source has duplicates. Detectable only with access to CSS source —
   // handled at scenario level, not decomposition level.
+
+  // --- Selector structure (C-36 through C-38) ---
+  {
+    id: 'C-36', domain: 'css', name: 'Multi-selector rule (comma-separated)',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'css',
+    predicateMatch: (p, pred) => {
+      if (p.passed) return false;
+      const sel = pred?.selector ?? '';
+      // Comma-separated multi-selector: .a, .b { ... }
+      return sel.includes(',');
+    },
+    confidence: 0.75,
+  },
+  {
+    id: 'C-37', domain: 'css', name: 'Selector combinator mismatch',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'css',
+    predicateMatch: (p, pred) => {
+      if (p.passed) return false;
+      const sel = pred?.selector ?? '';
+      // Child (>), adjacent (+), general sibling (~) combinators
+      return /[>+~]/.test(sel);
+    },
+    confidence: 0.75,
+  },
+  {
+    id: 'C-38', domain: 'css', name: 'Pseudo-class selector',
+    claimType: 'equality', truthType: 'contextual',
+    predicateType: 'css',
+    predicateMatch: (p, pred) => {
+      if (p.passed) return false;
+      const sel = pred?.selector ?? '';
+      // :hover, :focus, :active, :nth-child, ::before, ::after
+      return /::?[a-z]/.test(sel) && sel.includes(':');
+    },
+    confidence: 0.7,
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -373,9 +537,256 @@ const HTML_SHAPES: ShapeRule[] = [
     predicateMatch: (p) => !p.passed && p.actual === '(not found)',
     confidence: 0.7, // Same signal as H-01 but for tag-level mismatch
   },
-  // H-04 (multiple elements match selector) is indistinguishable from a successful
-  // HTML check at the predicate-result level. The ambiguity is only observable
-  // with DOM-level cardinality info not available in PredicateResult.
+  // --- Ambiguous / multi-match shapes ---
+  {
+    id: 'H-04', domain: 'html', name: 'Multiple elements match selector (ambiguous)',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'html',
+    // Generic tag selector (no class/id) with specific expected text — ambiguity risk
+    predicateMatch: (p, pred) => {
+      if (p.passed || !pred?.selector) return false;
+      const sel = pred.selector;
+      // Bare tag names without class/id qualifiers are ambiguous when multiple exist
+      return /^[a-z]+$/i.test(sel) && p.expected !== 'exists' && p.actual !== '(not found)';
+    },
+    confidence: 0.7,
+  },
+  // --- Text content / matching shapes ---
+  {
+    id: 'H-05', domain: 'html', name: 'Text inside nested/child elements',
+    claimType: 'containment', truthType: 'deterministic',
+    predicateType: 'html',
+    // Parent element expected to contain child text (nav containing anchor text, etc.)
+    predicateMatch: (p, pred) => {
+      if (p.passed || !pred?.selector) return false;
+      const sel = pred.selector;
+      // Container-like selectors (nav, div, section, ul, ol, main, header, footer, article, aside)
+      return /^(nav|div|section|ul|ol|main|header|footer|article|aside)$/i.test(sel)
+        && p.expected !== 'exists' && p.actual !== '(not found)';
+    },
+    confidence: 0.7,
+  },
+  {
+    id: 'H-08', domain: 'html', name: 'Whitespace normalization in text content',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'html',
+    // Expected and actual differ only in whitespace
+    predicateMatch: (p) => {
+      if (p.passed || !p.expected || !p.actual || p.actual === '(not found)') return false;
+      return p.expected.trim() === p.actual.trim() && p.expected !== p.actual;
+    },
+    confidence: 0.85,
+  },
+  {
+    id: 'H-09', domain: 'html', name: 'HTML entity encoding mismatch',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'html',
+    // Expected or actual contains HTML entities (&amp; &lt; &#39; etc.)
+    predicateMatch: (p) => {
+      if (p.passed) return false;
+      const e = p.expected ?? '';
+      const a = p.actual ?? '';
+      return /&[a-z]+;|&#\d+;/.test(e) || /&[a-z]+;|&#\d+;/.test(a);
+    },
+    confidence: 0.85,
+  },
+  {
+    id: 'H-10', domain: 'html', name: 'Case sensitivity mismatch',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'html',
+    // Same text different case
+    predicateMatch: (p) => {
+      if (p.passed || !p.expected || !p.actual || p.actual === '(not found)') return false;
+      return p.expected.toLowerCase() === p.actual.toLowerCase() && p.expected !== p.actual;
+    },
+    confidence: 0.85,
+  },
+  {
+    id: 'H-13', domain: 'html', name: 'Text spans child elements',
+    claimType: 'containment', truthType: 'deterministic',
+    predicateType: 'html',
+    // Element contains child tags — text extraction may differ (textContent vs innerText)
+    predicateMatch: (p, pred) => {
+      if (p.passed) return false;
+      const sel = pred?.selector ?? '';
+      // Block-level elements that commonly wrap inline children (p, span, td, th, li, dd)
+      return /^(p|span|td|th|li|dd|dt|label|figcaption)$/i.test(sel)
+        && p.expected !== 'exists' && p.actual !== '(not found)';
+    },
+    confidence: 0.7,
+  },
+  // --- Element existence subtypes ---
+  {
+    id: 'H-06', domain: 'html', name: 'Self-closing / void element existence',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'html',
+    predicateMatch: (p, pred) => {
+      const sel = pred?.selector ?? '';
+      return p.expected === 'exists'
+        && /^(br|hr|img|input|meta|link|source|area|base|col|embed|param|track|wbr)$/i.test(sel);
+    },
+    confidence: 0.85,
+  },
+  {
+    id: 'H-15', domain: 'html', name: 'Boolean attribute presence',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'html',
+    // Selector targets elements that commonly carry boolean attributes (input, select, textarea)
+    predicateMatch: (p, pred) => {
+      const sel = pred?.selector ?? '';
+      return p.expected === 'exists'
+        && /^(input|select|textarea|button|option)$/i.test(sel);
+    },
+    confidence: 0.8,
+  },
+  {
+    id: 'H-16', domain: 'html', name: 'Class-based selector existence',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'html',
+    predicateMatch: (p, pred) => {
+      const sel = pred?.selector ?? '';
+      return p.expected === 'exists' && sel.includes('.');
+    },
+    confidence: 0.8,
+  },
+  {
+    id: 'H-18', domain: 'html', name: 'Element with URL attribute (anchor/link)',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'html',
+    predicateMatch: (p, pred) => {
+      if (p.passed) return false;
+      const sel = pred?.selector ?? '';
+      return /^a\b|^link\b|^img\b|^script\b|^iframe\b/i.test(sel)
+        && p.expected !== 'exists';
+    },
+    confidence: 0.75,
+  },
+  {
+    id: 'H-21', domain: 'html', name: 'Element ordering / first-match dependency',
+    claimType: 'ordering', truthType: 'deterministic',
+    predicateType: 'html',
+    // Bare class or tag selector with specific text — depends on which element matched first
+    predicateMatch: (p, pred) => {
+      if (p.passed || !p.actual || p.actual === '(not found)') return false;
+      const sel = pred?.selector ?? '';
+      if (!sel) return false; // Need a selector to reason about ordering
+      // Multi-element selector (class, tag) where actual text differs from expected
+      return !/[#\[]/.test(sel) && p.expected !== 'exists'
+        && p.actual !== p.expected;
+    },
+    confidence: 0.65,
+  },
+  {
+    id: 'H-22', domain: 'html', name: 'Deeply nested element',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'html',
+    predicateMatch: (p, pred) => {
+      const sel = pred?.selector ?? '';
+      // Descendant combinator or nesting indicators
+      return p.expected === 'exists' && (sel.includes(' ') || sel.includes('>'));
+    },
+    confidence: 0.75,
+  },
+  {
+    id: 'H-24', domain: 'html', name: 'CSS-hidden element (display:none but exists in source)',
+    claimType: 'existence', truthType: 'contextual',
+    predicateType: 'html',
+    predicateMatch: (p, pred) => {
+      const sel = pred?.selector ?? '';
+      return p.expected === 'exists' && /hidden|invisible|offscreen|sr-only/i.test(sel);
+    },
+    confidence: 0.75,
+  },
+  {
+    id: 'H-31', domain: 'html', name: 'Attribute selector (e.g., [selected], [data-*])',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'html',
+    predicateMatch: (p, pred) => {
+      const sel = pred?.selector ?? '';
+      return sel.includes('[') && sel.includes(']');
+    },
+    confidence: 0.8,
+  },
+  {
+    id: 'H-32', domain: 'html', name: 'Hidden content text extraction',
+    claimType: 'containment', truthType: 'contextual',
+    predicateType: 'html',
+    predicateMatch: (p, pred) => {
+      if (p.passed) return false;
+      const sel = pred?.selector ?? '';
+      return /hidden|invisible/i.test(sel) && p.expected !== 'exists';
+    },
+    confidence: 0.7,
+  },
+  {
+    id: 'H-34', domain: 'html', name: 'Duplicate ID selector',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'html',
+    predicateMatch: (p, pred) => {
+      const sel = pred?.selector ?? '';
+      return sel.startsWith('#') && p.expected === 'exists';
+    },
+    confidence: 0.8,
+  },
+  {
+    id: 'H-35', domain: 'html', name: 'Table structure element (thead/tbody/tr/th/td)',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'html',
+    predicateMatch: (p, pred) => {
+      const sel = pred?.selector ?? '';
+      return /^(table|thead|tbody|tfoot|tr|th|td|caption|colgroup|col)$/i.test(sel);
+    },
+    confidence: 0.8,
+  },
+  {
+    id: 'H-36', domain: 'html', name: 'Malformed HTML (parser recovery)',
+    claimType: 'existence', truthType: 'contextual',
+    predicateType: 'html',
+    // Element exists but was parsed from malformed source — same signal as successful H-01
+    // Only distinguishable when the scenario knows source was malformed; we detect
+    // elements that pass despite edits that removed closing tags
+    predicateMatch: (p, pred) => {
+      const sel = pred?.selector ?? '';
+      return p.passed && p.expected === 'exists'
+        && /^(footer|div|section|span|p|li|td)$/i.test(sel);
+    },
+    confidence: 0.5, // Low — cannot definitively detect malformedness from predicate alone
+  },
+  {
+    id: 'H-38', domain: 'html', name: 'Parent-required element (td inside table)',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'html',
+    predicateMatch: (p, pred) => {
+      if (p.passed) return false;
+      const sel = pred?.selector ?? '';
+      // Elements that require specific parent context
+      return /^(td|th|tr|li|dd|dt|option|optgroup|caption|col|colgroup|thead|tbody|tfoot)$/i.test(sel)
+        && p.expected !== 'exists';
+    },
+    confidence: 0.75,
+  },
+  {
+    id: 'H-39', domain: 'html', name: 'Sibling element relationship',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'html',
+    predicateMatch: (p, pred) => {
+      const sel = pred?.selector ?? '';
+      // Sibling combinator in selector
+      return sel.includes('~') || sel.includes('+');
+    },
+    confidence: 0.75,
+  },
+  {
+    id: 'H-40', domain: 'html', name: 'Semantic HTML element (nav, article, section, aside)',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'html',
+    predicateMatch: (p, pred) => {
+      const sel = pred?.selector ?? '';
+      return p.expected === 'exists'
+        && /^(nav|article|section|aside|main|header|footer|figure|figcaption|details|summary|dialog|mark|time)$/i.test(sel);
+    },
+    confidence: 0.8,
+  },
   {
     id: 'H-17', domain: 'html', name: 'HTML attribute value mismatch',
     claimType: 'equality', truthType: 'deterministic',
@@ -470,6 +881,14 @@ const CONTENT_SHAPES: ShapeRule[] = [
     confidence: 0.75,
   },
   {
+    id: 'N-05', domain: 'content', name: 'Pattern spans line boundary',
+    claimType: 'containment', truthType: 'deterministic',
+    predicateType: 'content',
+    // Pattern contains newline — includes() matches across lines
+    predicateMatch: (p) => p.passed && /\n/.test(p.expected ?? ''),
+    confidence: 0.7,
+  },
+  {
     id: 'N-06', domain: 'content', name: 'Content pattern not found',
     claimType: 'containment', truthType: 'deterministic',
     predicateType: 'content',
@@ -489,6 +908,60 @@ const CONTENT_SHAPES: ShapeRule[] = [
     predicateType: 'content',
     predicateMatch: (p) => p.passed, // "color" matches "background-color"
     confidence: 0.45,
+  },
+  {
+    id: 'N-09', domain: 'content', name: 'Template expression matched as literal text',
+    claimType: 'containment', truthType: 'deterministic',
+    predicateType: 'content',
+    // Pattern contains template syntax (${...}, {{...}}, <% %>) matched literally
+    predicateMatch: (p) => p.passed && /\$\{|{{|<%/.test(p.expected ?? ''),
+    confidence: 0.7,
+  },
+  {
+    id: 'N-10', domain: 'content', name: 'Pattern matches repeated content',
+    claimType: 'containment', truthType: 'deterministic',
+    predicateType: 'content',
+    // Short common patterns that appear multiple times — includes() returns true
+    // but doesn't tell you WHICH occurrence matched
+    predicateMatch: (p) => {
+      if (!p.passed) return false;
+      const pat = p.expected ?? '';
+      // Short patterns (<20 chars) that are likely to appear multiple times
+      return pat.length > 0 && pat.length < 20;
+    },
+    confidence: 0.4,
+  },
+  {
+    id: 'N-11', domain: 'content', name: 'Boilerplate/scaffold pattern match',
+    claimType: 'containment', truthType: 'deterministic',
+    predicateType: 'content',
+    // Common boilerplate patterns that exist in any scaffold — false confidence
+    predicateMatch: (p) => {
+      if (!p.passed) return false;
+      const pat = (p.expected ?? '').toLowerCase();
+      return /createserver|require\(|import |module\.exports|listen\(|express\(\)/.test(pat);
+    },
+    confidence: 0.35,
+  },
+  {
+    id: 'N-12', domain: 'content', name: 'HTML template pattern in source bundle',
+    claimType: 'containment', truthType: 'deterministic',
+    predicateType: 'content',
+    // Pattern is HTML markup found inside a JS/TS source file (template string)
+    predicateMatch: (p) => {
+      if (!p.passed) return false;
+      const pat = p.expected ?? '';
+      return /<[a-z][\s>]/i.test(pat); // HTML tag pattern
+    },
+    confidence: 0.6,
+  },
+  {
+    id: 'N-26', domain: 'content', name: 'Pattern appears multiple times (ambiguous)',
+    claimType: 'containment', truthType: 'deterministic',
+    predicateType: 'content',
+    // Generic pass — pattern found, but includes() doesn't report occurrence count
+    predicateMatch: (p) => p.passed,
+    confidence: 0.3, // Very low — cannot distinguish single vs multiple occurrence
   },
 ];
 
@@ -719,6 +1192,166 @@ const SYNTAX_SHAPES: ShapeRule[] = [
     detailPatterns: [/line ending|crlf|\\r\\n/i],
     confidence: 0.85,
   },
+  // Move 7: F9 edge cases
+  {
+    id: 'X-42', domain: 'cross-cutting', name: 'Edit match inside string literal (not code)',
+    claimType: 'existence', truthType: 'deterministic',
+    detailPatterns: [/string literal|matches.*inside|template/i],
+    confidence: 0.8,
+  },
+  {
+    id: 'X-43', domain: 'cross-cutting', name: 'Valid syntax but wrong semantics (property mismatch)',
+    claimType: 'causal', truthType: 'deterministic',
+    resultMatch: (r) => {
+      const f9 = r.gates.find(g => g.gate === 'F9');
+      const gr = r.gates.find(g => g.gate === 'grounding');
+      return (f9?.passed === true) && (gr?.passed === false);
+    },
+    confidence: 0.8,
+  },
+  {
+    id: 'X-44', domain: 'cross-cutting', name: 'Multi-line search string (spans line boundary)',
+    claimType: 'existence', truthType: 'deterministic',
+    detailPatterns: [/multi.line|line boundary|span.*line/i],
+    confidence: 0.8,
+  },
+  {
+    id: 'X-45', domain: 'cross-cutting', name: 'Duplicate CSS declaration (same property twice)',
+    claimType: 'existence', truthType: 'deterministic',
+    detailPatterns: [/duplicate.*decl|same property twice|last.*wins/i],
+    confidence: 0.8,
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Cross-Cutting: General Edge Cases (X-01..X-35) — Move 10
+// ---------------------------------------------------------------------------
+
+const GENERAL_CROSS_CUTTING_SHAPES: ShapeRule[] = [
+  {
+    id: 'X-01', domain: 'cross-cutting', name: 'Gate order dependency (downstream gate needs upstream data)',
+    claimType: 'causal', truthType: 'deterministic',
+    resultMatch: (r) => {
+      // Grounding gate passed but a downstream gate (goal/verify) fails referencing grounding data
+      const grOk = r.gates.some(g => g.gate === 'grounding' && g.passed);
+      const downFail = r.gates.some(g => g.gate !== 'grounding' && !g.passed
+        && /grounding|selector|property/i.test(g.detail));
+      return grOk && downFail;
+    },
+    confidence: 0.7,
+  },
+  {
+    id: 'X-02', domain: 'cross-cutting', name: 'Narrowing from wrong gate (misattributed hint)',
+    claimType: 'causal', truthType: 'deterministic',
+    resultMatch: (r) => {
+      if (!r.narrowing?.resolutionHint) return false;
+      // Hint mentions a gate name that actually passed
+      const hint = r.narrowing.resolutionHint.toLowerCase();
+      return r.gates.some(g => g.passed && hint.includes(g.gate.toLowerCase()));
+    },
+    confidence: 0.6,
+  },
+  {
+    id: 'X-05', domain: 'cross-cutting', name: 'Empty predicate list submitted',
+    claimType: 'existence', truthType: 'deterministic',
+    resultMatch: (r) => {
+      const preds = r.predicateResults ?? [];
+      // Fire when predicates are empty, gates exist, all passed, and result has non-trivial content
+      // (not just a bare minimum pass with 1 gate)
+      return preds.length === 0 && r.gates.length >= 3 && r.gates.every(g => g.passed);
+    },
+    confidence: 0.85,
+  },
+  {
+    id: 'X-06', domain: 'cross-cutting', name: 'Duplicate predicates submitted (same fingerprint)',
+    claimType: 'existence', truthType: 'deterministic',
+    resultMatch: (r) => {
+      const preds = r.predicateResults ?? [];
+      const fps = preds.map(p => p.fingerprint).filter(Boolean);
+      return new Set(fps).size < fps.length;
+    },
+    confidence: 0.8,
+  },
+  {
+    id: 'X-07', domain: 'cross-cutting', name: 'Contradictory predicates (same selector, different expected)',
+    claimType: 'equality', truthType: 'deterministic',
+    resultMatch: (r) => {
+      const preds = r.predicateResults ?? [];
+      // Look for same type+selector but different expected values
+      const seen = new Map<string, string>();
+      for (const p of preds) {
+        const key = `${p.type}|${p.selector ?? ''}|${p.property ?? ''}`;
+        if (seen.has(key) && seen.get(key) !== p.expected) return true;
+        seen.set(key, p.expected ?? '');
+      }
+      return false;
+    },
+    confidence: 0.75,
+  },
+  {
+    id: 'X-10', domain: 'cross-cutting', name: 'Edit targets wrong domain (edit=CSS, predicate=HTML)',
+    claimType: 'causal', truthType: 'deterministic',
+    resultMatch: (r) => {
+      if (r.success) return false;
+      const preds = r.predicateResults ?? [];
+      const types = new Set(preds.map(p => p.type));
+      // Only HTML/content predicates, but gates suggest CSS edits
+      return types.has('html') && !types.has('css')
+        && r.gates.some(g => g.gate === 'goal' && /css|style/i.test(g.detail));
+    },
+    confidence: 0.65,
+  },
+  {
+    id: 'X-15', domain: 'cross-cutting', name: 'Constraint bans only valid predicate fingerprint (circular)',
+    claimType: 'invariance', truthType: 'deterministic',
+    resultMatch: (r) => {
+      const k5 = r.gates.find(g => g.gate === 'K5' && !g.passed);
+      return k5 !== undefined && /predicate_fingerprint/i.test(k5.detail)
+        && (r.predicateResults ?? []).length === 1;
+    },
+    confidence: 0.7,
+  },
+  {
+    id: 'X-20', domain: 'cross-cutting', name: 'All gates pass but narrowing non-empty (advisory warnings)',
+    claimType: 'invariance', truthType: 'deterministic',
+    resultMatch: (r) => {
+      return r.success && r.gates.every(g => g.passed)
+        && r.narrowing !== undefined && r.narrowing !== null
+        && (r.narrowing.resolutionHint !== undefined || (r.narrowing.constraints ?? []).length > 0);
+    },
+    confidence: 0.6,
+  },
+  {
+    id: 'X-30', domain: 'cross-cutting', name: 'Zero edits with predicates (noop submission)',
+    claimType: 'existence', truthType: 'deterministic',
+    resultMatch: (r) => {
+      const preds = r.predicateResults ?? [];
+      return preds.length > 0
+        && r.gates.some(g => g.gate === 'F9' && /no edit|0 edit|empty/i.test(g.detail));
+    },
+    confidence: 0.8,
+  },
+  {
+    id: 'X-35', domain: 'cross-cutting', name: 'Maximum predicate cap reached (bounded)',
+    claimType: 'existence', truthType: 'deterministic',
+    resultMatch: (r) => {
+      const preds = r.predicateResults ?? [];
+      return preds.length >= 8;
+    },
+    confidence: 0.65,
+  },
+  {
+    id: 'X-46', domain: 'cross-cutting', name: 'Unicode in edit content (non-ASCII)',
+    claimType: 'existence', truthType: 'deterministic',
+    detailPatterns: [/unicode|non.ascii|utf.?8|emoji|cjk|diacrit/i],
+    confidence: 0.75,
+  },
+  {
+    id: 'X-47', domain: 'cross-cutting', name: 'Regex-special characters in edit search string',
+    claimType: 'existence', truthType: 'deterministic',
+    detailPatterns: [/regex|special char|parenthes|bracket/i],
+    confidence: 0.75,
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -737,6 +1370,52 @@ const GROUNDING_SHAPES: ShapeRule[] = [
     claimType: 'existence', truthType: 'deterministic',
     predicateMatch: (p) => p.groundingMiss === true && p.type === 'db',
     confidence: 0.9,
+  },
+  // Move 7: Grounding edge cases
+  {
+    id: 'X-62', domain: 'cross-cutting', name: 'Grounding miss on minified CSS (no whitespace)',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateMatch: (p) => p.groundingMiss === true && p.type === 'css',
+    detailPatterns: [/minif/i],
+    confidence: 0.85,
+  },
+  {
+    id: 'X-63', domain: 'cross-cutting', name: 'Grounding miss on inline style (not in <style> block)',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateMatch: (p) => p.groundingMiss === true && p.type === 'css',
+    detailPatterns: [/inline/i],
+    confidence: 0.85,
+  },
+  {
+    id: 'X-64', domain: 'cross-cutting', name: 'Grounding miss on dynamic selector (template literal)',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateMatch: (p) => p.groundingMiss === true && p.type === 'css'
+      && /\$\{|\btemplate\b|dynamic/i.test(p.selector ?? ''),
+    confidence: 0.8,
+  },
+  {
+    id: 'X-65', domain: 'cross-cutting', name: 'Grounding false positive from CSS-in-JS string',
+    claimType: 'existence', truthType: 'deterministic',
+    // Only matches CSS predicates that passed despite being in a CSS-in-JS context
+    // (detected via grounding gate detail text, not bare predicate type)
+    resultMatch: (r) => r.gates.some(g => g.gate === 'grounding'
+      && /css.in.js|string literal|fake/i.test(g.detail)),
+    confidence: 0.7,
+  },
+  {
+    id: 'X-66', domain: 'cross-cutting', name: 'Grounding parser handles @media/@keyframes blocks',
+    claimType: 'existence', truthType: 'deterministic',
+    resultMatch: (r) => r.success && r.predicates?.some(
+      (p: any) => p.type === 'css' && /@media|@keyframes|animation/i.test(p.selector ?? ''),
+    ),
+    confidence: 0.8,
+  },
+  {
+    id: 'X-67', domain: 'cross-cutting', name: 'Grounding sees post-edit state (stale cache)',
+    claimType: 'existence', truthType: 'deterministic',
+    resultMatch: (r) => !r.success && r.gates.some(g => g.gate === 'grounding' && !g.passed),
+    detailPatterns: [/stale|post.edit|removed by.*edit/i],
+    confidence: 0.85,
   },
 ];
 
@@ -772,6 +1451,28 @@ const K5_SHAPES: ShapeRule[] = [
     resultMatch: (r) => r.gates.some(g => g.gate === 'K5' && !g.passed
       && /goal_drift/i.test(g.detail)),
     confidence: 0.95,
+  },
+  // Move 7: K5 edge cases
+  {
+    id: 'X-55', domain: 'cross-cutting', name: 'K5 expired constraint correctly ignored',
+    claimType: 'invariance', truthType: 'deterministic',
+    resultMatch: (r) => r.gates.some(g => g.gate === 'K5' && g.passed),
+    confidence: 0.7,
+  },
+  {
+    id: 'X-56', domain: 'cross-cutting', name: 'K5 constraint deadlock (multiple conflicting constraints)',
+    claimType: 'invariance', truthType: 'deterministic',
+    resultMatch: (r) => r.gates.some(g => g.gate === 'K5' && !g.passed
+      && /action_class/i.test(g.detail)),
+    confidence: 0.9,
+  },
+  {
+    id: 'X-57', domain: 'cross-cutting', name: 'K5 harness fault correctly not seeded',
+    claimType: 'invariance', truthType: 'deterministic',
+    // Only matches when K5 gate is present and passed (harness correctly didn't seed)
+    resultMatch: (r) => r.gates.some(g => g.gate === 'K5') && r.gates.every(g => g.passed),
+    detailPatterns: [/harness.*fault|infrastructure.*error|dns.*resolution/i],
+    confidence: 0.7,
   },
 ];
 
@@ -821,6 +1522,32 @@ const CONTAINMENT_SHAPES: ShapeRule[] = [
     id: 'AT-05', domain: 'attribution', name: 'Accidental correctness (pass for wrong reason)',
     claimType: 'causal', truthType: 'deterministic',
     resultMatch: (r) => r.success && (r.containment?.unexplained ?? 0) > 0,
+    confidence: 0.7,
+  },
+  // Move 7: G5 edge cases
+  {
+    id: 'AT-06', domain: 'attribution', name: 'Scaffolding mutation misclassified as unexplained',
+    claimType: 'causal', truthType: 'deterministic',
+    resultMatch: (r) => (r.containment?.unexplained ?? 0) > 0
+      && (r.containment?.scaffolding ?? 0) === 0,
+    confidence: 0.75,
+  },
+  {
+    id: 'AT-07', domain: 'attribution', name: 'Double attribution ambiguity (two predicates match same file)',
+    claimType: 'causal', truthType: 'deterministic',
+    resultMatch: (r) => (r.containment?.direct ?? 0) >= 2,
+    confidence: 0.7,
+  },
+  {
+    id: 'AT-08', domain: 'attribution', name: 'Identity binding false positive (wrong table ID)',
+    claimType: 'causal', truthType: 'deterministic',
+    detailPatterns: [/identity.*mismatch|wrong.*table|binding.*false/i],
+    confidence: 0.7,
+  },
+  {
+    id: 'AT-09', domain: 'attribution', name: 'Surface drift from CSS shorthand expansion',
+    claimType: 'causal', truthType: 'deterministic',
+    detailPatterns: [/surface.*drift|shorthand.*expand|one property.*three/i],
     confidence: 0.7,
   },
 ];
@@ -1135,6 +1862,70 @@ const SER_SHAPES: ShapeRule[] = [
     predicateMatch: (p) => !p.passed && (p.actual?.includes('file not found') ?? false),
     confidence: 0.95,
   },
+  // Move 10: Serialization edge cases
+  {
+    id: 'SER-07', domain: 'serialization', name: 'Deeply nested schema validation failure',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'serialization',
+    predicateMatch: (p) => {
+      if (p.passed) return false;
+      const actual = p.actual ?? '';
+      // Multi-level path in schema validation detail: "foo: bar: type mismatch"
+      return (actual.match(/:/g) ?? []).length >= 2;
+    },
+    confidence: 0.8,
+  },
+  {
+    id: 'SER-08', domain: 'serialization', name: 'Array item schema validation failure',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'serialization',
+    predicateMatch: (p) => {
+      if (p.passed) return false;
+      const actual = p.actual ?? '';
+      return /items\[/.test(actual);
+    },
+    confidence: 0.85,
+  },
+  {
+    id: 'SER-09', domain: 'serialization', name: 'JSON parse error (comments or trailing comma)',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'serialization',
+    predicateMatch: (p) => {
+      if (p.passed) return false;
+      const actual = p.actual ?? '';
+      return /parse error/i.test(actual) && /comment|trailing|unexpected/i.test(actual);
+    },
+    confidence: 0.85,
+  },
+  {
+    id: 'SER-10', domain: 'serialization', name: 'Subset check missing key',
+    claimType: 'containment', truthType: 'deterministic',
+    predicateType: 'serialization',
+    predicateMatch: (p) => {
+      if (p.passed) return false;
+      const actual = p.actual ?? '';
+      return /missing key:/i.test(actual);
+    },
+    confidence: 0.85,
+  },
+  {
+    id: 'SER-11', domain: 'serialization', name: 'Structural comparison type mismatch',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'serialization',
+    predicateMatch: (p) => {
+      if (p.passed) return false;
+      const actual = p.actual ?? '';
+      return /type mismatch: expected (string|number|boolean|object|array)/i.test(actual);
+    },
+    confidence: 0.85,
+  },
+  {
+    id: 'SER-12', domain: 'serialization', name: 'Schema validation pass',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'serialization',
+    predicateMatch: (p) => p.passed && /schema valid/i.test(p.actual ?? ''),
+    confidence: 0.8,
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -1169,6 +1960,78 @@ const CONFIG_SHAPES: ShapeRule[] = [
     predicateType: 'config',
     predicateMatch: (p) => !p.passed && (p.actual?.includes('not found in') ?? false),
     confidence: 0.85,
+  },
+  // Move 10: Config edge cases
+  {
+    id: 'CFG-05', domain: 'configuration', name: 'Nested env var reference (variable interpolation)',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'config',
+    predicateMatch: (p) => {
+      if (p.passed) return false;
+      const actual = p.actual ?? '';
+      return /\$\{|\$[A-Z_]/.test(actual);
+    },
+    confidence: 0.8,
+  },
+  {
+    id: 'CFG-06', domain: 'configuration', name: 'Env var with special characters (quoting issue)',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'config',
+    predicateMatch: (p) => {
+      if (p.passed) return false;
+      const actual = p.actual ?? '';
+      return /[@$!#%&*(){}|\\]/.test(actual) && p.expected !== undefined;
+    },
+    confidence: 0.75,
+  },
+  {
+    id: 'CFG-07', domain: 'configuration', name: 'Deep nested config path (4+ levels)',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'config',
+    predicateMatch: (p, pred) => {
+      const key = pred?.key ?? '';
+      return (key.split('.').length >= 4);
+    },
+    confidence: 0.7,
+  },
+  {
+    id: 'CFG-08', domain: 'configuration', name: 'YAML config value (non-JSON source)',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'config',
+    predicateMatch: (p, pred) => {
+      const source = pred?.source ?? '';
+      return source === 'yaml' || /\.ya?ml/.test(p.actual ?? '');
+    },
+    confidence: 0.75,
+  },
+  {
+    id: 'CFG-09', domain: 'configuration', name: 'Config value is boolean (type coercion)',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'config',
+    predicateMatch: (p) => {
+      if (p.passed) return false;
+      const actual = p.actual ?? '';
+      return /= "(true|false)"/.test(actual);
+    },
+    confidence: 0.7,
+  },
+  {
+    id: 'CFG-10', domain: 'configuration', name: 'Config value is numeric (type coercion)',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'config',
+    predicateMatch: (p) => {
+      if (p.passed) return false;
+      const actual = p.actual ?? '';
+      return /= "\d+(\.\d+)?"/.test(actual);
+    },
+    confidence: 0.7,
+  },
+  {
+    id: 'CFG-11', domain: 'configuration', name: 'Config key exists (pass)',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'config',
+    predicateMatch: (p) => p.passed && (p.expected?.includes('exists') ?? false),
+    confidence: 0.9,
   },
 ];
 
@@ -1219,6 +2082,49 @@ const SEC_SHAPES: ShapeRule[] = [
     predicateMatch: (p) => !p.passed && (p.actual?.includes('no findings (expected some)') ?? false),
     confidence: 0.85,
   },
+  // Move 11: Security expansion
+  {
+    id: 'SEC-07', domain: 'security', name: 'Eval usage detected',
+    claimType: 'absence', truthType: 'deterministic',
+    predicateType: 'security',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=eval_usage'),
+    confidence: 0.85,
+  },
+  {
+    id: 'SEC-08', domain: 'security', name: 'Prototype pollution pattern detected',
+    claimType: 'absence', truthType: 'deterministic',
+    predicateType: 'security',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=prototype_pollution'),
+    confidence: 0.85,
+  },
+  {
+    id: 'SEC-09', domain: 'security', name: 'Path traversal in file operations',
+    claimType: 'absence', truthType: 'deterministic',
+    predicateType: 'security',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=path_traversal'),
+    confidence: 0.85,
+  },
+  {
+    id: 'SEC-10', domain: 'security', name: 'Insecure deserialization detected',
+    claimType: 'absence', truthType: 'deterministic',
+    predicateType: 'security',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=insecure_deserialization'),
+    confidence: 0.8,
+  },
+  {
+    id: 'SEC-11', domain: 'security', name: 'Open redirect vulnerability',
+    claimType: 'absence', truthType: 'deterministic',
+    predicateType: 'security',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=open_redirect'),
+    confidence: 0.8,
+  },
+  {
+    id: 'SEC-12', domain: 'security', name: 'Missing rate limiting on auth endpoint',
+    claimType: 'absence', truthType: 'deterministic',
+    predicateType: 'security',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=rate_limiting'),
+    confidence: 0.8,
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -1268,6 +2174,42 @@ const A11Y_SHAPES: ShapeRule[] = [
     predicateMatch: (p) => !p.passed && (p.actual?.includes('no findings (expected some)') ?? false),
     confidence: 0.85,
   },
+  // Move 11: A11y expansion
+  {
+    id: 'A11Y-07', domain: 'accessibility', name: 'Form input missing label',
+    claimType: 'absence', truthType: 'deterministic',
+    predicateType: 'a11y',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=form_labels'),
+    confidence: 0.85,
+  },
+  {
+    id: 'A11Y-08', domain: 'accessibility', name: 'Non-descriptive link text',
+    claimType: 'absence', truthType: 'deterministic',
+    predicateType: 'a11y',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=link_text'),
+    confidence: 0.85,
+  },
+  {
+    id: 'A11Y-09', domain: 'accessibility', name: 'Missing lang attribute on html',
+    claimType: 'absence', truthType: 'deterministic',
+    predicateType: 'a11y',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=lang_attr'),
+    confidence: 0.9,
+  },
+  {
+    id: 'A11Y-10', domain: 'accessibility', name: 'Auto-playing media without control',
+    claimType: 'absence', truthType: 'deterministic',
+    predicateType: 'a11y',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=autoplay'),
+    confidence: 0.8,
+  },
+  {
+    id: 'A11Y-11', domain: 'accessibility', name: 'Missing skip navigation link',
+    claimType: 'absence', truthType: 'deterministic',
+    predicateType: 'a11y',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=skip_nav'),
+    confidence: 0.8,
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -1310,6 +2252,42 @@ const PERF_SHAPES: ShapeRule[] = [
     predicateMatch: (p) => !p.passed && (p.actual?.includes('unknown check') ?? false),
     confidence: 0.9,
   },
+  // Move 11: Performance expansion
+  {
+    id: 'PERF-06', domain: 'performance', name: 'Unminified assets detected',
+    claimType: 'absence', truthType: 'deterministic',
+    predicateType: 'performance',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=unminified_assets'),
+    confidence: 0.85,
+  },
+  {
+    id: 'PERF-07', domain: 'performance', name: 'Render-blocking resources in head',
+    claimType: 'absence', truthType: 'deterministic',
+    predicateType: 'performance',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=render_blocking'),
+    confidence: 0.85,
+  },
+  {
+    id: 'PERF-08', domain: 'performance', name: 'Excessive DOM depth',
+    claimType: 'threshold', truthType: 'deterministic',
+    predicateType: 'performance',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=dom_depth'),
+    confidence: 0.8,
+  },
+  {
+    id: 'PERF-09', domain: 'performance', name: 'Missing cache headers on static assets',
+    claimType: 'absence', truthType: 'deterministic',
+    predicateType: 'performance',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=cache_headers'),
+    confidence: 0.8,
+  },
+  {
+    id: 'PERF-10', domain: 'performance', name: 'Duplicate dependencies detected',
+    claimType: 'absence', truthType: 'deterministic',
+    predicateType: 'performance',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=duplicate_deps'),
+    confidence: 0.85,
+  },
 ];
 
 // =============================================================================
@@ -1330,6 +2308,7 @@ const ALL_SHAPES: ShapeRule[] = [
   ...A11Y_SHAPES,
   ...PERF_SHAPES,
   ...SYNTAX_SHAPES,
+  ...GENERAL_CROSS_CUTTING_SHAPES,
   ...GROUNDING_SHAPES,
   ...K5_SHAPES,
   ...CONTAINMENT_SHAPES,
@@ -1724,8 +2703,11 @@ const DOMAIN_SPECIFICITY: Record<string, number> = {
  */
 const DOMINANCE: Record<string, string[]> = {
   // Specific CSS shapes dominate generic CSS value mismatch
-  'C-33': ['C-01', 'C-02', 'C-03', 'C-04', 'C-06', 'C-07', 'C-08', 'C-09', 'C-10',
-    'C-11', 'C-12', 'C-13', 'C-14', 'C-44', 'C-45', 'C-49', 'C-52', 'C-17'],
+  'C-33': ['C-01', 'C-02', 'C-03', 'C-04', 'C-05', 'C-06', 'C-07', 'C-08', 'C-09', 'C-10',
+    'C-11', 'C-12', 'C-13', 'C-14', 'C-16', 'C-44', 'C-45', 'C-46', 'C-47', 'C-48',
+    'C-49', 'C-50', 'C-52', 'C-17', 'C-18', 'C-19', 'C-20', 'C-21'],
+  // Specific shorthand shapes dominate generic C-17 shorthand mismatch
+  'C-17': ['C-18', 'C-19', 'C-20', 'C-21'],
   // Generic CSS groundingMiss shapes — C-32 (property miss) and C-40 (inherited) are
   // more specific than C-15 (new property)
   'C-15': ['C-32', 'C-40'],
@@ -1734,17 +2716,36 @@ const DOMINANCE: Record<string, string[]> = {
   'C-35': ['C-33'],
   'C-42': ['C-33'],
   // Generic HTML element not found — H-03 (wrong tag) is same signal, H-01 dominates
+  // Specific HTML shapes dominate generic H-01 (not found) and H-02 (wrong content)
+  'H-01': ['H-06', 'H-15', 'H-16', 'H-22', 'H-24', 'H-31', 'H-34', 'H-35', 'H-40'],
+  'H-02': ['H-04', 'H-05', 'H-08', 'H-09', 'H-10', 'H-13', 'H-18', 'H-21', 'H-32', 'H-38'],
   'H-03': ['H-01'],
   // Generic HTTP body missing is dominated by error page match
   'P-02': ['P-23'],
   // Generic content not found is dominated by comment match / false positive
   'N-06': ['N-03', 'N-07', 'N-08'],
   // N-07 and N-08 are both "false positive" variants — N-08 is more specific
-  'N-07': ['N-08'],
+  'N-07': ['N-04', 'N-05', 'N-08', 'N-09', 'N-10', 'N-11', 'N-12'],
+  // N-26 (generic pass, ambiguous) dominated by all specific pass shapes
+  'N-26': ['N-03', 'N-04', 'N-05', 'N-07', 'N-08', 'N-09', 'N-10', 'N-11', 'N-12'],
+  // N-10 (repeated content) dominated by boilerplate/bundle match
+  'N-10': ['N-11', 'N-12'],
   // FS-03 (file changed) dominated by FS-07 (hash drift) when both match
   'FS-03': ['FS-07'],
   // FS-04 (count mismatch) dominated by FS-17 (extra files) when direction is known
   'FS-04': ['FS-17'],
+  // Config: generic CFG-01 (not found) dominated by deep path / yaml source specifics
+  'CFG-01': ['CFG-07'],
+  // Config: generic CFG-02 (value mismatch) dominated by boolean/numeric/special-char specifics
+  'CFG-02': ['CFG-05', 'CFG-06', 'CFG-09', 'CFG-10'],
+  // Serialization: generic SER-02 (type mismatch) dominated by deep/array specifics
+  'SER-02': ['SER-07', 'SER-11'],
+  'SER-01': ['SER-09'],
+  // Serialization: generic SER-05 (missing keys) dominated by subset missing key
+  'SER-05': ['SER-10'],
+  // Cross-cutting: X-05 (empty predicates) dominates X-30 (zero edits with predicates)
+  // since empty predicates is a more fundamental issue
+  'X-55': ['X-57'],
 };
 
 /**

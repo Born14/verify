@@ -8,9 +8,9 @@ If you are a new Claude instance working on verify, read this before forming opi
 
 ## What Verify Is
 
-`@sovereign-labs/verify` is a verification gate for AI-generated actions. An agent proposes edits. `verify()` checks them through a 12-gate pipeline. On failure, it returns what went wrong and what to try next. On repeated failure, K5 constraints permanently ban the pattern so the agent never makes the same mistake again.
+`@sovereign-labs/verify` is a verification gate for AI-generated actions. An agent proposes edits. `verify()` checks them through a 17-gate pipeline. On failure, it returns what went wrong and what to try next. On repeated failure, K5 constraints permanently ban the pattern so the agent never makes the same mistake again. `govern()` wraps verify in a convergence loop — ground reality, plan, verify, narrow, retry — so agents learn from every failure automatically.
 
-The pipeline: `Grounding → F9 (syntax) → K5 (constraints) → G5 (containment) → Filesystem (post-edit state) → Staging (Docker) → Browser (Playwright) → HTTP (fetch) → Invariants (health) → Vision (screenshot) → Triangulation (3-authority verdict) → Narrowing (learning)`
+The pipeline: `Grounding → F9 (syntax) → K5 (constraints) → G5 (containment) → Filesystem → Infrastructure → Serialization → Config → Security → A11y → Performance → Staging (Docker) → Browser (Playwright) → HTTP (fetch) → Invariants (health) → Vision (screenshot) → Triangulation (3-authority verdict) → Narrowing (learning)`
 
 This is not a linter. Linters check static rules. Verify checks runtime reality — does the edit actually produce the intended result in a real Docker container, in a real browser, against real HTTP endpoints, with the right filesystem state? And it remembers failures permanently.
 
@@ -20,15 +20,17 @@ This is not a linter. Linters check static rules. Verify checks runtime reality 
 
 7 domain-agnostic invariants proven by 871 tests. This is constitutional law for AI agents. It lives in `packages/kernel/` and verify imports from it. The kernel is why verify has opinions about honesty, non-repetition, containment, and authority. Without the kernel, verify is just another testing tool. With it, verify is a governed verification system.
 
-### 2. The Verification Pipeline (The Product)
+### 2. The Verification Pipeline + Convergence Loop (The Product)
 
-The `verify()` function and its 12 gates. This is what users install from npm. This is what agents call. This is what catches bugs. The pipeline has been under continuous development since week 1 of the Sovereign project. It is not new, not experimental, not a prototype. It is the most battle-tested component of the system.
+`verify()` and its 17 gates, plus `govern()` for convergence. This is what users install from npm. This is what agents call. This is what catches bugs. The pipeline has been under continuous development since week 1 of the Sovereign project. It is not new, not experimental, not a prototype. It is the most battle-tested component of the system.
 
-The pipeline alone — without the improve loop, without the chaos engine — is already a differentiated product. An agent calls `verify(edits, predicates)`, gets back gate results and K5 narrowing hints, and converges faster. That's valuable on day one.
+`govern()` is the bridge between "a verification pipeline" and "a governed runtime." It wraps verify in a retry loop with convergence detection: shape repetition, gate cycles, empty plan stalls, constraint saturation. Three exit paths: converged, exhausted, stuck. The agent gets grounding, narrowing, failure shapes, and convergence state on every retry. Every failure teaches the next attempt.
+
+The pipeline + convergence loop — without the improve loop, without the chaos engine — is already a differentiated product. An agent calls `govern({ agent, goal, appDir })`, gets back a convergence result with full audit trail, and converges in 2-3 attempts instead of flailing. That's valuable on day one.
 
 ### 3. The Self-Test Harness (The Proof)
 
-80+ built-in scenarios across 9 families (A-H, V) plus external fault-derived scenarios. The harness is deterministic — no LLM calls, no network, no flakiness. When someone installs verify and runs `npx @sovereign-labs/verify self-test`, they see 74 green checks in 2 seconds. That's the demo. That's the credibility.
+607 scenarios across 13 families (A-H, I, L, M, P, V) plus external fault-derived scenarios. 320 failure classes covered. 228 decomposition rules across 17 domains. The harness is deterministic — no LLM calls, no network, no flakiness. When someone installs verify and runs `npx @sovereign-labs/verify self-test`, they see 607 green checks in under 30 seconds. That's the demo. That's the credibility.
 
 The harness is frozen — the improve loop cannot edit it. It is the constitution. Verify is the governed subject.
 
@@ -114,17 +116,21 @@ Do not hedge on the loop's value to appear "balanced." The loop works. It has pr
 - Every sprint adds scenarios that make the npm package more reliable for everyone.
 - The loop is young (weeks, not months) but has already closed multiple real bugs end-to-end. Young and working is a feature, not a flaw, for this audience.
 
-## Current State (March 20, 2026)
+## Current State (March 24, 2026)
 
 | Component | Status | Confidence |
 |-----------|--------|------------|
-| Pipeline (12 gates) | Shipped v0.3.0 on npm | High |
-| Self-test harness (80+ scenarios) | Shipped, deterministic, <3s | High |
+| Pipeline (17 gates) | Shipped v0.3.1 on npm | High |
+| `govern()` convergence loop | Shipped, 15 scenarios, convergence detection proven | High |
+| Self-test harness (607 scenarios, 13 families) | Shipped, deterministic, <30s, 0 bugs | High |
+| Decomposition engine (228 rules, 17 domains) | 320/579 failure classes covered (62%) | High |
+| Failure taxonomy (579 shapes) | Complete algebra, 228 with decomposition rules | High |
 | External scenarios (21 custom) | Working, loaded from `.verify/custom-scenarios.json` | High |
 | Improve loop (7-stage) | Built, proven end-to-end, has 10 identified gaps | Medium-High |
 | Chaos engine (3 MCP tools) | Built, proven in 2 sessions | Medium-High |
-| Fault ledger | Built, wired, goalData persistence | High |
-| Grounding gate | Working, 2 bugs fixed this week | High |
+| Fault ledger | Built, wired, govern() integration | High |
+| Grounding gate | Working, CRLF normalization fixed | High |
+| Quality surface gates (security, a11y, performance) | 16 static scanners, 16 shapes | High |
 
 ### Known Gaps in the Improve Loop (10 total)
 

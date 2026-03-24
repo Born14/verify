@@ -58,7 +58,8 @@ function readHTMLContent(appDir: string): Array<{ relativePath: string; content:
 // A11Y CHECKERS
 // =============================================================================
 
-type A11yCheckType = 'aria_label' | 'alt_text' | 'heading_hierarchy' | 'landmark' | 'color_contrast' | 'focus_management';
+type A11yCheckType = 'aria_label' | 'alt_text' | 'heading_hierarchy' | 'landmark' | 'color_contrast' | 'focus_management'
+  | 'form_labels' | 'link_text' | 'lang_attr' | 'autoplay' | 'skip_nav';
 
 interface A11yFinding {
   check: A11yCheckType;
@@ -217,6 +218,89 @@ function checkFocusManagement(files: Array<{ relativePath: string; content: stri
   return findings;
 }
 
+/**
+ * Check for missing form labels.
+ */
+function checkFormLabels(files: Array<{ relativePath: string; content: string }>): A11yFinding[] {
+  const findings: A11yFinding[] = [];
+  const inputRegex = /<input\b[^>]*>/gi;
+  for (const file of files) {
+    let match;
+    inputRegex.lastIndex = 0;
+    while ((match = inputRegex.exec(file.content)) !== null) {
+      const tag = match[0];
+      if (/type\s*=\s*["'](?:hidden|submit|button|reset|image)["']/i.test(tag)) continue;
+      if (!tag.includes('aria-label') && !tag.includes('aria-labelledby') && !tag.includes('id=')) {
+        findings.push({ check: 'form_labels', file: file.relativePath, detail: 'Input without associated label or aria-label', severity: 'error' });
+      } else if (tag.includes('id=')) {
+        const idMatch = tag.match(/id\s*=\s*["']([^"']+)["']/);
+        if (idMatch) {
+          const hasLabel = files.some(f => new RegExp(`for\\s*=\\s*["']${idMatch[1]}["']`).test(f.content));
+          if (!hasLabel && !tag.includes('aria-label')) {
+            findings.push({ check: 'form_labels', file: file.relativePath, detail: `Input #${idMatch[1]} has no matching <label for="">`, severity: 'warning' });
+          }
+        }
+      }
+    }
+  }
+  return findings;
+}
+
+/**
+ * Check for non-descriptive link text.
+ */
+function checkLinkText(files: Array<{ relativePath: string; content: string }>): A11yFinding[] {
+  const findings: A11yFinding[] = [];
+  const BAD_TEXTS = ['click here', 'here', 'read more', 'more', 'link', 'this'];
+  const linkRegex = /<a\b[^>]*>(.*?)<\/a>/gi;
+  for (const file of files) {
+    let match;
+    linkRegex.lastIndex = 0;
+    while ((match = linkRegex.exec(file.content)) !== null) {
+      const text = match[1].replace(/<[^>]*>/g, '').trim().toLowerCase();
+      if (BAD_TEXTS.includes(text)) {
+        findings.push({ check: 'link_text', file: file.relativePath, detail: `Non-descriptive link text: "${text}"`, severity: 'warning' });
+      }
+    }
+  }
+  return findings;
+}
+
+/**
+ * Check for missing lang attribute on html element.
+ */
+function checkLangAttr(files: Array<{ relativePath: string; content: string }>): A11yFinding[] {
+  const allContent = files.map(f => f.content).join('\n');
+  if (/<html\b/i.test(allContent) && !/<html\b[^>]*\blang\s*=/i.test(allContent)) {
+    return [{ check: 'lang_attr', file: '(project)', detail: '<html> element missing lang attribute', severity: 'error' }];
+  }
+  return [];
+}
+
+/**
+ * Check for auto-playing media.
+ */
+function checkAutoplay(files: Array<{ relativePath: string; content: string }>): A11yFinding[] {
+  const findings: A11yFinding[] = [];
+  for (const file of files) {
+    if (/<(?:video|audio)\b[^>]*\bautoplay\b/i.test(file.content)) {
+      findings.push({ check: 'autoplay', file: file.relativePath, detail: 'Auto-playing media without user control', severity: 'warning' });
+    }
+  }
+  return findings;
+}
+
+/**
+ * Check for skip navigation link.
+ */
+function checkSkipNav(files: Array<{ relativePath: string; content: string }>): A11yFinding[] {
+  const allContent = files.map(f => f.content).join('\n');
+  if (/<main\b/i.test(allContent) && !/<a\b[^>]*href\s*=\s*["']#(?:main|content|skip)/i.test(allContent)) {
+    return [{ check: 'skip_nav', file: '(project)', detail: 'No skip-to-content navigation link found', severity: 'warning' }];
+  }
+  return [];
+}
+
 function runA11yCheck(
   check: A11yCheckType,
   files: Array<{ relativePath: string; content: string }>,
@@ -228,6 +312,11 @@ function runA11yCheck(
     case 'aria_label': return checkAriaLabels(files);
     case 'focus_management': return checkFocusManagement(files);
     case 'color_contrast': return []; // Requires computed styles — deferred to browser gate
+    case 'form_labels': return checkFormLabels(files);
+    case 'link_text': return checkLinkText(files);
+    case 'lang_attr': return checkLangAttr(files);
+    case 'autoplay': return checkAutoplay(files);
+    case 'skip_nav': return checkSkipNav(files);
     default: return [];
   }
 }

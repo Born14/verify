@@ -8,6 +8,13 @@
  * This is the bridge between "a verification pipeline" and "a governed runtime."
  * The taxonomy classifies. The gates enforce. govern() makes them converge.
  *
+ * Convergence intelligence ported from Sovereign's agent-loop patterns:
+ *   - Shape repetition detection (same shapes across attempts → stuck)
+ *   - Empty plan stall (consecutive empty edits → escalate)
+ *   - Gate cycle detection (same gate failing same way → stuck)
+ *   - Constraint saturation (constraints growing but not helping → clarify)
+ *   - Three exit paths: converged, exhausted, stuck
+ *
  * Usage:
  *   import { govern } from '@sovereign-labs/verify';
  *
@@ -39,6 +46,59 @@ import { join } from 'path';
 // =============================================================================
 
 /**
+ * Why the governed loop stopped. Three exit paths:
+ *   - converged: goal succeeded
+ *   - exhausted: all attempts used, but was making progress
+ *   - stuck: loop detected no progress (shape repetition, gate cycles, constraint saturation)
+ *   - empty_plan_stall: agent returned empty edits repeatedly
+ *   - approval_aborted: human rejected the plan
+ *   - agent_error: agent plan() threw on every attempt
+ */
+export type StopReason =
+  | 'converged'
+  | 'exhausted'
+  | 'stuck'
+  | 'empty_plan_stall'
+  | 'approval_aborted'
+  | 'agent_error';
+
+/**
+ * Convergence state — tracks whether the loop is making progress.
+ * Available on GovernResult and GovernContext (so the agent can see it too).
+ */
+export interface ConvergenceState {
+  /** Why the loop stopped (or 'running' if still active — only on context) */
+  stopReason?: StopReason;
+
+  /** Are new shapes appearing? (false = stuck, same failures repeating) */
+  shapesProgressing: boolean;
+
+  /** Are new gates being reached? (false = stuck at same gate) */
+  gatesProgressing: boolean;
+
+  /** Unique shapes seen so far */
+  uniqueShapes: string[];
+
+  /** Per-attempt shape sets — which shapes were new on each attempt */
+  shapeHistory: string[][];
+
+  /** Per-attempt gate failure sets — which gates failed on each attempt */
+  gateFailureHistory: string[][];
+
+  /** Consecutive empty plans (agent returning 0 edits) */
+  emptyPlanCount: number;
+
+  /** Consecutive identical gate failure sets (exact same gates failing) */
+  gateRepeatCount: number;
+
+  /** Constraints seeded but shapes unchanged — narrowing isn't helping */
+  constraintSaturation: boolean;
+
+  /** Human-readable progress summary */
+  progressSummary: string;
+}
+
+/**
  * What the governed loop gives the agent on each attempt.
  * Everything the agent needs to make a better plan.
  */
@@ -64,6 +124,9 @@ export interface GovernContext {
 
   /** Failure shapes from the taxonomy (what category of failure occurred) */
   failureShapes?: string[];
+
+  /** Convergence state — is the loop making progress? */
+  convergence?: ConvergenceState;
 }
 
 /**
@@ -128,6 +191,13 @@ export interface GovernConfig {
    * Return false to abort. Omit to auto-approve (CI mode).
    */
   onApproval?: (plan: AgentPlan, context: GovernContext) => Promise<boolean>;
+
+  /**
+   * Called when the loop detects it's stuck (shape repetition, gate cycles, etc.).
+   * Return 'continue' to force another attempt, 'stop' to break immediately.
+   * Default: stop immediately when stuck.
+   */
+  onStuck?: (state: ConvergenceState, context: GovernContext) => 'continue' | 'stop';
 }
 
 /**
@@ -151,6 +221,12 @@ export interface GovernResult {
 
   /** Was the loop stopped by the approval gate? */
   abortedByApproval: boolean;
+
+  /** Why the loop stopped — the three exit paths */
+  stopReason: StopReason;
+
+  /** Full convergence tracking state */
+  convergence: ConvergenceState;
 
   /** Execution receipt — the audit trail */
   receipt: GovernReceipt;
@@ -193,6 +269,165 @@ export interface GovernReceipt {
 
 
 // =============================================================================
+// CONVERGENCE DETECTION — Pure functions, ported from Sovereign
+// =============================================================================
+
+/** Threshold: consecutive empty plans before escalating */
+const EMPTY_PLAN_STALL_THRESHOLD = 3;
+
+/** Threshold: consecutive identical gate failure sets before declaring stuck */
+const GATE_REPEAT_THRESHOLD = 3;
+
+/**
+ * Create initial convergence state.
+ */
+function createConvergenceState(): ConvergenceState {
+  return {
+    shapesProgressing: true,
+    gatesProgressing: true,
+    uniqueShapes: [],
+    shapeHistory: [],
+    gateFailureHistory: [],
+    emptyPlanCount: 0,
+    gateRepeatCount: 0,
+    constraintSaturation: false,
+    progressSummary: 'Starting',
+  };
+}
+
+/**
+ * Record an empty plan attempt. Returns updated state.
+ */
+function recordEmptyPlan(state: ConvergenceState): ConvergenceState {
+  const emptyPlanCount = state.emptyPlanCount + 1;
+  return {
+    ...state,
+    emptyPlanCount,
+    progressSummary: `Empty plan ${emptyPlanCount}/${EMPTY_PLAN_STALL_THRESHOLD}`,
+  };
+}
+
+/**
+ * Record a verify() result. Returns updated state with convergence signals.
+ */
+function recordAttempt(
+  state: ConvergenceState,
+  shapes: string[],
+  gateFailures: string[],
+  constraintsBeforeAttempt: number,
+  constraintsAfterAttempt: number,
+): ConvergenceState {
+  // Reset empty plan counter (we got a real plan)
+  const emptyPlanCount = 0;
+
+  // --- Shape progression ---
+  const prevUnique = new Set(state.uniqueShapes);
+  const newShapes = shapes.filter(s => !prevUnique.has(s));
+  const uniqueShapes = [...new Set([...state.uniqueShapes, ...shapes])];
+  const shapeHistory = [...state.shapeHistory, shapes];
+  const shapesProgressing = shapes.length === 0 || newShapes.length > 0;
+
+  // --- Gate progression ---
+  const gateFailureHistory = [...state.gateFailureHistory, gateFailures];
+  const prevGateFailures = state.gateFailureHistory[state.gateFailureHistory.length - 1];
+  const gatesSame = prevGateFailures !== undefined && setsEqual(prevGateFailures, gateFailures);
+  const gateRepeatCount = gatesSame ? state.gateRepeatCount + 1 : 0;
+  const gatesProgressing = !gatesSame;
+
+  // --- Constraint saturation ---
+  // Constraints grew but shapes didn't change = narrowing isn't helping
+  const constraintsGrew = constraintsAfterAttempt > constraintsBeforeAttempt;
+  const constraintSaturation = constraintsGrew && !shapesProgressing;
+
+  // --- Progress summary ---
+  const parts: string[] = [];
+  if (newShapes.length > 0) parts.push(`${newShapes.length} new shape(s)`);
+  if (!shapesProgressing && shapes.length > 0) parts.push('shapes repeating');
+  if (gatesSame) parts.push(`same gates failing (×${gateRepeatCount + 1})`);
+  if (constraintSaturation) parts.push('constraint saturation');
+  const progressSummary = parts.length > 0 ? parts.join(', ') : 'progressing';
+
+  return {
+    shapesProgressing,
+    gatesProgressing,
+    uniqueShapes,
+    shapeHistory,
+    gateFailureHistory,
+    emptyPlanCount,
+    gateRepeatCount,
+    constraintSaturation,
+    progressSummary,
+  };
+}
+
+/**
+ * Determine if the loop should stop early.
+ * Returns a StopReason if stuck, or undefined to continue.
+ */
+function detectStuck(state: ConvergenceState): StopReason | undefined {
+  // Empty plan stall: agent can't produce edits
+  if (state.emptyPlanCount >= EMPTY_PLAN_STALL_THRESHOLD) {
+    return 'empty_plan_stall';
+  }
+
+  // Gate cycle: same gates failing the same way repeatedly
+  if (state.gateRepeatCount >= GATE_REPEAT_THRESHOLD) {
+    return 'stuck';
+  }
+
+  // Shape repetition + constraint saturation: narrowing didn't help, shapes unchanged
+  if (state.constraintSaturation && !state.shapesProgressing && state.gateFailureHistory.length >= 2) {
+    return 'stuck';
+  }
+
+  // Both axes stalled: no new shapes AND same gates for 2+ attempts
+  if (!state.shapesProgressing && !state.gatesProgressing && state.gateFailureHistory.length >= 2) {
+    return 'stuck';
+  }
+
+  return undefined;
+}
+
+/**
+ * Determine the final stop reason when loop ends normally.
+ */
+function determineFinalStopReason(
+  success: boolean,
+  abortedByApproval: boolean,
+  state: ConvergenceState,
+  history: VerifyResult[],
+): StopReason {
+  if (success) return 'converged';
+  if (abortedByApproval) return 'approval_aborted';
+
+  // Check if we ever made progress
+  const stuckReason = detectStuck(state);
+  if (stuckReason) return stuckReason;
+
+  // All attempts were agent errors (plan() threw or empty)
+  const allAgentErrors = history.every(r =>
+    r.attestation.includes('Agent plan() threw') || r.attestation.includes('0 edits')
+  );
+  if (allAgentErrors) return 'agent_error';
+
+  // Had progress (new shapes appeared, gates changed) but ran out of attempts
+  if (state.shapesProgressing || state.gatesProgressing) return 'exhausted';
+
+  // Default: stuck (no evidence of progress)
+  return 'stuck';
+}
+
+/**
+ * Set equality for string arrays (order-independent).
+ */
+function setsEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const setA = new Set(a);
+  return b.every(x => setA.has(x));
+}
+
+
+// =============================================================================
 // THE ONE FUNCTION
 // =============================================================================
 
@@ -217,6 +452,7 @@ export async function govern(config: GovernConfig): Promise<GovernResult> {
     invariants,
     onAttempt,
     onApproval,
+    onStuck,
   } = config;
 
   mkdirSync(stateDir, { recursive: true });
@@ -230,6 +466,7 @@ export async function govern(config: GovernConfig): Promise<GovernResult> {
   const totalStart = Date.now();
   let abortedByApproval = false;
   let unclassifiedFailures = 0;
+  let convergence = createConvergenceState();
 
   // =========================================================================
   // GROUND — Read reality once, before any attempts
@@ -243,7 +480,7 @@ export async function govern(config: GovernConfig): Promise<GovernResult> {
     const attemptStart = Date.now();
     const priorResult = history[history.length - 1];
 
-    // Build context for the agent
+    // Build context for the agent (includes convergence state)
     const context: GovernContext = {
       grounding,
       attempt,
@@ -255,6 +492,7 @@ export async function govern(config: GovernConfig): Promise<GovernResult> {
         reason: c.reason,
       })),
       failureShapes: allShapes.length > 0 ? [...allShapes] : undefined,
+      convergence: attempt > 1 ? { ...convergence } : undefined,
     };
 
     // -----------------------------------------------------------------------
@@ -279,6 +517,8 @@ export async function govern(config: GovernConfig): Promise<GovernResult> {
 
     // Validate plan is non-empty
     if (!plan.edits || plan.edits.length === 0) {
+      convergence = recordEmptyPlan(convergence);
+
       const emptyResult: VerifyResult = {
         success: false,
         gates: [],
@@ -289,7 +529,21 @@ export async function govern(config: GovernConfig): Promise<GovernResult> {
       history.push(emptyResult);
       attemptDurations.push(Date.now() - attemptStart);
       onAttempt?.(attempt, emptyResult);
+
+      // Check empty plan stall
+      const stuckReason = detectStuck(convergence);
+      if (stuckReason) {
+        convergence.stopReason = stuckReason;
+        if (!onStuck || onStuck(convergence, context) === 'stop') {
+          break;
+        }
+      }
       continue;
+    }
+
+    // Reset empty plan counter on non-empty plan
+    if (convergence.emptyPlanCount > 0) {
+      convergence = { ...convergence, emptyPlanCount: 0 };
     }
 
     // -----------------------------------------------------------------------
@@ -313,8 +567,10 @@ export async function govern(config: GovernConfig): Promise<GovernResult> {
     }
 
     // -----------------------------------------------------------------------
-    // VERIFY — Run the 17-gate pipeline
+    // VERIFY — Run the gate pipeline
     // -----------------------------------------------------------------------
+    const constraintsBefore = store.getConstraintCount();
+
     const verifyConfig: VerifyConfig = {
       appDir,
       goal,
@@ -335,15 +591,18 @@ export async function govern(config: GovernConfig): Promise<GovernResult> {
       allConstraintsSeeded.push(...result.constraintDelta.seeded);
     }
 
+    const constraintsAfter = store.getConstraintCount();
+
     // -----------------------------------------------------------------------
     // DECOMPOSE — Map failure to taxonomy shapes
     // -----------------------------------------------------------------------
+    let attemptShapes: string[] = [];
     let decomposition: DecompositionResult | undefined;
     if (!result.success) {
       try {
         decomposition = decomposeFailure(result, plan.predicates);
-        const shapeIds = decomposition.shapes.map(s => s.id);
-        allShapes.push(...shapeIds);
+        attemptShapes = decomposition.shapes.map(s => s.id);
+        allShapes.push(...attemptShapes);
 
         // Track unclassified failures — gaps in the taxonomy
         if (!decomposition.fullyClassified || decomposition.shapes.length === 0) {
@@ -354,6 +613,12 @@ export async function govern(config: GovernConfig): Promise<GovernResult> {
         unclassifiedFailures++;
       }
     }
+
+    // -----------------------------------------------------------------------
+    // CONVERGENCE — Update tracking state
+    // -----------------------------------------------------------------------
+    const gateFailures = result.gates.filter(g => !g.passed).map(g => g.gate);
+    convergence = recordAttempt(convergence, attemptShapes, gateFailures, constraintsBefore, constraintsAfter);
 
     // -----------------------------------------------------------------------
     // RECORD — Persist to fault ledger for taxonomy growth
@@ -372,9 +637,11 @@ export async function govern(config: GovernConfig): Promise<GovernResult> {
     onAttempt?.(attempt, result);
 
     // -----------------------------------------------------------------------
-    // CONVERGE — Success or narrow
+    // CONVERGE — Success, stuck, or narrow
     // -----------------------------------------------------------------------
     if (result.success) {
+      convergence.stopReason = 'converged';
+      convergence.progressSummary = formatFinalSummary('converged', convergence);
       return buildGovernResult({
         success: true,
         history,
@@ -386,7 +653,19 @@ export async function govern(config: GovernConfig): Promise<GovernResult> {
         store,
         goal,
         abortedByApproval: false,
+        convergence,
       });
+    }
+
+    // Check if stuck — early exit saves attempts
+    if (attempt < maxAttempts) {
+      const stuckReason = detectStuck(convergence);
+      if (stuckReason) {
+        convergence.stopReason = stuckReason;
+        if (!onStuck || onStuck(convergence, context) === 'stop') {
+          break;
+        }
+      }
     }
 
     // If this isn't the last attempt, the loop continues.
@@ -394,8 +673,14 @@ export async function govern(config: GovernConfig): Promise<GovernResult> {
   }
 
   // =========================================================================
-  // EXHAUSTED — All attempts failed
+  // DONE — Determine final stop reason
   // =========================================================================
+  const stopReason = convergence.stopReason ?? determineFinalStopReason(
+    false, abortedByApproval, convergence, history,
+  );
+  convergence.stopReason = stopReason;
+  convergence.progressSummary = formatFinalSummary(stopReason, convergence);
+
   return buildGovernResult({
     success: false,
     history,
@@ -407,6 +692,7 @@ export async function govern(config: GovernConfig): Promise<GovernResult> {
     store,
     goal,
     abortedByApproval,
+    convergence,
   });
 }
 
@@ -426,16 +712,16 @@ interface BuildGovernResultOpts {
   store: ConstraintStore;
   goal: string;
   abortedByApproval: boolean;
+  convergence: ConvergenceState;
 }
 
 function buildGovernResult(opts: BuildGovernResultOpts): GovernResult {
   const {
     success, history, allShapes, allConstraintsSeeded, unclassifiedFailures,
-    attemptDurations, totalStart, store, goal, abortedByApproval,
+    attemptDurations, totalStart, store, goal, abortedByApproval, convergence,
   } = opts;
 
   const finalResult = history[history.length - 1];
-  const constraintsBefore = store.getConstraintCount() - allConstraintsSeeded.length;
   const constraintsAfter = store.getConstraintCount();
 
   // Convergence narrowed if constraints were seeded (search space shrank)
@@ -444,6 +730,8 @@ function buildGovernResult(opts: BuildGovernResultOpts): GovernResult {
   const gatesPassed = finalResult.gates.filter(g => g.passed).map(g => g.gate);
   const gatesFailed = finalResult.gates.filter(g => !g.passed).map(g => g.gate);
 
+  const stopReason = convergence.stopReason ?? 'exhausted';
+
   return {
     success,
     attempts: history.length,
@@ -451,6 +739,8 @@ function buildGovernResult(opts: BuildGovernResultOpts): GovernResult {
     history,
     convergenceNarrowed,
     abortedByApproval,
+    stopReason,
+    convergence,
     receipt: {
       goal,
       attestation: finalResult.attestation,
@@ -464,4 +754,28 @@ function buildGovernResult(opts: BuildGovernResultOpts): GovernResult {
       attemptDurations,
     },
   };
+}
+
+/**
+ * Format a human-readable summary of why the loop stopped.
+ */
+function formatFinalSummary(reason: StopReason, state: ConvergenceState): string {
+  switch (reason) {
+    case 'converged':
+      return `Converged after ${state.shapeHistory.length} attempt(s)`;
+    case 'exhausted':
+      return `Exhausted ${state.shapeHistory.length + state.emptyPlanCount} attempt(s) — was making progress (${state.uniqueShapes.length} unique shapes)`;
+    case 'stuck':
+      const stuckParts: string[] = [];
+      if (!state.shapesProgressing) stuckParts.push('shapes repeating');
+      if (state.gateRepeatCount >= GATE_REPEAT_THRESHOLD) stuckParts.push(`same gates failing ×${state.gateRepeatCount + 1}`);
+      if (state.constraintSaturation) stuckParts.push('constraint saturation');
+      return `Stuck: ${stuckParts.join(', ')}. Goal may need clarification.`;
+    case 'empty_plan_stall':
+      return `Agent returned ${state.emptyPlanCount} consecutive empty plans. Goal may need clarification.`;
+    case 'approval_aborted':
+      return 'Aborted by approval gate';
+    case 'agent_error':
+      return 'Agent plan() threw on every attempt';
+  }
 }

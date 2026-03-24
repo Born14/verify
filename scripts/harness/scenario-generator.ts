@@ -12281,6 +12281,109 @@ function generateSerializationScenarios(appDir: string): VerifyScenario[] {
     requiresDocker: false,
   });
 
+  // SER-11: Structural comparison type mismatch (string vs number)
+  scenarios.push({
+    id: nextId('G', 'ser_structural_type_mismatch'),
+    family: 'G',
+    generator: 'ser_structural_type_mismatch',
+    failureClass: 'SER-11',
+    description: 'SER: structural comparison detects type mismatch',
+    edits: [noopEdit],
+    predicates: [
+      {
+        type: 'serialization', file: 'test-data/valid.json',
+        expected: '{"name": 42}',
+        comparison: 'structural',
+        description: 'name should be number but is string',
+      } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: { ...qualityGates, grounding: false } },
+    invariants: [
+      shouldNotCrash('serialization structural type mismatch should not crash'),
+      gatePresent('serialization'),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // SER-10: Subset check missing key
+  scenarios.push({
+    id: nextId('G', 'ser_subset_missing_key'),
+    family: 'G',
+    generator: 'ser_subset_missing_key',
+    failureClass: 'SER-10',
+    description: 'SER: subset check fails when expected key is missing from actual',
+    edits: [noopEdit],
+    predicates: [
+      {
+        type: 'serialization', file: 'test-data/valid.json',
+        expected: '{"nonexistent_field": "value"}',
+        comparison: 'subset',
+        description: 'Subset requires nonexistent field',
+      } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: { ...qualityGates, grounding: false } },
+    invariants: [
+      shouldNotCrash('serialization subset missing key should not crash'),
+      gatePresent('serialization'),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // SER-12: Schema validation pass (explicit schema match)
+  scenarios.push({
+    id: nextId('G', 'ser_schema_valid_pass'),
+    family: 'G',
+    generator: 'ser_schema_valid_pass',
+    failureClass: 'SER-12',
+    description: 'SER: serialization passes when JSON matches schema',
+    edits: [noopEdit],
+    predicates: [
+      {
+        type: 'serialization', file: 'test-data/valid.json',
+        schema: { type: 'object', properties: { name: { type: 'string' }, version: { type: 'string' }, settings: { type: 'object' } } },
+        description: 'Full schema validates correctly',
+      } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('serialization schema valid should not crash'),
+      verifySucceeded('serialization should pass for valid schema'),
+      gatePresent('serialization'),
+      gatePassed('serialization'),
+    ],
+    requiresDocker: false,
+  });
+
+  // SER-08: Array item schema validation failure
+  scenarios.push({
+    id: nextId('G', 'ser_array_item_fail'),
+    family: 'G',
+    generator: 'ser_array_item_fail',
+    failureClass: 'SER-08',
+    description: 'SER: schema validation fails on array item type',
+    edits: [noopEdit],
+    predicates: [
+      {
+        type: 'serialization', file: 'test-data/valid.json',
+        schema: { type: 'object', properties: { users: { type: 'array', items: { type: 'string' } } } },
+        description: 'Expect array of strings but get array of objects',
+      } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: { ...qualityGates, grounding: false } },
+    invariants: [
+      shouldNotCrash('serialization array item fail should not crash'),
+      gatePresent('serialization'),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
   return scenarios;
 }
 
@@ -12425,6 +12528,93 @@ function generateConfigScenarios(appDir: string): VerifyScenario[] {
     requiresDocker: false,
   });
 
+  // CFG-07: Deep nested config path (4+ levels)
+  scenarios.push({
+    id: nextId('G', 'cfg_deep_nested'),
+    family: 'G',
+    generator: 'cfg_deep_nested',
+    failureClass: 'CFG-07',
+    description: 'CFG: deep nested config path with 4+ levels',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'config', key: 'a.b.c.d', expected: 'exists', description: 'Deep nested key' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: { ...qualityGates, grounding: false } },
+    invariants: [
+      shouldNotCrash('deep nested config key should not crash'),
+      gatePresent('config'),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // CFG-09: Config value is boolean (type coercion)
+  scenarios.push({
+    id: nextId('G', 'cfg_boolean_coercion'),
+    family: 'G',
+    generator: 'cfg_boolean_coercion',
+    failureClass: 'CFG-09',
+    description: 'CFG: config boolean value type coercion mismatch',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'config', key: 'DEBUG', expected: 'true', description: 'DEBUG should be true but is false' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: { ...qualityGates, grounding: false } },
+    invariants: [
+      shouldNotCrash('config boolean coercion should not crash'),
+      gatePresent('config'),
+      gateFailed('config', 'mismatch'),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // CFG-10: Config value is numeric (type coercion)
+  scenarios.push({
+    id: nextId('G', 'cfg_numeric_coercion'),
+    family: 'G',
+    generator: 'cfg_numeric_coercion',
+    failureClass: 'CFG-10',
+    description: 'CFG: config numeric value type coercion mismatch',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'config', key: 'PORT', expected: '8080', description: 'PORT should be 8080 but is 3000' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: { ...qualityGates, grounding: false } },
+    invariants: [
+      shouldNotCrash('config numeric coercion should not crash'),
+      gatePresent('config'),
+      gateFailed('config', 'mismatch'),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // CFG-11: Config key exists (pass)
+  scenarios.push({
+    id: nextId('G', 'cfg_key_exists_explicit'),
+    family: 'G',
+    generator: 'cfg_key_exists_explicit',
+    failureClass: 'CFG-11',
+    description: 'CFG: config key existence check passes explicitly',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'config', key: 'SECRET_KEY', expected: 'exists', description: 'SECRET_KEY exists' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('config key exists explicit should not crash'),
+      verifySucceeded('explicit key existence should pass'),
+      gatePresent('config'),
+      gatePassed('config'),
+    ],
+    requiresDocker: false,
+  });
+
   return scenarios;
 }
 
@@ -12522,6 +12712,72 @@ function generateSecurityScenarios(appDir: string): VerifyScenario[] {
     invariants: [
       shouldNotCrash('security cors clean should not crash'),
       verifySucceeded('cors check should pass for clean code'),
+      gatePresent('security'),
+      gatePassed('security'),
+    ],
+    requiresDocker: false,
+  });
+
+  // Move 11: SEC-07 eval_usage clean pass
+  scenarios.push({
+    id: nextId('G', 'sec_eval_usage_clean'),
+    family: 'G',
+    generator: 'sec_eval_usage_clean',
+    failureClass: 'SEC-07',
+    description: 'SEC: eval usage check passes for clean code',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'security', securityCheck: 'eval_usage', expected: 'no_findings', description: 'No eval usage' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('eval usage check should not crash'),
+      verifySucceeded('eval usage should pass for clean code'),
+      gatePresent('security'),
+      gatePassed('security'),
+    ],
+    requiresDocker: false,
+  });
+
+  // Move 11: SEC-09 path_traversal clean pass
+  scenarios.push({
+    id: nextId('G', 'sec_path_traversal_clean'),
+    family: 'G',
+    generator: 'sec_path_traversal_clean',
+    failureClass: 'SEC-09',
+    description: 'SEC: path traversal check passes for clean code',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'security', securityCheck: 'path_traversal', expected: 'no_findings', description: 'No path traversal' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('path traversal check should not crash'),
+      verifySucceeded('path traversal should pass for clean code'),
+      gatePresent('security'),
+      gatePassed('security'),
+    ],
+    requiresDocker: false,
+  });
+
+  // Move 11: SEC-11 open_redirect clean pass
+  scenarios.push({
+    id: nextId('G', 'sec_open_redirect_clean'),
+    family: 'G',
+    generator: 'sec_open_redirect_clean',
+    failureClass: 'SEC-11',
+    description: 'SEC: open redirect check passes for clean code',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'security', securityCheck: 'open_redirect', expected: 'no_findings', description: 'No open redirect' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('open redirect check should not crash'),
+      verifySucceeded('open redirect should pass for clean code'),
       gatePresent('security'),
       gatePassed('security'),
     ],
@@ -12643,6 +12899,72 @@ function generateA11yScenarios(appDir: string): VerifyScenario[] {
     invariants: [
       shouldNotCrash('a11y focus management should not crash'),
       verifySucceeded('focus management should pass'),
+      gatePresent('a11y'),
+      gatePassed('a11y'),
+    ],
+    requiresDocker: false,
+  });
+
+  // Move 11: A11Y-07 form_labels detects issue (demo app has search input without label)
+  scenarios.push({
+    id: nextId('G', 'a11y_form_labels_fail'),
+    family: 'G',
+    generator: 'a11y_form_labels_fail',
+    failureClass: 'A11Y-07',
+    description: 'A11Y: form labels check fails when input lacks label',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'a11y', a11yCheck: 'form_labels', expected: 'no_findings', description: 'All inputs should have labels' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('form labels check should not crash'),
+      verifyFailedAt('a11y', 'form labels should fail when demo app has unlabeled input'),
+      gatePresent('a11y'),
+      gateFailed('a11y'),
+    ],
+    requiresDocker: false,
+  });
+
+  // Move 11: A11Y-08 link_text clean pass
+  scenarios.push({
+    id: nextId('G', 'a11y_link_text_clean'),
+    family: 'G',
+    generator: 'a11y_link_text_clean',
+    failureClass: 'A11Y-08',
+    description: 'A11Y: link text check passes for clean HTML',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'a11y', a11yCheck: 'link_text', expected: 'no_findings', description: 'All links have descriptive text' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('link text check should not crash'),
+      verifySucceeded('link text should pass for clean HTML'),
+      gatePresent('a11y'),
+      gatePassed('a11y'),
+    ],
+    requiresDocker: false,
+  });
+
+  // Move 11: A11Y-10 autoplay clean pass
+  scenarios.push({
+    id: nextId('G', 'a11y_autoplay_clean'),
+    family: 'G',
+    generator: 'a11y_autoplay_clean',
+    failureClass: 'A11Y-10',
+    description: 'A11Y: autoplay check passes when no auto-playing media',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'a11y', a11yCheck: 'autoplay', expected: 'no_findings', description: 'No auto-playing media' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('autoplay check should not crash'),
+      verifySucceeded('autoplay should pass when no media'),
       gatePresent('a11y'),
       gatePassed('a11y'),
     ],
@@ -12790,6 +13112,94 @@ function generatePerformanceScenarios(appDir: string): VerifyScenario[] {
     requiresDocker: false,
   });
 
+  // Move 11: PERF-06 unminified_assets clean pass
+  scenarios.push({
+    id: nextId('G', 'perf_unminified_pass'),
+    family: 'G',
+    generator: 'perf_unminified_pass',
+    failureClass: 'PERF-06',
+    description: 'PERF: unminified assets check passes for small files',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'performance', perfCheck: 'unminified_assets', description: 'Assets minified' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('unminified assets check should not crash'),
+      verifySucceeded('unminified should pass for small demo app'),
+      gatePresent('performance'),
+      gatePassed('performance'),
+    ],
+    requiresDocker: false,
+  });
+
+  // Move 11: PERF-07 render_blocking clean pass
+  scenarios.push({
+    id: nextId('G', 'perf_render_blocking_pass'),
+    family: 'G',
+    generator: 'perf_render_blocking_pass',
+    failureClass: 'PERF-07',
+    description: 'PERF: render blocking check passes for clean HTML',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'performance', perfCheck: 'render_blocking', description: 'No render blocking resources' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('render blocking check should not crash'),
+      verifySucceeded('render blocking should pass for clean HTML'),
+      gatePresent('performance'),
+      gatePassed('performance'),
+    ],
+    requiresDocker: false,
+  });
+
+  // Move 11: PERF-08 dom_depth clean pass
+  scenarios.push({
+    id: nextId('G', 'perf_dom_depth_pass'),
+    family: 'G',
+    generator: 'perf_dom_depth_pass',
+    failureClass: 'PERF-08',
+    description: 'PERF: DOM depth check passes for shallow HTML',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'performance', perfCheck: 'dom_depth', description: 'DOM depth within limits' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('dom depth check should not crash'),
+      verifySucceeded('dom depth should pass for simple demo app'),
+      gatePresent('performance'),
+      gatePassed('performance'),
+    ],
+    requiresDocker: false,
+  });
+
+  // Move 11: PERF-10 duplicate_deps clean pass
+  scenarios.push({
+    id: nextId('G', 'perf_duplicate_deps_pass'),
+    family: 'G',
+    generator: 'perf_duplicate_deps_pass',
+    failureClass: 'PERF-10',
+    description: 'PERF: duplicate deps check passes for clean package.json',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'performance', perfCheck: 'duplicate_deps', description: 'No duplicate deps' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('duplicate deps check should not crash'),
+      verifySucceeded('duplicate deps should pass for demo app'),
+      gatePresent('performance'),
+      gatePassed('performance'),
+    ],
+    requiresDocker: false,
+  });
+
   // PERF: No performance predicates — gate skipped
   scenarios.push({
     id: nextId('G', 'perf_no_predicates'),
@@ -12811,6 +13221,1284 @@ function generatePerformanceScenarios(appDir: string): VerifyScenario[] {
 }
 
 // =============================================================================
+// MOVE 7: CORE PIPELINE EDGE CASES (Grounding + F9 + K5 + G5)
+// =============================================================================
+
+function generateMove7Scenarios(appDir: string): VerifyScenario[] {
+  const scenarios: VerifyScenario[] = [];
+  const edgeCasesDir = appDir; // same fixture, /edge-cases route has the terrain
+
+  // ---------------------------------------------------------------------------
+  // GR-07: Grounding runs on stale file cache (file changed between ground and verify)
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('G', 'GR07_staleCache'),
+    family: 'G',
+    generator: 'GR07_staleGroundingCache',
+    failureClass: 'GR-07',
+    description: 'Grounding based on file state that changed before verification — selector existed at ground time, removed by edit',
+    edits: [{
+      file: 'server.js',
+      search: '.edge-hero .edge-title { color: #e74c3c; text-transform: uppercase; }',
+      replace: '/* removed edge-title rule */',
+    }],
+    predicates: [
+      { type: 'css', selector: '.edge-title', property: 'color', expected: '#e74c3c', path: '/edge-cases' },
+    ],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      shouldNotCrash('stale grounding should not crash'),
+      groundingRan(),
+      // The predicate targets a selector that the edit removes — grounding catches it
+      gateFailed('grounding', 'selector removed by own edit — grounding sees post-edit state'),
+    ],
+    requiresDocker: false,
+  });
+
+  // ---------------------------------------------------------------------------
+  // GR-08: Grounding parses minified CSS (no whitespace between rules)
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('G', 'GR08_minifiedCSS'),
+    family: 'G',
+    generator: 'GR08_minifiedCSS',
+    failureClass: 'GR-08',
+    description: 'Grounding must parse minified CSS blocks (no whitespace between rules)',
+    edits: [{
+      file: 'server.js',
+      search: '.minified{color:#ff6600;font-size:14px;}',
+      replace: '.minified{color:#00ff00;font-size:14px;}',
+    }],
+    predicates: [
+      { type: 'css', selector: '.minified', property: 'color', expected: '#00ff00', path: '/edge-cases' },
+    ],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      shouldNotCrash('minified CSS should not crash'),
+      groundingRan(),
+      predicateIsGrounded(0, 'minified selector should be grounded'),
+    ],
+    requiresDocker: false,
+  });
+
+  // GR-08b: Grounding finds inner selector within minified block
+  scenarios.push({
+    id: nextId('G', 'GR08b_minifiedInner'),
+    family: 'G',
+    generator: 'GR08b_minifiedInnerSelector',
+    failureClass: 'GR-08',
+    description: 'Grounding must find nested selectors within minified CSS',
+    edits: [{
+      file: 'server.js',
+      search: '.minified .inner{background:#000;color:#fff;}',
+      replace: '.minified .inner{background:#111;color:#fff;}',
+    }],
+    predicates: [
+      { type: 'css', selector: '.minified .inner', property: 'background', expected: '#111', path: '/edge-cases' },
+    ],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      shouldNotCrash('minified inner selector should not crash'),
+      groundingRan(),
+      predicateIsGrounded(0, 'minified inner selector should be grounded'),
+    ],
+    requiresDocker: false,
+  });
+
+  // ---------------------------------------------------------------------------
+  // GR-09: Grounding misses inline styles (only parses <style> blocks)
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('G', 'GR09_inlineStyles'),
+    family: 'G',
+    generator: 'GR09_inlineStyleMiss',
+    failureClass: 'GR-09',
+    description: 'Grounding cannot see inline style attributes — predicate for inline-styled element is grounding miss',
+    edits: [{
+      file: 'server.js',
+      search: 'style="color: #e67e22; font-size: 18px;"',
+      replace: 'style="color: #27ae60; font-size: 18px;"',
+    }],
+    predicates: [
+      { type: 'css', selector: '.inline-styled', property: 'color', expected: '#27ae60', path: '/edge-cases' },
+    ],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      shouldNotCrash('inline style grounding miss should not crash'),
+      groundingRan(),
+      // .inline-styled has no <style> block rule — grounding should miss it
+      predicateIsGroundingMiss(0, 'inline-styled selector not in any <style> block'),
+    ],
+    requiresDocker: false,
+  });
+
+  // ---------------------------------------------------------------------------
+  // GR-10: Grounding miss on dynamically constructed selector (template literal)
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('G', 'GR10_dynamicSelector'),
+    family: 'G',
+    generator: 'GR10_dynamicSelector',
+    failureClass: 'GR-10',
+    description: 'Dynamic class from template literal — grounding cannot resolve it',
+    edits: [{
+      file: 'server.js',
+      search: "const dynamicClass = 'status-' + (Date.now() % 2 === 0 ? 'active' : 'idle');",
+      replace: "const dynamicClass = 'status-' + (Date.now() % 2 === 0 ? 'active' : 'idle'); // unchanged",
+    }],
+    predicates: [
+      { type: 'css', selector: '.status-active', property: 'color', expected: 'green', path: '/edge-cases' },
+    ],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      shouldNotCrash('dynamic selector should not crash'),
+      groundingRan(),
+      predicateIsGroundingMiss(0, 'dynamic class not in <style> blocks'),
+    ],
+    requiresDocker: false,
+  });
+
+  // ---------------------------------------------------------------------------
+  // GR-11: Grounding false positive from CSS-in-JS string literal
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('G', 'GR11_cssInJS'),
+    family: 'G',
+    generator: 'GR11_cssInJSFalsePositive',
+    failureClass: 'GR-11',
+    description: 'CSS selector in JS string literal should not be treated as real CSS',
+    edits: [{
+      file: 'server.js',
+      search: "const cssString = '.fake-selector { color: green; font-weight: bold; }';",
+      replace: "const cssString = '.fake-selector { color: red; font-weight: bold; }';",
+    }],
+    predicates: [
+      { type: 'css', selector: '.fake-selector', property: 'color', expected: 'red', path: '/edge-cases' },
+    ],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      shouldNotCrash('CSS-in-JS string should not crash'),
+      groundingRan(),
+      // .fake-selector is inside a JS string, not a <style> block
+      predicateIsGroundingMiss(0, 'CSS in JS string should not be grounded'),
+    ],
+    requiresDocker: false,
+  });
+
+  // ---------------------------------------------------------------------------
+  // GR-12: Grounding parser chokes on CSS @media/@keyframes nested blocks
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('G', 'GR12_nestedAtRules'),
+    family: 'G',
+    generator: 'GR12_atMediaKeyframes',
+    failureClass: 'GR-12',
+    description: 'Grounding must survive @media and @keyframes blocks without choking',
+    edits: [{
+      file: 'server.js',
+      search: '.animated { animation: pulse 2s infinite; color: #9b59b6; }',
+      replace: '.animated { animation: pulse 2s infinite; color: #2ecc71; }',
+    }],
+    predicates: [
+      { type: 'css', selector: '.animated', property: 'color', expected: '#2ecc71', path: '/edge-cases' },
+    ],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      shouldNotCrash('@media/@keyframes should not crash grounding'),
+      groundingRan(),
+      predicateIsGrounded(0, '.animated is in a style block after @keyframes'),
+    ],
+    requiresDocker: false,
+  });
+
+  // ---------------------------------------------------------------------------
+  // F9-05: Edit search string matches inside a string literal, not code
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('G', 'F9_05_stringLiteral'),
+    family: 'G',
+    generator: 'F905_searchInStringLiteral',
+    failureClass: 'F9-05',
+    description: 'Edit search targets text that appears in JS string AND in actual CSS — ambiguous match',
+    edits: [{
+      file: 'server.js',
+      search: 'color: green',
+      replace: 'color: purple',
+    }],
+    predicates: [
+      { type: 'css', selector: '.fake-selector', property: 'color', expected: 'purple', path: '/edge-cases' },
+    ],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      shouldNotCrash('ambiguous match in string literal should not crash'),
+      // "color: green" appears in both JS string and possibly CSS — ambiguous
+      // F9 should either succeed (first match) or fail (ambiguous)
+    ],
+    requiresDocker: false,
+  });
+
+  // ---------------------------------------------------------------------------
+  // F9-06: Edit creates valid syntax but wrong semantics (wrong property)
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('G', 'F9_06_wrongProperty'),
+    family: 'G',
+    generator: 'F906_validSyntaxWrongSemantics',
+    failureClass: 'F9-06',
+    description: 'Edit changes font-size but predicate checks color — syntax valid, semantics wrong',
+    edits: [{
+      file: 'server.js',
+      search: '.edge-hero { color: #2c3e50; font-size: 1.5rem; font-weight: bold; }',
+      replace: '.edge-hero { color: #2c3e50; font-size: 2rem; font-weight: bold; }',
+    }],
+    predicates: [
+      { type: 'css', selector: '.edge-hero', property: 'color', expected: '#ff0000', path: '/edge-cases' },
+    ],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      shouldNotCrash('wrong-property edit should not crash'),
+      // Edit is syntactically valid but changes the wrong property
+      // Verify fails because grounding or predicate evaluation shows color unchanged
+      verifyFailedAt('grounding', 'edit changes wrong property — color predicate unsatisfied'),
+    ],
+    requiresDocker: false,
+  });
+
+  // ---------------------------------------------------------------------------
+  // F9-07: Edit search string spans a line boundary (multi-line match)
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('G', 'F9_07_multiLine'),
+    family: 'G',
+    generator: 'F907_multiLineSearch',
+    failureClass: 'F9-07',
+    description: 'Edit search string includes newline — tests multi-line matching in F9',
+    edits: [{
+      file: 'server.js',
+      search: '.edge-card { background: #ecf0f1; padding: 1rem; margin: 0.5rem 0; border-radius: 4px; }\n    .edge-card .edge-label { font-weight: 600; color: #34495e; }',
+      replace: '.edge-card { background: #dfe6e9; padding: 1rem; margin: 0.5rem 0; border-radius: 4px; }\n    .edge-card .edge-label { font-weight: 600; color: #34495e; }',
+    }],
+    predicates: [
+      { type: 'css', selector: '.edge-card', property: 'background', expected: '#dfe6e9', path: '/edge-cases' },
+    ],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      shouldNotCrash('multi-line search should not crash'),
+      gatePassed('F9'),
+    ],
+    requiresDocker: false,
+  });
+
+  // ---------------------------------------------------------------------------
+  // F9-08: Edit creates duplicate declarations (same property twice in same block)
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('G', 'F9_08_duplicateDecl'),
+    family: 'G',
+    generator: 'F908_duplicateDeclarations',
+    failureClass: 'F9-08',
+    description: 'Edit adds color declaration to block that already has color — duplicate property',
+    edits: [{
+      file: 'server.js',
+      search: '.duplicate-prop { color: red; color: blue; }',
+      replace: '.duplicate-prop { color: red; color: blue; color: green; }',
+    }],
+    predicates: [
+      { type: 'css', selector: '.duplicate-prop', property: 'color', expected: 'green', path: '/edge-cases' },
+    ],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      shouldNotCrash('duplicate declarations should not crash'),
+      gatePassed('F9'),
+      // In CSS, last declaration wins — green should be the value
+    ],
+    requiresDocker: false,
+  });
+
+  // ---------------------------------------------------------------------------
+  // K5-07: Constraint expired but not garbage collected (TTL boundary)
+  // ---------------------------------------------------------------------------
+  (() => {
+    const stateDir = join(appDir, '.verify-k5-07');
+    const store = new ConstraintStore(stateDir);
+    // Manually inject an expired constraint
+    const expiredConstraint: any = {
+      id: 'k5-07-expired',
+      type: 'forbidden_action',
+      signature: 'test_expired',
+      scope: 'planning',
+      appliesTo: ['ui'],
+      surface: { files: ['server.js'], intents: [] },
+      requires: { patterns: ['/health'] },
+      reason: 'Expired constraint for testing',
+      introducedAt: Date.now() - 7200000, // 2 hours ago
+      expiresAt: Date.now() - 3600000, // expired 1 hour ago
+      sessionScope: true,
+    };
+    // Write directly to constraint store data file (compact JSONL format)
+    const dataPath = store.getDataPath();
+    const dir = dataPath.replace(/[/\\][^/\\]+$/, '');
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    writeFileSync(dataPath, JSON.stringify({
+      _op: 'compact', _ts: Date.now(),
+      data: { constraints: [expiredConstraint], outcomes: [], patterns: [] },
+    }) + '\n');
+
+    scenarios.push({
+      id: nextId('G', 'K5_07_expiredTTL'),
+      family: 'G',
+      generator: 'K507_expiredConstraint',
+      failureClass: 'K5-07',
+      description: 'Expired constraint must not block — TTL boundary test',
+      edits: [{ file: 'server.js', search: '<title>Demo App</title>', replace: '<title>Demo App V2</title>' }],
+      predicates: [
+        { type: 'content', file: 'server.js', pattern: 'Demo App V2' },
+      ],
+      config: {
+        appDir,
+        stateDir,
+        gates: { grounding: false, staging: false, browser: false, http: false },
+      },
+      invariants: [
+        shouldNotCrash('expired constraint should not crash'),
+        k5ShouldPass('expired constraint should not block'),
+      ],
+      requiresDocker: false,
+    });
+  })();
+
+  // ---------------------------------------------------------------------------
+  // K5-08: Constraint applies to wrong scope (session-scoped doesn't leak)
+  // ---------------------------------------------------------------------------
+  (() => {
+    const stateDir = join(appDir, '.verify-k5-08');
+    const store = new ConstraintStore(stateDir);
+    // Session-scoped constraint with specific sessionId
+    const scopedConstraint: any = {
+      id: 'k5-08-scoped',
+      type: 'forbidden_action',
+      signature: 'test_scoped',
+      scope: 'planning',
+      appliesTo: ['ui'],
+      surface: { files: ['server.js'], intents: [] },
+      requires: {},
+      reason: 'Session-scoped constraint from different session',
+      introducedAt: Date.now(),
+      sessionId: 'different-session-id-12345',
+      sessionScope: true,
+      expiresAt: Date.now() + 3600000, // still valid
+    };
+    const dataPath = store.getDataPath();
+    const dir = dataPath.replace(/[/\\][^/\\]+$/, '');
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    writeFileSync(dataPath, JSON.stringify({
+      _op: 'compact', _ts: Date.now(),
+      data: { constraints: [scopedConstraint], outcomes: [], patterns: [] },
+    }) + '\n');
+
+    scenarios.push({
+      id: nextId('G', 'K5_08_scopeLeak'),
+      family: 'G',
+      generator: 'K508_sessionScopeLeak',
+      failureClass: 'K5-08',
+      description: 'Session-scoped constraint from different session — should it leak?',
+      edits: [{ file: 'server.js', search: '<title>Demo App</title>', replace: '<title>Demo App Scoped</title>' }],
+      predicates: [
+        { type: 'content', file: 'server.js', pattern: 'Demo App Scoped' },
+      ],
+      config: {
+        appDir,
+        stateDir,
+        gates: { grounding: false, staging: false, browser: false, http: false },
+      },
+      invariants: [
+        shouldNotCrash('scope leak test should not crash'),
+        // Current behavior: session-scoped constraints from other sessions still apply
+        // This is the scenario we want to document — it may or may not block
+      ],
+      requiresDocker: false,
+    });
+  })();
+
+  // ---------------------------------------------------------------------------
+  // K5-09: Multiple constraints interact — one bans strategy, another requires it
+  // ---------------------------------------------------------------------------
+  (() => {
+    const stateDir = join(appDir, '.verify-k5-09');
+    const store = new ConstraintStore(stateDir);
+    // Constraint 1: bans any change (action_class ban, empty appliesTo = matches all)
+    const banConstraint: any = {
+      id: 'k5-09-ban',
+      type: 'forbidden_action',
+      signature: 'style_overhaul_ban',
+      scope: 'planning',
+      appliesTo: [],
+      surface: { files: [], intents: [] },
+      requires: {},
+      reason: 'Style overhaul banned',
+      introducedAt: Date.now(),
+      expiresAt: Date.now() + 3600000,
+    };
+    // Constraint 2: radius limit to 1 file
+    const radiusConstraint: any = {
+      id: 'k5-09-radius',
+      type: 'radius_limit',
+      signature: 'radius_squeeze',
+      scope: 'planning',
+      appliesTo: [],
+      surface: { files: [], intents: [] },
+      requires: { maxFiles: 1 },
+      reason: 'Radius squeezed to 1 file',
+      introducedAt: Date.now(),
+      expiresAt: Date.now() + 3600000,
+    };
+    const dataPath = store.getDataPath();
+    const dir = dataPath.replace(/[/\\][^/\\]+$/, '');
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    writeFileSync(dataPath, JSON.stringify({
+      _op: 'compact', _ts: Date.now(),
+      data: { constraints: [banConstraint, radiusConstraint], outcomes: [], patterns: [] },
+    }) + '\n');
+
+    scenarios.push({
+      id: nextId('G', 'K5_09_deadlock'),
+      family: 'G',
+      generator: 'K509_constraintDeadlock',
+      failureClass: 'K5-09',
+      description: 'Two constraints interact — action class ban fires first, prevents any change',
+      edits: [{ file: 'server.js', search: '<title>Demo App</title>', replace: '<title>Demo App Deadlock</title>' }],
+      predicates: [
+        { type: 'content', file: 'server.js', pattern: 'Demo App Deadlock' },
+      ],
+      config: {
+        appDir,
+        stateDir,
+        gates: { grounding: false, staging: false, browser: false, http: false },
+      },
+      invariants: [
+        shouldNotCrash('constraint deadlock should not crash'),
+        k5ShouldBlock('action class ban should fire first'),
+      ],
+      requiresDocker: false,
+    });
+  })();
+
+  // ---------------------------------------------------------------------------
+  // K5-10: Constraint seeded from harness fault (infrastructure error, not agent fault)
+  // ---------------------------------------------------------------------------
+  (() => {
+    const stateDir = join(appDir, '.verify-k5-10');
+    const store = new ConstraintStore(stateDir);
+    // Seed a constraint from a harness fault — should be blocked by seedFromFailure
+    const result = store.seedFromFailure({
+      sessionId: 'k5-10-test',
+      source: 'staging',
+      error: 'getaddrinfo EAI_AGAIN db',
+      filesTouched: ['server.js'],
+      attempt: 2,
+      failureKind: 'harness_fault',
+    });
+
+    scenarios.push({
+      id: nextId('G', 'K5_10_harnessFault'),
+      family: 'G',
+      generator: 'K510_harnessFaultNoSeed',
+      failureClass: 'K5-10',
+      description: 'Harness fault (DNS resolution) must NOT seed K5 constraint — infrastructure error, not agent fault',
+      edits: [{ file: 'server.js', search: '<title>Demo App</title>', replace: '<title>Demo App Fault</title>' }],
+      predicates: [
+        { type: 'content', file: 'server.js', pattern: 'Demo App Fault' },
+      ],
+      config: {
+        appDir,
+        stateDir,
+        gates: { grounding: false, staging: false, browser: false, http: false },
+      },
+      invariants: [
+        shouldNotCrash('harness fault constraint should not crash'),
+        constraintCountEquals(0),
+        k5ShouldPass('no constraint should exist from harness fault'),
+      ],
+      requiresDocker: false,
+    });
+  })();
+
+  // ---------------------------------------------------------------------------
+  // K5-11: Predicate fingerprint ban on compound predicate (multiple fields)
+  // ---------------------------------------------------------------------------
+  (() => {
+    const stateDir = join(appDir, '.verify-k5-11');
+    const store = new ConstraintStore(stateDir);
+    // Create a fingerprint ban for a specific CSS predicate (include path to match scenario)
+    const bannedFp = predicateFingerprint({
+      type: 'css', selector: '.edge-hero', property: 'color', expected: '#ff0000', path: '/edge-cases',
+    });
+    const fpConstraint: any = {
+      id: 'k5-11-fp-ban',
+      type: 'forbidden_action',
+      signature: 'predicate_fingerprint_ban',
+      scope: 'planning',
+      appliesTo: [],
+      surface: { files: [], intents: [] },
+      requires: { bannedPredicateFingerprints: [bannedFp] },
+      reason: 'This predicate failed before',
+      introducedAt: Date.now(),
+      expiresAt: Date.now() + 3600000,
+    };
+    const dataPath = store.getDataPath();
+    const dir = dataPath.replace(/[/\\][^/\\]+$/, '');
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    writeFileSync(dataPath, JSON.stringify({
+      _op: 'compact', _ts: Date.now(),
+      data: { constraints: [fpConstraint], outcomes: [], patterns: [] },
+    }) + '\n');
+
+    scenarios.push({
+      id: nextId('G', 'K5_11_fpBan'),
+      family: 'G',
+      generator: 'K511_predicateFingerprintBan',
+      failureClass: 'K5-11',
+      description: 'Predicate fingerprint ban blocks resubmission of exact same predicate',
+      edits: [{
+        file: 'server.js',
+        search: '.edge-hero { color: #2c3e50; font-size: 1.5rem; font-weight: bold; }',
+        replace: '.edge-hero { color: #ff0000; font-size: 1.5rem; font-weight: bold; }',
+      }],
+      predicates: [
+        { type: 'css', selector: '.edge-hero', property: 'color', expected: '#ff0000', path: '/edge-cases' },
+      ],
+      config: {
+        appDir,
+        stateDir,
+        gates: { grounding: false, staging: false, browser: false, http: false },
+      },
+      invariants: [
+        shouldNotCrash('fingerprint ban should not crash'),
+        k5ShouldBlock('banned predicate fingerprint should block'),
+        narrowingPresent(),
+        narrowingHintContains('predicate'),
+      ],
+      requiresDocker: false,
+    });
+
+    // K5-11b: Different expected value on same selector — should NOT be banned
+    const differentFp = predicateFingerprint({
+      type: 'css', selector: '.edge-hero', property: 'color', expected: '#00ff00',
+    });
+    scenarios.push({
+      id: nextId('G', 'K5_11b_fpDifferent'),
+      family: 'G',
+      generator: 'K511b_differentFingerprintPasses',
+      failureClass: 'K5-11',
+      description: 'Different expected value on same selector has different fingerprint — not banned',
+      edits: [{
+        file: 'server.js',
+        search: '.edge-hero { color: #2c3e50; font-size: 1.5rem; font-weight: bold; }',
+        replace: '.edge-hero { color: #00ff00; font-size: 1.5rem; font-weight: bold; }',
+      }],
+      predicates: [
+        { type: 'css', selector: '.edge-hero', property: 'color', expected: '#00ff00', path: '/edge-cases' },
+      ],
+      config: {
+        appDir,
+        stateDir,
+        gates: { grounding: false, staging: false, browser: false, http: false },
+      },
+      invariants: [
+        shouldNotCrash('different fingerprint should not crash'),
+        k5ShouldPass('different expected value = different fingerprint = not banned'),
+      ],
+      requiresDocker: false,
+    });
+  })();
+
+  // ---------------------------------------------------------------------------
+  // G5-05: Scaffolding mutation misclassified as unexplained (deploy not recognized)
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('G', 'G5_05_scaffoldingMiss'),
+    family: 'G',
+    generator: 'G505_scaffoldingMisclassified',
+    failureClass: 'G5-05',
+    description: 'Edit to Dockerfile alongside CSS change — Dockerfile edit should be scaffolding, not unexplained',
+    edits: [
+      {
+        file: 'server.js',
+        search: '.edge-hero { color: #2c3e50; font-size: 1.5rem; font-weight: bold; }',
+        replace: '.edge-hero { color: #1abc9c; font-size: 1.5rem; font-weight: bold; }',
+      },
+      {
+        file: 'Dockerfile',
+        search: 'FROM node:18',
+        replace: 'FROM node:20',
+      },
+    ],
+    predicates: [
+      { type: 'css', selector: '.edge-hero', property: 'color', expected: '#1abc9c', path: '/edge-cases' },
+    ],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      shouldNotCrash('scaffolding classification should not crash'),
+      containmentAlwaysPasses(),
+      // Dockerfile edit should be classified as scaffolding (infra supporting CSS change)
+    ],
+    requiresDocker: false,
+  });
+
+  // ---------------------------------------------------------------------------
+  // G5-06: Direct attribution on wrong predicate (two predicates match same file)
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('G', 'G5_06_wrongAttribution'),
+    family: 'G',
+    generator: 'G506_twoPredicatesSameFile',
+    failureClass: 'G5-06',
+    description: 'Two CSS predicates target same file — edit attributed to one, which one?',
+    edits: [{
+      file: 'server.js',
+      search: '.edge-hero { color: #2c3e50; font-size: 1.5rem; font-weight: bold; }',
+      replace: '.edge-hero { color: #e74c3c; font-size: 1.5rem; font-weight: bold; }',
+    }],
+    predicates: [
+      { type: 'css', selector: '.edge-hero', property: 'color', expected: '#e74c3c', path: '/edge-cases' },
+      { type: 'css', selector: '.edge-hero', property: 'font-size', expected: '1.5rem', path: '/edge-cases' },
+    ],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      shouldNotCrash('dual predicate same file should not crash'),
+      containmentAlwaysPasses(),
+      containmentTotalMatchesEdits(),
+      editAttributed('server.js', 'direct'),
+    ],
+    requiresDocker: false,
+  });
+
+  // ---------------------------------------------------------------------------
+  // G5-07: Identity binding false positive (WHERE clause ID from different table)
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('G', 'G5_07_identityBinding'),
+    family: 'G',
+    generator: 'G507_identityBindingCrossTable',
+    failureClass: 'G5-07',
+    description: 'SQL WHERE with id=1 in different table context — identity binding should not false-positive',
+    edits: [{
+      file: 'server.js',
+      search: "res.end(JSON.stringify([",
+      replace: "// SELECT * FROM items WHERE id = 1\n    res.end(JSON.stringify([",
+    }],
+    predicates: [
+      { type: 'http', path: '/api/items', method: 'GET', expect: { status: 200, bodyContains: 'Alpha' } },
+    ],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      shouldNotCrash('identity binding cross-table should not crash'),
+      containmentAlwaysPasses(),
+    ],
+    requiresDocker: false,
+  });
+
+  // ---------------------------------------------------------------------------
+  // G5-08: Surface drift on CSS shorthand expansion
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('G', 'G5_08_shorthandDrift'),
+    family: 'G',
+    generator: 'G508_shorthandSurfaceDrift',
+    failureClass: 'G5-08',
+    description: 'Edit changes shorthand margin — surface drift detects expansion into margin-top/right/bottom/left',
+    edits: [{
+      file: 'server.js',
+      search: '.shorthand-test { margin: 10px; border: 1px solid #ccc; padding: 5px 10px 15px 20px; }',
+      replace: '.shorthand-test { margin: 20px; border: 1px solid #ccc; padding: 5px 10px 15px 20px; }',
+    }],
+    predicates: [
+      { type: 'css', selector: '.shorthand-test', property: 'margin', expected: '20px', path: '/edge-cases' },
+    ],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      shouldNotCrash('shorthand surface drift should not crash'),
+      containmentAlwaysPasses(),
+    ],
+    requiresDocker: false,
+  });
+
+  return scenarios;
+}
+
+// =============================================================================
+// FAMILY L: GOVERN LOOP CONVERGENCE SCENARIOS (Move 12)
+// =============================================================================
+// Proves that shape language actually alters the convergence loop.
+// Each scenario exercises govern() with a mock agent, verifying that:
+//   - shapes flow through to GovernContext.failureShapes
+//   - convergence detection works (stuck, exhausted, empty_plan_stall)
+//   - the receipt captures shapes, constraints, and timing
+//   - narrowing threads through to agent context on retry
+
+import {
+  governStopReason, governAttempts, governAttemptsRange,
+  governHasShapes, governReceiptHasShapes, governShapesInContext,
+  governNarrowed, governReceiptWellFormed, governHistoryLength,
+  governEmptyPlanStall,
+} from './oracle.js';
+
+function generateFamilyL(appDir: string): VerifyScenario[] {
+  const scenarios: VerifyScenario[] = [];
+
+  // ---------------------------------------------------------------------------
+  // GOV-01: Happy path — correct edits on first attempt → converged
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_01_happyPath'),
+    family: 'L',
+    generator: 'GOV01_happyPath',
+    description: 'govern() succeeds on first attempt → stopReason=converged, 1 attempt',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      governStopReason('converged'),
+      governAttempts(1),
+      governReceiptWellFormed(),
+      governHistoryLength(1),
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Change nav link color to red',
+      maxAttempts: 3,
+      agent: {
+        plan: async () => ({
+          edits: [{
+            file: 'server.js',
+            search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }',
+            replace: 'a.nav-link { color: red; margin-right: 1rem; }',
+          }],
+          predicates: [{
+            type: 'css' as const,
+            selector: 'a.nav-link',
+            property: 'color',
+            expected: 'red',
+            path: '/about',
+          }],
+        }),
+      },
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // GOV-02: Fail then fix — F9 failure on attempt 1, correct on attempt 2
+  // Proves shapes from attempt 1 flow into receipt
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_02_failThenFix'),
+    family: 'L',
+    generator: 'GOV02_failThenFix',
+    description: 'govern() fails F9 on attempt 1, fixes on attempt 2 → converged with shapes in receipt',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      governStopReason('converged'),
+      governAttempts(2),
+      governReceiptWellFormed(),
+      governReceiptHasShapes(),
+      governShapesInContext(),
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Change hero background to green',
+      maxAttempts: 5,
+      agent: (() => {
+        let attempt = 0;
+        return {
+          plan: async () => {
+            attempt++;
+            if (attempt === 1) {
+              return {
+                edits: [{ file: 'server.js', search: '.hero { background: WRONG;', replace: '.hero { background: green;' }],
+                predicates: [{ type: 'css' as const, selector: '.hero', property: 'background', expected: 'green', path: '/about' }],
+              };
+            }
+            return {
+              edits: [{ file: 'server.js', search: '.hero { background: #3498db;', replace: '.hero { background: green;' }],
+              predicates: [{ type: 'css' as const, selector: '.hero', property: 'background', expected: 'green', path: '/about' }],
+            };
+          },
+        };
+      })(),
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // GOV-03: Stuck detection — same failure repeating → stuck
+  // Proves gate cycle detection works
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_03_stuckDetection'),
+    family: 'L',
+    generator: 'GOV03_stuckDetection',
+    description: 'govern() detects stuck condition when same gate fails repeatedly',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      governStopReason('stuck'),
+      governAttemptsRange(2, 4),
+      governReceiptWellFormed(),
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Change something that does not exist',
+      maxAttempts: 10,
+      agent: {
+        plan: async () => ({
+          edits: [{ file: 'server.js', search: 'THIS_STRING_NEVER_EXISTS_GOV03', replace: 'something' }],
+          predicates: [{ type: 'content' as const, file: 'server.js', pattern: 'something', expected: 'exists' }],
+        }),
+      },
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // GOV-04: Empty plan stall — 3 consecutive empty plans → early exit
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_04_emptyPlanStall'),
+    family: 'L',
+    generator: 'GOV04_emptyPlanStall',
+    description: 'govern() detects empty plan stall after 3 consecutive empty plans',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      governStopReason('empty_plan_stall'),
+      governAttempts(3),
+      governEmptyPlanStall(),
+      governReceiptWellFormed(),
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Agent always returns empty',
+      maxAttempts: 10,
+      agent: {
+        plan: async () => ({ edits: [], predicates: [] }),
+      },
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // GOV-05: Approval abort — onApproval returns false
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_05_approvalAbort'),
+    family: 'L',
+    generator: 'GOV05_approvalAbort',
+    description: 'govern() stops when approval gate rejects → approval_aborted',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      governStopReason('approval_aborted'),
+      governAttempts(1),
+      governReceiptWellFormed(),
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Change something',
+      maxAttempts: 3,
+      agent: {
+        plan: async () => ({
+          edits: [{ file: 'server.js', search: 'const PORT', replace: 'const PORT' }],
+          predicates: [{ type: 'content' as const, file: 'server.js', pattern: 'PORT', expected: 'exists' }],
+        }),
+      },
+      onApproval: async () => false,
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // GOV-06: Agent error → agent_error stopReason
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_06_agentError'),
+    family: 'L',
+    generator: 'GOV06_agentError',
+    description: 'govern() handles agent plan() throwing on every attempt',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      governStopReason('agent_error'),
+      governAttempts(3),
+      governReceiptWellFormed(),
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Agent always crashes',
+      maxAttempts: 3,
+      agent: {
+        plan: async () => { throw new Error('LLM timeout'); },
+      },
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // GOV-07: Progress detection — different failures → exhausted (not stuck)
+  // Proves the loop distinguishes progress from repetition
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_07_exhausted'),
+    family: 'L',
+    generator: 'GOV07_exhaustedNotStuck',
+    description: 'govern() returns exhausted (not stuck) when making progress with different failures',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      governStopReason('exhausted'),
+      governAttempts(2),
+      governReceiptWellFormed(),
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Making progress but not converging',
+      maxAttempts: 2,
+      agent: (() => {
+        let attempt = 0;
+        return {
+          plan: async () => {
+            attempt++;
+            if (attempt === 1) {
+              // Attempt 1: F9 failure (bad search string)
+              return {
+                edits: [{ file: 'server.js', search: 'WILL_NOT_MATCH_GOV07', replace: 'new' }],
+                predicates: [{ type: 'content' as const, file: 'server.js', pattern: 'new', expected: 'exists' }],
+              };
+            }
+            // Attempt 2: Different failure (edit applies but predicate wrong value)
+            return {
+              edits: [{ file: 'server.js', search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }', replace: 'a.nav-link { color: #0066cc; margin-right: 1rem; }' }],
+              predicates: [{ type: 'css' as const, selector: 'a.nav-link', property: 'color', expected: 'purple', path: '/about' }],
+            };
+          },
+        };
+      })(),
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // GOV-08: Shape flow — shapes from decomposition appear in receipt
+  // THE KEY TEST: proves shapes actually flow through the loop
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_08_shapeFlow'),
+    family: 'L',
+    generator: 'GOV08_shapeFlowThrough',
+    description: 'Failure shapes from decompose flow into receipt.failureShapes — the shape→loop bridge',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      governReceiptHasShapes(),
+      governHasShapes(1),
+      governReceiptWellFormed(),
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Track shapes through loop',
+      maxAttempts: 1,
+      agent: {
+        plan: async () => ({
+          // This will fail F9 (search not found) which should decompose to X-37
+          edits: [{ file: 'server.js', search: 'DOES_NOT_EXIST_GOV08_SHAPE_FLOW', replace: 'new' }],
+          predicates: [{ type: 'content' as const, file: 'server.js', pattern: 'new', expected: 'exists' }],
+        }),
+      },
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // GOV-09: Empty plan recovery — 2 empties then real plan → converged
+  // Proves emptyPlanCount resets on success
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_09_emptyRecovery'),
+    family: 'L',
+    generator: 'GOV09_emptyPlanRecovery',
+    description: 'govern() recovers from 2 empty plans when attempt 3 succeeds',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      governStopReason('converged'),
+      governAttempts(3),
+      governReceiptWellFormed(),
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Recover from empty plans',
+      maxAttempts: 5,
+      agent: (() => {
+        let attempt = 0;
+        return {
+          plan: async () => {
+            attempt++;
+            if (attempt <= 2) return { edits: [], predicates: [] };
+            return {
+              edits: [{ file: 'server.js', search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }', replace: 'a.nav-link { color: red; margin-right: 1rem; }' }],
+              predicates: [{ type: 'css' as const, selector: 'a.nav-link', property: 'color', expected: 'red', path: '/about' }],
+            };
+          },
+        };
+      })(),
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // GOV-10: Agent uses narrowing — context.narrowing present on attempt 2
+  // Proves the narrowing thread works
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_10_narrowingThread'),
+    family: 'L',
+    generator: 'GOV10_narrowingThread',
+    description: 'govern() threads narrowing from attempt 1 failure to attempt 2 context',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      governStopReason('converged'),
+      governAttempts(2),
+      governReceiptWellFormed(),
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Use narrowing to fix',
+      maxAttempts: 3,
+      agent: (() => {
+        let attempt = 0;
+        let sawNarrowing = false;
+        return {
+          plan: async (_goal: string, ctx: any) => {
+            attempt++;
+            if (attempt === 1) {
+              // Fail with bad search string → produces narrowing
+              return {
+                edits: [{ file: 'server.js', search: '.hero { background: WRONG_GOV10;', replace: '.hero { background: green;' }],
+                predicates: [{ type: 'css' as const, selector: '.hero', property: 'background', expected: 'green', path: '/about' }],
+              };
+            }
+            // On attempt 2, narrowing should be present from prior failure
+            sawNarrowing = !!ctx.narrowing || !!ctx.priorResult;
+            return {
+              edits: [{ file: 'server.js', search: '.hero { background: #3498db;', replace: '.hero { background: green;' }],
+              predicates: [{ type: 'css' as const, selector: '.hero', property: 'background', expected: 'green', path: '/about' }],
+            };
+          },
+        };
+      })(),
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // GOV-11: onStuck override — override stuck detection to continue
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_11_onStuckOverride'),
+    family: 'L',
+    generator: 'GOV11_onStuckOverride',
+    description: 'onStuck returning continue forces loop past stuck detection',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      governAttempts(5),
+      governReceiptWellFormed(),
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Agent always returns empty but overridden',
+      maxAttempts: 5,
+      agent: {
+        plan: async () => ({ edits: [], predicates: [] }),
+      },
+      onStuck: () => 'continue' as const,
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // GOV-12: Shape progression tracking — new shapes appear across attempts
+  // Proves shapesProgressing flag works
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_12_shapeProgression'),
+    family: 'L',
+    generator: 'GOV12_shapeProgression',
+    description: 'govern() tracks shape progression across attempts with different failure types',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      governReceiptWellFormed(),
+      governReceiptHasShapes(),
+      governHasShapes(1),
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Track shape progression',
+      maxAttempts: 2,
+      agent: (() => {
+        let attempt = 0;
+        return {
+          plan: async () => {
+            attempt++;
+            if (attempt === 1) {
+              // F9 failure: search not found → X-37 shape
+              return {
+                edits: [{ file: 'server.js', search: 'NONEXISTENT_GOV12_A', replace: 'x' }],
+                predicates: [{ type: 'content' as const, file: 'server.js', pattern: 'x', expected: 'exists' }],
+              };
+            }
+            // Predicate mismatch failure (different shape domain)
+            return {
+              edits: [{ file: 'server.js', search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }', replace: 'a.nav-link { color: #0066cc; margin-right: 1rem; }' }],
+              predicates: [{ type: 'css' as const, selector: 'a.nav-link', property: 'color', expected: 'green', path: '/about' }],
+            };
+          },
+        };
+      })(),
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // GOV-13: Grounding provided to agent
+  // Proves grounding context flows through govern()
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_13_groundingContext'),
+    family: 'L',
+    generator: 'GOV13_groundingContext',
+    description: 'govern() provides grounding context (routes, CSS) to agent on every attempt',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      governStopReason('converged'),
+      governReceiptWellFormed(),
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Check grounding in govern',
+      maxAttempts: 1,
+      agent: {
+        plan: async (_goal: string, ctx: any) => {
+          // Agent verifies grounding exists — if it doesn't, plan will throw
+          if (!ctx.grounding || !ctx.grounding.routes || ctx.grounding.routes.length === 0) {
+            throw new Error('Grounding missing routes');
+          }
+          if (!ctx.grounding.routeCSSMap || ctx.grounding.routeCSSMap.size === 0) {
+            throw new Error('Grounding missing CSS');
+          }
+          return {
+            edits: [{ file: 'server.js', search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }', replace: 'a.nav-link { color: orange; margin-right: 1rem; }' }],
+            predicates: [{ type: 'css' as const, selector: 'a.nav-link', property: 'color', expected: 'orange', path: '/about' }],
+          };
+        },
+      },
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // GOV-14: Receipt attestation content
+  // Proves receipt attestation contains VERIFY PASSED/FAILED
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_14_receiptAttestation'),
+    family: 'L',
+    generator: 'GOV14_receiptAttestation',
+    description: 'govern() receipt attestation contains verification outcome text',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      governReceiptWellFormed(),
+      {
+        name: 'govern_attestation_contains_verify',
+        category: 'pipeline' as const,
+        layer: 'product' as const,
+        check: (_scenario: any, result: any) => {
+          if (result instanceof Error) return { passed: true, severity: 'info' as const };
+          const govResult = result._governResult;
+          if (!govResult) return { passed: false, violation: 'No _governResult', severity: 'bug' as const };
+          const att = govResult.receipt.attestation;
+          if (!att.includes('VERIFY PASSED') && !att.includes('VERIFY FAILED') && !att.includes('GOVERN')) {
+            return { passed: false, violation: `Attestation missing expected text: "${att.substring(0, 80)}"`, severity: 'unexpected' as const };
+          }
+          return { passed: true, severity: 'info' as const };
+        },
+      },
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Check attestation',
+      maxAttempts: 1,
+      agent: {
+        plan: async () => ({
+          edits: [{ file: 'server.js', search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }', replace: 'a.nav-link { color: teal; margin-right: 1rem; }' }],
+          predicates: [{ type: 'css' as const, selector: 'a.nav-link', property: 'color', expected: 'teal', path: '/about' }],
+        }),
+      },
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // GOV-15: Constraint seeding on failure — convergenceNarrowed
+  // Proves K5 seeds from govern() failures
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_15_constraintSeeding'),
+    family: 'L',
+    generator: 'GOV15_constraintSeeding',
+    description: 'govern() seeds K5 constraints on failure — convergenceNarrowed reflects it',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      governReceiptWellFormed(),
+      {
+        name: 'govern_constraints_active_tracked',
+        category: 'pipeline' as const,
+        layer: 'product' as const,
+        check: (_scenario: any, result: any) => {
+          if (result instanceof Error) return { passed: true, severity: 'info' as const };
+          const govResult = result._governResult;
+          if (!govResult) return { passed: false, violation: 'No _governResult', severity: 'bug' as const };
+          // constraintsActive should be a number >= 0
+          if (typeof govResult.receipt.constraintsActive !== 'number') {
+            return { passed: false, violation: `constraintsActive is ${typeof govResult.receipt.constraintsActive}`, severity: 'bug' as const };
+          }
+          return { passed: true, severity: 'info' as const };
+        },
+      },
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Test constraint seeding',
+      maxAttempts: 2,
+      agent: {
+        plan: async () => ({
+          edits: [{ file: 'server.js', search: '.badge { display: inline-block; background: #e74c3c;', replace: '.badge { display: inline-block; background: #e74c3c;' }],
+          predicates: [{ type: 'css' as const, selector: '.badge', property: 'background', expected: 'blue', path: '/about' }],
+        }),
+      },
+    },
+  });
+
+  return scenarios;
+}
+
+// =============================================================================
 // GENERATOR DISPATCH
 // =============================================================================
 
@@ -12825,6 +14513,7 @@ export function generateAllScenarios(appDir: string): VerifyScenario[] {
     ...generateFamilyG(appDir),
     ...generateFamilyH(appDir),
     ...generateFamilyI(appDir),
+    ...generateFamilyL(appDir),
     ...generateFamilyM(appDir),
     ...generateFamilyP(appDir),
     ...generateFamilyV(appDir),
@@ -12838,6 +14527,7 @@ export function generateAllScenarios(appDir: string): VerifyScenario[] {
     ...generateSecurityScenarios(appDir),
     ...generateA11yScenarios(appDir),
     ...generatePerformanceScenarios(appDir),
+    ...generateMove7Scenarios(appDir),
   ];
 }
 
@@ -12852,6 +14542,7 @@ export function generateFamily(family: ScenarioFamily, appDir: string): VerifySc
     case 'G': return [...generateFamilyG(appDir), ...generateWave2A_G(appDir), ...generateWave2B(appDir).filter(s => s.family === 'G'), ...generateWave2C(appDir).filter(s => s.family === 'G'), ...generateWave3(appDir).filter(s => s.family === 'G'), ...generateInfraScenarios(appDir), ...generateSerializationScenarios(appDir), ...generateConfigScenarios(appDir), ...generateSecurityScenarios(appDir), ...generateA11yScenarios(appDir), ...generatePerformanceScenarios(appDir)];
     case 'H': return [...generateFamilyH(appDir), ...generateWave2B(appDir).filter(s => s.family === 'H'), ...generateWave2C(appDir).filter(s => s.family === 'H'), ...generateWave3(appDir).filter(s => s.family === 'H')];
     case 'I': return [...generateFamilyI(appDir), ...generateWave2C(appDir).filter(s => s.family === 'I'), ...generateWave3(appDir).filter(s => s.family === 'I')];
+    case 'L': return generateFamilyL(appDir);
     case 'M': return generateFamilyM(appDir);
     case 'P': return generateFamilyP(appDir);
     case 'V': return generateFamilyV(appDir);

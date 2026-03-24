@@ -11,7 +11,7 @@ import { mkdirSync, rmSync, existsSync, cpSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { govern } from '../src/govern.js';
-import type { GovernContext, AgentPlan } from '../src/govern.js';
+import type { GovernContext, AgentPlan, ConvergenceState, StopReason } from '../src/govern.js';
 import type { Edit, Predicate } from '../src/types.js';
 
 // ---------------------------------------------------------------------------
@@ -159,8 +159,9 @@ describe('govern()', () => {
     });
 
     expect(result.success).toBe(false);
-    expect(result.attempts).toBe(3);
-    expect(result.history).toHaveLength(3);
+    // Same failure repeating = stuck detection kicks in, may stop before maxAttempts
+    expect(result.attempts).toBeGreaterThanOrEqual(2);
+    expect(result.attempts).toBeLessThanOrEqual(3);
     expect(result.history.every(r => !r.success)).toBe(true);
     expect(result.receipt.attestation).toContain('VERIFY FAILED');
   });
@@ -442,6 +443,354 @@ describe('govern()', () => {
     expect(result.receipt.totalDurationMs).toBeGreaterThan(0);
     expect(result.receipt.attemptDurations).toHaveLength(1);
     expect(result.receipt.attemptDurations[0]).toBeGreaterThan(0);
+  });
+
+});
+
+
+// ---------------------------------------------------------------------------
+// Convergence Intelligence Tests
+// ---------------------------------------------------------------------------
+
+describe('govern() convergence detection', () => {
+
+  test('success → stopReason = converged', async () => {
+    const result = await govern({
+      appDir: testDir,
+      goal: 'Converge on first try',
+      agent: {
+        plan: async () => ({
+          edits: [{
+            file: 'server.js',
+            search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }',
+            replace: 'a.nav-link { color: red; margin-right: 1rem; }',
+          }],
+          predicates: [{
+            type: 'css' as const,
+            selector: 'a.nav-link',
+            property: 'color',
+            expected: 'red',
+            path: '/about',
+          }],
+        }),
+      },
+    });
+
+    expect(result.stopReason).toBe('converged');
+    expect(result.convergence).toBeDefined();
+    expect(result.convergence.stopReason).toBe('converged');
+  });
+
+  test('empty plan stall: 3 consecutive empty plans → early exit', async () => {
+    const result = await govern({
+      appDir: testDir,
+      goal: 'Agent always returns empty',
+      agent: {
+        plan: async () => ({ edits: [], predicates: [] }),
+      },
+      maxAttempts: 10, // Would run 10 if not for stall detection
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.stopReason).toBe('empty_plan_stall');
+    // Should stop at 3, not 10
+    expect(result.attempts).toBe(3);
+    expect(result.convergence.emptyPlanCount).toBe(3);
+    expect(result.convergence.progressSummary).toContain('empty plans');
+  });
+
+  test('empty plan stall: onStuck can override to continue', async () => {
+    let stuckCalled = false;
+
+    const result = await govern({
+      appDir: testDir,
+      goal: 'Agent always returns empty but overridden',
+      agent: {
+        plan: async () => ({ edits: [], predicates: [] }),
+      },
+      maxAttempts: 5,
+      onStuck: (state) => {
+        stuckCalled = true;
+        return 'continue'; // Override: keep going
+      },
+    });
+
+    expect(stuckCalled).toBe(true);
+    expect(result.success).toBe(false);
+    // Should run all 5 attempts since we overrode the stall
+    expect(result.attempts).toBe(5);
+  });
+
+  test('gate cycle detection: same gate failing repeatedly → stuck', async () => {
+    const result = await govern({
+      appDir: testDir,
+      goal: 'Same gate always fails',
+      agent: {
+        plan: async () => ({
+          edits: [{
+            file: 'server.js',
+            search: 'THIS_WILL_NOT_MATCH_EVER_GATE_CYCLE',
+            replace: 'something',
+          }],
+          predicates: [{
+            type: 'content' as const,
+            file: 'server.js',
+            pattern: 'something',
+            expected: 'exists',
+          }],
+        }),
+      },
+      maxAttempts: 10, // Would run 10 if not for cycle detection
+    });
+
+    expect(result.success).toBe(false);
+    // Should detect stuck condition and stop early (not run all 10)
+    expect(result.stopReason).toBe('stuck');
+    // At least one of the stuck signals should be present
+    expect(
+      !result.convergence.gatesProgressing || !result.convergence.shapesProgressing
+    ).toBe(true);
+  });
+
+  test('convergence state threaded to agent context', async () => {
+    const convergenceStates: Array<ConvergenceState | undefined> = [];
+
+    await govern({
+      appDir: testDir,
+      goal: 'Track convergence in context',
+      agent: {
+        plan: async (_goal, ctx) => {
+          convergenceStates.push(ctx.convergence);
+          return {
+            edits: [{
+              file: 'server.js',
+              search: 'DOES_NOT_EXIST_CONVERGENCE_THREAD',
+              replace: 'new',
+            }],
+            predicates: [{
+              type: 'content' as const,
+              file: 'server.js',
+              pattern: 'new',
+              expected: 'exists',
+            }],
+          };
+        },
+      },
+      maxAttempts: 3,
+    });
+
+    // First attempt: no convergence state (nothing to track yet)
+    expect(convergenceStates[0]).toBeUndefined();
+    // Second attempt: convergence state present
+    expect(convergenceStates[1]).toBeDefined();
+    expect(convergenceStates[1]!.gateFailureHistory.length).toBeGreaterThan(0);
+  });
+
+  test('approval abort → stopReason = approval_aborted', async () => {
+    const result = await govern({
+      appDir: testDir,
+      goal: 'Will be rejected',
+      agent: {
+        plan: async () => ({
+          edits: [{
+            file: 'server.js',
+            search: 'const PORT',
+            replace: 'const PORT',
+          }],
+          predicates: [{
+            type: 'content' as const,
+            file: 'server.js',
+            pattern: 'PORT',
+            expected: 'exists',
+          }],
+        }),
+      },
+      onApproval: async () => false,
+    });
+
+    expect(result.stopReason).toBe('approval_aborted');
+    expect(result.abortedByApproval).toBe(true);
+  });
+
+  test('agent throws on every attempt → stopReason = agent_error', async () => {
+    const result = await govern({
+      appDir: testDir,
+      goal: 'Agent always crashes',
+      agent: {
+        plan: async () => { throw new Error('Always fails'); },
+      },
+      maxAttempts: 3,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.stopReason).toBe('agent_error');
+    expect(result.attempts).toBe(3);
+  });
+
+  test('progress detected: different gates fail → exhausted not stuck', async () => {
+    let attempt = 0;
+
+    const result = await govern({
+      appDir: testDir,
+      goal: 'Making progress but not converging',
+      agent: {
+        plan: async () => {
+          attempt++;
+          if (attempt === 1) {
+            // First attempt: will fail F9 (bad search string)
+            return {
+              edits: [{
+                file: 'server.js',
+                search: 'WILL_NOT_MATCH_PROGRESS_TEST',
+                replace: 'new',
+              }],
+              predicates: [{
+                type: 'content' as const,
+                file: 'server.js',
+                pattern: 'new',
+                expected: 'exists',
+              }],
+            };
+          }
+          // Second attempt: different failure (edit applies but predicate wrong)
+          return {
+            edits: [{
+              file: 'server.js',
+              search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }',
+              replace: 'a.nav-link { color: #0066cc; margin-right: 1rem; }',
+            }],
+            predicates: [{
+              type: 'css' as const,
+              selector: 'a.nav-link',
+              property: 'color',
+              expected: 'purple',
+              path: '/about',
+            }],
+          };
+        },
+      },
+      maxAttempts: 2,
+    });
+
+    expect(result.success).toBe(false);
+    // Different failures each time = was making progress
+    expect(result.stopReason).toBe('exhausted');
+  });
+
+  test('convergence state tracks unique shapes', async () => {
+    const result = await govern({
+      appDir: testDir,
+      goal: 'Track shapes across attempts',
+      agent: {
+        plan: async () => ({
+          edits: [{
+            file: 'server.js',
+            search: 'NONEXISTENT_SHAPE_TRACKING_TEST',
+            replace: 'x',
+          }],
+          predicates: [{
+            type: 'content' as const,
+            file: 'server.js',
+            pattern: 'x',
+            expected: 'exists',
+          }],
+        }),
+      },
+      maxAttempts: 2,
+    });
+
+    expect(result.convergence).toBeDefined();
+    expect(Array.isArray(result.convergence.uniqueShapes)).toBe(true);
+    expect(Array.isArray(result.convergence.shapeHistory)).toBe(true);
+    expect(Array.isArray(result.convergence.gateFailureHistory)).toBe(true);
+  });
+
+  test('empty plan recovery: empty then real plan resets counter', async () => {
+    let attempt = 0;
+
+    const result = await govern({
+      appDir: testDir,
+      goal: 'Recovers from empty plan',
+      agent: {
+        plan: async () => {
+          attempt++;
+          if (attempt <= 2) {
+            return { edits: [], predicates: [] };
+          }
+          // Third attempt: real plan that succeeds
+          return {
+            edits: [{
+              file: 'server.js',
+              search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }',
+              replace: 'a.nav-link { color: red; margin-right: 1rem; }',
+            }],
+            predicates: [{
+              type: 'css' as const,
+              selector: 'a.nav-link',
+              property: 'color',
+              expected: 'red',
+              path: '/about',
+            }],
+          };
+        },
+      },
+      maxAttempts: 5,
+    });
+
+    // Should succeed — 2 empties then real plan
+    expect(result.success).toBe(true);
+    expect(result.stopReason).toBe('converged');
+    expect(result.attempts).toBe(3);
+    expect(result.convergence.emptyPlanCount).toBe(0); // Reset on success
+  });
+
+  test('convergence on retry: fail then fix → converged', async () => {
+    let attempt = 0;
+
+    const result = await govern({
+      appDir: testDir,
+      goal: 'Change hero background',
+      agent: {
+        plan: async (_goal, ctx) => {
+          attempt++;
+          if (attempt === 1) {
+            return {
+              edits: [{
+                file: 'server.js',
+                search: '.hero { background: WRONG;',
+                replace: '.hero { background: green;',
+              }],
+              predicates: [{
+                type: 'css' as const,
+                selector: '.hero',
+                property: 'background',
+                expected: 'green',
+                path: '/about',
+              }],
+            };
+          }
+          return {
+            edits: [{
+              file: 'server.js',
+              search: '.hero { background: #3498db;',
+              replace: '.hero { background: green;',
+            }],
+            predicates: [{
+              type: 'css' as const,
+              selector: '.hero',
+              property: 'background',
+              expected: 'green',
+              path: '/about',
+            }],
+          };
+        },
+      },
+      maxAttempts: 5,
+    });
+
+    expect(result.stopReason).toBe('converged');
+    expect(result.convergence.stopReason).toBe('converged');
+    expect(result.convergence.progressSummary).toContain('Converged');
   });
 
 });

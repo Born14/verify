@@ -44,16 +44,18 @@ export function runSyntaxGate(ctx: GateContext): SyntaxGateResult {
       continue;
     }
 
-    const content = readFileSync(filePath, 'utf-8');
+    // Normalize line endings for cross-platform matching (CRLF → LF)
+    const content = readFileSync(filePath, 'utf-8').replace(/\r\n/g, '\n');
+    const search = edit.search.replace(/\r\n/g, '\n');
 
     // Count occurrences
     let count = 0;
     let idx = 0;
     while (true) {
-      idx = content.indexOf(edit.search, idx);
+      idx = content.indexOf(search, idx);
       if (idx === -1) break;
       count++;
-      idx += edit.search.length;
+      idx += search.length;
     }
 
     if (count === 0) {
@@ -107,8 +109,11 @@ export function applyEdits(
       continue;
     }
 
-    const content = readFileSync(filePath, 'utf-8');
-    const idx = content.indexOf(edit.search);
+    // Normalize line endings for cross-platform matching (CRLF → LF)
+    const rawContent = readFileSync(filePath, 'utf-8');
+    const content = rawContent.replace(/\r\n/g, '\n');
+    const search = edit.search.replace(/\r\n/g, '\n');
+    const idx = content.indexOf(search);
 
     if (idx === -1) {
       results.push({ file: edit.file, applied: false, reason: 'search string not found' });
@@ -116,15 +121,16 @@ export function applyEdits(
     }
 
     // Check uniqueness
-    const secondIdx = content.indexOf(edit.search, idx + 1);
+    const secondIdx = content.indexOf(search, idx + 1);
     if (secondIdx !== -1) {
       results.push({ file: edit.file, applied: false, reason: 'ambiguous match' });
       continue;
     }
 
-    // Apply
+    // Apply — write with normalized line endings
     const { writeFileSync } = require('fs');
-    const newContent = content.slice(0, idx) + edit.replace + content.slice(idx + edit.search.length);
+    const replace = edit.replace.replace(/\r\n/g, '\n');
+    const newContent = content.slice(0, idx) + replace + content.slice(idx + search.length);
     writeFileSync(filePath, newContent, 'utf-8');
     results.push({ file: edit.file, applied: true });
   }

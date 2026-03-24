@@ -8,13 +8,13 @@ Verification gate for AI agent actions. Every edit gets a fair trial before it t
 
 In v0.1.1, HTTP predicates with different `bodyContains` values produced identical fingerprints — K5 couldn't tell them apart. A human caught it by reading the code.
 
-Now 553 automated scenarios across 12 families catch it in under 30 seconds:
+Now 607 automated scenarios across 13 families catch it in under 30 seconds:
 
 ```bash
 npx @sovereign-labs/verify self-test
 
-#   0 bugs | 553 scenarios | 0 unexpected | A: clean, ..., I: clean, ..., P: clean, V: clean
-#   Failure Class Coverage: 289/289 clean
+#   0 bugs | 607 scenarios | 0 unexpected | A: clean, ..., L: clean, ..., P: clean, V: clean
+#   Failure Class Coverage: 320/320 clean
 #   ALL CLEAN — No invariant violations detected.
 ```
 
@@ -85,7 +85,79 @@ if (result.success) {
 }
 ```
 
-### 2. As a CLI
+### 2. Convergence loop — `govern()`
+
+`verify()` is a single pass. `govern()` wraps it in a convergence loop — ground reality, plan, verify, narrow, retry. The agent learns from every failure.
+
+```typescript
+import { govern } from '@sovereign-labs/verify';
+
+const result = await govern({
+  appDir: './my-app',
+  goal: 'Change the button color to orange',
+  maxAttempts: 3,
+
+  // Your agent — one method: plan
+  agent: {
+    plan: async (goal, context) => {
+      // context.grounding: CSS, HTML, routes, DB schema — the app's ground truth
+      // context.narrowing: what failed last time and why
+      // context.failureShapes: taxonomy IDs (e.g., 'C-05', 'F9-02')
+      // context.convergence: is the loop making progress?
+
+      return {
+        edits: [{ file: 'style.css', search: 'blue', replace: 'orange' }],
+        predicates: [{ type: 'css', selector: '.btn', property: 'color', expected: 'orange' }],
+      };
+    },
+  },
+
+  // Optional: human approval before each verify() run
+  onApproval: async (plan, context) => {
+    console.log(`Attempt ${context.attempt}: ${plan.edits.length} edits`);
+    return true; // false to abort
+  },
+
+  // Optional: observe progress without blocking
+  onAttempt: (attempt, result) => {
+    console.log(`Attempt ${attempt}: ${result.success ? 'PASS' : 'FAIL'}`);
+  },
+});
+
+if (result.success) {
+  console.log(`Converged in ${result.attempts} attempt(s)`);
+  console.log(result.receipt.attestation);
+} else {
+  console.log(`Stopped: ${result.stopReason}`);
+  // 'exhausted' — all attempts used, was making progress
+  // 'stuck' — shape repetition or gate cycles detected
+  // 'empty_plan_stall' — agent returned empty edits 3x
+  // 'approval_aborted' — human rejected the plan
+}
+```
+
+**Three exit paths:**
+- **converged** — goal succeeded, edits verified
+- **exhausted** — max attempts used but was making progress (more attempts might help)
+- **stuck** — loop detected no progress (same shapes repeating, same gates failing, constraints growing but not helping)
+
+**What the agent sees on retry** (`GovernContext`):
+- `grounding` — CSS rules, HTML elements, routes, DB schema from the app
+- `priorResult` — the previous `verify()` result (gates, narrowing, attestation)
+- `narrowing` — resolution hints, banned fingerprints, pattern recall
+- `failureShapes` — taxonomy shape IDs from `decomposeFailure()` (e.g., `C-05: named color vs computed RGB`)
+- `constraints` — active K5 constraints (what's banned and why)
+- `convergence` — shape progression, gate progression, empty plan count, progress summary
+
+**Convergence detection** (ported from Sovereign's battle-tested agent loop):
+- Shape repetition — same failure shapes across attempts means no new information
+- Gate cycles — same gates failing the same way
+- Empty plan stall — agent returning 0 edits repeatedly
+- Constraint saturation — constraints growing but shapes unchanged (narrowing isn't helping)
+
+**Fault ledger:** Every failure is automatically recorded to `.verify/faults.jsonl`. Unclassified failures (where the taxonomy has no matching shape) are flagged on `result.receipt.unclassifiedFailures`. Run `npx @sovereign-labs/verify faults` to inspect gaps.
+
+### 3. As a CLI
 
 ```bash
 # Initialize config
@@ -104,7 +176,7 @@ npx @sovereign-labs/verify ground
 npx @sovereign-labs/verify doctor
 ```
 
-### 3. As an MCP server
+### 4. As an MCP server
 
 Add to your agent's MCP config:
 
@@ -147,7 +219,7 @@ Add to your agent's MCP config:
 
 ## Self-Test Harness
 
-553 scenarios across 12 families exercise the verification pipeline's invariants — including 14 filesystem, 29 CSS (value normalization + shorthand), 8 content pattern, 10 F9 syntax gate, 8 fingerprinting/K5, 10 attribution error, 9 HTTP gate, 28 cross-predicate interaction (including 6 product compositions and 3 temporal compositions), 14 communication/message gate (including topic trust enforcement and epoch-based evidence staleness), 18 DB schema grounding (type aliases, fabricated references, case sensitivity), 18 infrastructure (The Alexei Gate — Terraform/Pulumi/CloudFormation state file verification), 8 serialization (JSON schema validation), 6 configuration (.env + JSON config parsing), 5 security (XSS, injection, CSP, CORS), 5 accessibility (heading hierarchy, landmarks, ARIA, alt text), 6 performance (bundle size, image optimization, lazy loading), and 9 HTML predicate failure classes tracked by the [failure taxonomy](FAILURE-TAXONOMY.md). A decomposition engine (`decomposeFailure()`) maps observations to taxonomy shape IDs — 118 shape rules across 17 domains, pure functions, zero LLM, with diagnostics (`computeDecompositionDiagnostics()`), composition operators (product ×, temporal ⊗), and round-trip decomposition verification. Run them to prove your install works, or use `--fail-on-bug` in CI.
+607 scenarios across 13 families exercise the verification pipeline's invariants — including 14 filesystem, 29 CSS (value normalization + shorthand), 8 content pattern, 10 F9 syntax gate, 8 fingerprinting/K5, 10 attribution error, 9 HTTP gate, 28 cross-predicate interaction (including 6 product compositions and 3 temporal compositions), 14 communication/message gate (including topic trust enforcement and epoch-based evidence staleness), 18 DB schema grounding (type aliases, fabricated references, case sensitivity), 18 infrastructure (The Alexei Gate — Terraform/Pulumi/CloudFormation state file verification), 8 serialization (JSON schema validation), 6 configuration (.env + JSON config parsing), 11 security (XSS, injection, CSP, CORS, eval, prototype pollution, path traversal, deserialization, open redirect, rate limiting), 11 accessibility (heading hierarchy, landmarks, ARIA, alt text, form labels, link text, lang attr, autoplay, skip nav), 11 performance (bundle size, image optimization, lazy loading, unminified assets, render blocking, DOM depth, cache headers, duplicate deps), 15 convergence loop (govern() with shape tracking, constraint propagation, convergence detection), and 9 HTML predicate failure classes tracked by the [failure taxonomy](FAILURE-TAXONOMY.md). A decomposition engine (`decomposeFailure()`) maps observations to taxonomy shape IDs — 228 shape rules across 17 domains, pure functions, zero LLM, with diagnostics (`computeDecompositionDiagnostics()`), composition operators (product ×, temporal ⊗), and round-trip decomposition verification. Run them to prove your install works, or use `--fail-on-bug` in CI.
 
 ```bash
 # Pure-only (~2s, no Docker needed)
@@ -171,15 +243,16 @@ npx @sovereign-labs/verify self-test --fail-on-bug
 | **D** | 23 | G5 containment attribution + attribution errors (AT-01–AT-10) | No |
 | **E** | 95 | Grounding: CSS normalization/shorthand + content patterns (C-01–C-62, N-04–N-08) | No |
 | **F** | 6 | Full Docker pipeline (build → stage → verify) | Yes |
-| **G** | 284 | Edge cases, F9 syntax, HTML (H-01–H-40), content (N-03–N-12), CSS selectors deep (C-34–C-62), HTTP deep (P-10–P-35), scope/identity, cross-cutting (X-05–X-75), invariants, DB grounding (D-01–D-12), infrastructure (INFRA-01–INFRA-12, The Alexei Gate), serialization (SER-01–SER-06), config (CFG-01–CFG-04), security (SEC-01–SEC-06), a11y (A11Y-01–A11Y-06), performance (PERF-01–PERF-05), temporal/concurrency/observer/drift + universal scenarios | No |
+| **G** | 323 | Edge cases, F9 syntax, HTML (H-01–H-40), content (N-03–N-12), CSS selectors deep (C-34–C-62), HTTP deep (P-10–P-35), scope/identity, cross-cutting (X-05–X-75), invariants, DB grounding (D-01–D-12), infrastructure (INFRA-01–INFRA-12, The Alexei Gate), serialization (SER-01–SER-09), config (CFG-01–CFG-08), security (SEC-01–SEC-12), a11y (A11Y-01–A11Y-11), performance (PERF-01–PERF-10), temporal/concurrency/observer/drift + universal scenarios | No |
 | **H** | 47 | Filesystem gate — 22 failure classes (FS-01 through FS-34) | No |
+| **L** | 15 | Convergence loop (govern()) — shape tracking, constraint propagation, convergence detection | No |
 | **I** | 28 | Cross-predicate interactions + product/temporal compositions (I-01–I-12, I-05×–I-10×, I-T01–T03) | No |
 | **M** | 21 | Message gate — 14 failure classes (MSG-01 through MSG-14) | No |
 | **P** | 18 | HTTP gate — status, body, regex, content-type, sequence (P-01–P-09) | Yes |
 | **V** | 14 | Vision + triangulation (3-authority verdict) | No |
 | **UV** | 28 | Universal full-pipeline integration (color normalization, multi-predicate, F9 rejection, HTML predicates) | No |
 
-538 pure scenarios + 15 multi-step K5 scenarios = 553 total. 28 universal scenarios test cross-gate integration including HTML predicates. 24 need Docker (6 F + 18 P). 289 failure classes covered across 579 known failure shapes (50% atomic coverage). Decomposition engine maps observations to taxonomy shape IDs — 118 shape rules across 17 domains (16 CSS, 6 HTML, 6 HTTP, 12 DB, 5 content, 7 filesystem, 11 cross-cutting, 6 interaction, 4 attribution, 12 infrastructure, 6 serialization, 4 config, 6 security, 6 a11y, 5 performance, plus staging/vision/invariant/message), with Phase 2 hardening: minimal basis enforcement, deterministic sort, decomposition scoring, claim-type driven decomposition, temporal mode integration, and composition operators (product ×, temporal ⊗) with round-trip verification. DB grounding validates predicates against init.sql schema with type alias normalization (serial→integer, varchar(N)→varchar, bool→boolean). Infrastructure grounding validates predicates against Terraform/Pulumi/CloudFormation state files (resource existence, attribute values, manifest drift). Quality surface gates (serialization, config, security, a11y, performance) perform pure static analysis — no Docker, no network. 310 decomposition/composition tests, 1,249+ assertions. Plus external fault-derived scenarios from `.verify/custom-scenarios.json` when testing against a real app. The harness is deterministic — no LLM calls, no network, no flakiness.
+592 pure scenarios + 15 multi-step K5 scenarios = 607 total. 28 universal scenarios test cross-gate integration including HTML predicates. 24 need Docker (6 F + 18 P). 320 failure classes covered across 579 known failure shapes (62% atomic coverage). Decomposition engine maps observations to taxonomy shape IDs — 228 shape rules across 17 domains (22 CSS, 11 HTML, 6 HTTP, 12 DB, 7 content, 7 filesystem, 16 cross-cutting, 6 interaction, 4 attribution, 12 infrastructure, 9 serialization, 8 config, 12 security, 11 a11y, 10 performance, plus staging/vision/invariant/message), with Phase 2 hardening: minimal basis enforcement, deterministic sort, decomposition scoring, claim-type driven decomposition, temporal mode integration, and composition operators (product ×, temporal ⊗) with round-trip verification. DB grounding validates predicates against init.sql schema with type alias normalization (serial→integer, varchar(N)→varchar, bool→boolean). Infrastructure grounding validates predicates against Terraform/Pulumi/CloudFormation state files (resource existence, attribute values, manifest drift). Quality surface gates (serialization, config, security, a11y, performance) perform pure static analysis — no Docker, no network. 333 unit tests, 11,539+ assertions. Plus external fault-derived scenarios from `.verify/custom-scenarios.json` when testing against a real app. The harness is deterministic — no LLM calls, no network, no flakiness.
 
 ## Gates
 

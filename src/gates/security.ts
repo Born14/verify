@@ -25,7 +25,8 @@ import type { GateContext, GateResult, Predicate, PredicateResult } from '../typ
 // SECURITY SCANNERS
 // =============================================================================
 
-type SecurityCheckType = 'xss' | 'sql_injection' | 'csrf' | 'secrets_in_code' | 'csp' | 'cors' | 'auth_header';
+type SecurityCheckType = 'xss' | 'sql_injection' | 'csrf' | 'secrets_in_code' | 'csp' | 'cors' | 'auth_header'
+  | 'eval_usage' | 'prototype_pollution' | 'path_traversal' | 'open_redirect' | 'rate_limiting' | 'insecure_deserialization';
 
 interface SecurityFinding {
   check: SecurityCheckType;
@@ -190,6 +191,148 @@ function scanCORS(files: Array<{ relativePath: string; content: string }>): Secu
 }
 
 /**
+ * Scan for eval / new Function usage.
+ */
+function scanEvalUsage(files: Array<{ relativePath: string; content: string }>): SecurityFinding[] {
+  const findings: SecurityFinding[] = [];
+  const patterns = [
+    { regex: /\beval\s*\(/g, detail: 'eval() usage (code injection risk)' },
+    { regex: /new\s+Function\s*\(/g, detail: 'new Function() usage (code injection risk)' },
+    { regex: /setTimeout\s*\(\s*['"`]/g, detail: 'setTimeout with string argument (implicit eval)' },
+    { regex: /setInterval\s*\(\s*['"`]/g, detail: 'setInterval with string argument (implicit eval)' },
+  ];
+  for (const file of files) {
+    const lines = file.content.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const trimmed = lines[i].trim();
+      if (trimmed.startsWith('//') || trimmed.startsWith('*')) continue;
+      for (const { regex, detail } of patterns) {
+        regex.lastIndex = 0;
+        if (regex.test(lines[i])) {
+          findings.push({ check: 'eval_usage', file: file.relativePath, line: i + 1, detail, severity: 'high' });
+        }
+      }
+    }
+  }
+  return findings;
+}
+
+/**
+ * Scan for prototype pollution patterns.
+ */
+function scanPrototypePollution(files: Array<{ relativePath: string; content: string }>): SecurityFinding[] {
+  const findings: SecurityFinding[] = [];
+  const patterns = [
+    { regex: /__proto__/g, detail: '__proto__ access (prototype pollution risk)' },
+    { regex: /constructor\s*\[\s*['"]prototype['"]\s*\]/g, detail: 'constructor.prototype access (prototype pollution risk)' },
+    { regex: /Object\.assign\s*\(\s*(?:{}|Object\.prototype)/g, detail: 'Object.assign to Object.prototype (prototype pollution)' },
+  ];
+  for (const file of files) {
+    const lines = file.content.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      for (const { regex, detail } of patterns) {
+        regex.lastIndex = 0;
+        if (regex.test(lines[i])) {
+          findings.push({ check: 'prototype_pollution', file: file.relativePath, line: i + 1, detail, severity: 'high' });
+        }
+      }
+    }
+  }
+  return findings;
+}
+
+/**
+ * Scan for path traversal in file operations.
+ */
+function scanPathTraversal(files: Array<{ relativePath: string; content: string }>): SecurityFinding[] {
+  const findings: SecurityFinding[] = [];
+  const patterns = [
+    { regex: /(?:readFile|readFileSync|createReadStream|writeFile|writeFileSync)\s*\(\s*(?:req\.|params\.|body\.|query\.|args\.)/g, detail: 'User input in file operation (path traversal risk)' },
+    { regex: /(?:readFile|readFileSync|createReadStream)\s*\([^)]*\+[^)]*(?:req|params|body|query)/g, detail: 'Concatenated user input in file path' },
+  ];
+  for (const file of files) {
+    const lines = file.content.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      for (const { regex, detail } of patterns) {
+        regex.lastIndex = 0;
+        if (regex.test(lines[i])) {
+          findings.push({ check: 'path_traversal', file: file.relativePath, line: i + 1, detail, severity: 'high' });
+        }
+      }
+    }
+  }
+  return findings;
+}
+
+/**
+ * Scan for open redirect vulnerabilities.
+ */
+function scanOpenRedirect(files: Array<{ relativePath: string; content: string }>): SecurityFinding[] {
+  const findings: SecurityFinding[] = [];
+  const patterns = [
+    { regex: /(?:redirect|location)\s*(?:=|\()\s*(?:req\.|params\.|body\.|query\.)/g, detail: 'User input in redirect (open redirect risk)' },
+    { regex: /res\.redirect\s*\(\s*(?:req\.|params\.|query\.)/g, detail: 'Express redirect with user input' },
+  ];
+  for (const file of files) {
+    const lines = file.content.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      for (const { regex, detail } of patterns) {
+        regex.lastIndex = 0;
+        if (regex.test(lines[i])) {
+          findings.push({ check: 'open_redirect', file: file.relativePath, line: i + 1, detail, severity: 'medium' });
+        }
+      }
+    }
+  }
+  return findings;
+}
+
+/**
+ * Scan for missing rate limiting on auth endpoints.
+ */
+function scanRateLimiting(files: Array<{ relativePath: string; content: string }>): SecurityFinding[] {
+  const findings: SecurityFinding[] = [];
+  const hasRateLimit = files.some(f =>
+    /rate.?limit/i.test(f.content) || /express-rate-limit/i.test(f.content) || /throttle/i.test(f.content)
+  );
+  if (!hasRateLimit) {
+    // Check if auth endpoints exist
+    for (const file of files) {
+      const lines = file.content.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        if (/(?:post|app\.post)\s*\(\s*['"]\/(?:auth|login|signin|register)/i.test(lines[i])) {
+          findings.push({ check: 'rate_limiting', file: file.relativePath, line: i + 1, detail: 'Auth endpoint without rate limiting', severity: 'medium' });
+        }
+      }
+    }
+  }
+  return findings;
+}
+
+/**
+ * Scan for insecure deserialization.
+ */
+function scanInsecureDeserialization(files: Array<{ relativePath: string; content: string }>): SecurityFinding[] {
+  const findings: SecurityFinding[] = [];
+  const patterns = [
+    { regex: /JSON\.parse\s*\(\s*(?:req\.|params\.|body\.|query\.|headers\.)/g, detail: 'JSON.parse on user input without validation' },
+    { regex: /(?:unserialize|deserialize)\s*\(\s*(?:req\.|params\.|body\.|query\.)/g, detail: 'Deserialization of user input' },
+  ];
+  for (const file of files) {
+    const lines = file.content.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      for (const { regex, detail } of patterns) {
+        regex.lastIndex = 0;
+        if (regex.test(lines[i])) {
+          findings.push({ check: 'insecure_deserialization', file: file.relativePath, line: i + 1, detail, severity: 'medium' });
+        }
+      }
+    }
+  }
+  return findings;
+}
+
+/**
  * Run a specific security check and return findings.
  */
 function runSecurityCheck(
@@ -204,6 +347,12 @@ function runSecurityCheck(
     case 'cors': return scanCORS(files);
     case 'csrf': return []; // CSRF is structural — hard to detect statically
     case 'auth_header': return []; // Auth header is runtime — deferred to HTTP gate
+    case 'eval_usage': return scanEvalUsage(files);
+    case 'prototype_pollution': return scanPrototypePollution(files);
+    case 'path_traversal': return scanPathTraversal(files);
+    case 'open_redirect': return scanOpenRedirect(files);
+    case 'rate_limiting': return scanRateLimiting(files);
+    case 'insecure_deserialization': return scanInsecureDeserialization(files);
     default: return [];
   }
 }

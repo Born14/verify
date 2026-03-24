@@ -7,7 +7,7 @@
  * Phase 3: Multi-step scenarios (Family B) — constraint store state
  */
 
-import { mkdirSync, rmSync, existsSync } from 'fs';
+import { mkdirSync, rmSync, existsSync, copyFileSync, readdirSync } from 'fs';
 import { inflateSync } from 'zlib';
 import { join, dirname } from 'path';
 import { tmpdir } from 'os';
@@ -246,6 +246,17 @@ async function runScenario(scenario: VerifyScenario, config: RunConfig): Promise
 
   try {
     mkdirSync(stateDir, { recursive: true });
+
+    // If scenario pre-seeded a stateDir with constraints, copy data into tmpdir
+    const scenarioStateDir = scenario.config.stateDir;
+    if (scenarioStateDir && existsSync(scenarioStateDir) && scenarioStateDir !== stateDir) {
+      try {
+        for (const f of readdirSync(scenarioStateDir)) {
+          copyFileSync(join(scenarioStateDir, f), join(stateDir, f));
+        }
+      } catch { /* best-effort copy */ }
+    }
+
     const store = new ConstraintStore(stateDir);
     constraintsBefore = store.getConstraintCount();
 
@@ -296,6 +307,37 @@ async function runScenario(scenario: VerifyScenario, config: RunConfig): Promise
         // Stash the full message result for invariant checks
         _messageResult: msgResult,
       } as any;
+    } else if (scenario.governTest) {
+      // Family L: govern loop scenarios call govern() instead of verify()
+      const { govern } = await import('../../src/govern.js');
+      const govResult = await Promise.race([
+        govern({
+          appDir: mergedConfig.appDir!,
+          goal: scenario.governTest.goal,
+          agent: scenario.governTest.agent,
+          maxAttempts: scenario.governTest.maxAttempts,
+          stateDir,
+          gates: mergedConfig.gates,
+          onApproval: scenario.governTest.onApproval,
+          onStuck: scenario.governTest.onStuck,
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Govern scenario timeout (10 min)')), MAX_SCENARIO_TIMEOUT)
+        ),
+      ]);
+      // Convert GovernResult to VerifyResult shape for invariant checking
+      result = {
+        success: govResult.success,
+        gates: govResult.finalResult.gates,
+        attestation: govResult.receipt.attestation,
+        timing: { totalMs: govResult.receipt.totalDurationMs, perGate: {} },
+        narrowing: govResult.finalResult.narrowing,
+        // Stash the full govern result for invariant checks
+        _governResult: govResult,
+      } as any;
+      // Update constraint count from govern's state
+      const storePostGovern = new ConstraintStore(stateDir);
+      constraintsAfter = storePostGovern.getConstraintCount();
     } else {
       result = await Promise.race([
         verify(scenario.edits, scenario.predicates, mergedConfig),
