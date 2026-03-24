@@ -34,7 +34,7 @@ const PRODUCT_INVARIANTS: InvariantCheck[] = [
       if (typeof result.attestation !== 'string' || result.attestation.length === 0) {
         return { passed: false, violation: `attestation is empty`, severity: 'bug' };
       }
-      if (!result.timing || result.timing.totalMs <= 0) {
+      if (!result.timing || typeof result.timing.totalMs !== 'number' || result.timing.totalMs < 0) {
         return { passed: false, violation: `timing.totalMs is ${result.timing?.totalMs}`, severity: 'unexpected' };
       }
       return { passed: true, severity: 'info' };

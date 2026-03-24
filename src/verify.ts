@@ -453,6 +453,26 @@ export async function verify(
         durationMs: 0,
       });
 
+      // Browser gate (Playwright CSS/HTML validation)
+      if (gateConfig.browser !== false) {
+        log('[browser] Running Playwright validation...');
+        const browserResult = await runBrowserGate(ctx) as BrowserGateResult;
+        gates.push(browserResult);
+
+        if (browserResult.screenshots) {
+          browserScreenshots = browserResult.screenshots;
+          log(`[browser] ${Object.keys(browserScreenshots).length} screenshot(s) captured for vision gate`);
+        }
+
+        if (!browserResult.passed) {
+          log(`[browser] FAILED: ${browserResult.detail}`);
+          return buildResult({
+            gates, config, store, sessionId, totalStart, logs,
+            failedGate: 'browser', error: browserResult.detail, edits, predicates: groundedPredicates,
+          });
+        }
+      }
+
       // HTTP gate
       if (gateConfig.http !== false) {
         const httpPredicates = groundedPredicates.filter(

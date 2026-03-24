@@ -69,9 +69,10 @@ async function detectDocker(): Promise<{ docker: boolean; dockerVersion?: string
 
 async function detectPlaywright(): Promise<{ playwright: boolean; playwrightVersion?: string }> {
   try {
-    const result = await runCommand('npx', ['playwright', '--version']);
-    if (result.exitCode === 0 && result.stdout.trim()) {
-      return { playwright: true, playwrightVersion: result.stdout.trim() };
+    // Check for the verify-playwright Docker image (same check as src/gates/browser.ts)
+    const result = await runCommand('docker', ['image', 'inspect', 'verify-playwright:latest']);
+    if (result.exitCode === 0) {
+      return { playwright: true, playwrightVersion: 'docker' };
     }
     return { playwright: false };
   } catch {
@@ -385,41 +386,58 @@ export async function runSelfTest(config: RunConfig): Promise<{ exitCode: number
     }
   }
 
-  // Phase 4: Live Docker scenarios (--live tier) — real Postgres + app container
-  if (liveDocker.length > 0 && tier !== 'pure') {
+  // Phase 4+5 share a DBHarness — the demo-app container serves both
+  // live DB/HTTP scenarios (Phase 4) and Playwright browser scenarios (Phase 5).
+  const needsLiveContainers = (liveDocker.length > 0 && tier !== 'pure') ||
+    (playwright.length > 0 && tier === 'full');
+
+  if (needsLiveContainers) {
     if (!infra.docker) {
-      console.log(`\n  Phase 4: ${liveDocker.length} live Docker scenarios — SKIPPED (Docker not available)\n`);
+      if (liveDocker.length > 0 && tier !== 'pure') {
+        console.log(`\n  Phase 4: ${liveDocker.length} live Docker scenarios — SKIPPED (Docker not available)\n`);
+      }
+      if (playwright.length > 0 && tier === 'full') {
+        console.log(`\n  Phase 5: ${playwright.length} Playwright scenarios — SKIPPED (Docker not available)\n`);
+      }
     } else {
-      console.log(`\n  Phase 4: ${liveDocker.length} live Docker scenarios (sequential, real containers)\n`);
       const { DBHarness } = await import('./db-harness.js');
       const dbHarness = new DBHarness(fixtureDir);
       try {
-        console.log('    Starting containers...');
+        console.log('\n    Starting containers...');
         await dbHarness.start();
         console.log(`    App running at ${dbHarness.getAppUrl()}\n`);
-        for (const scenario of liveDocker) {
-          if (Date.now() - totalStart > MAX_TOTAL_TIMEOUT) break;
-          const entry = await runScenario(scenario, config, undefined, dbHarness);
-          ledger.append(entry);
-          printProgress(entry);
+
+        // Phase 4: Live Docker scenarios (--live tier) — real Postgres + app container
+        if (liveDocker.length > 0 && tier !== 'pure') {
+          console.log(`  Phase 4: ${liveDocker.length} live Docker scenarios (sequential, real containers)\n`);
+          for (const scenario of liveDocker) {
+            if (Date.now() - totalStart > MAX_TOTAL_TIMEOUT) break;
+            const entry = await runScenario(scenario, config, undefined, dbHarness);
+            ledger.append(entry);
+            printProgress(entry);
+          }
+        }
+
+        // Phase 5: Playwright scenarios (--full tier) — real browser rendering
+        if (playwright.length > 0 && tier === 'full') {
+          if (!infra.playwright) {
+            console.log(`\n  Phase 5: ${playwright.length} Playwright scenarios — SKIPPED (verify-playwright:latest image not found)`);
+            console.log(`    Build with: docker build -t verify-playwright:latest -f fixtures/Dockerfile.playwright .\n`);
+          } else {
+            console.log(`\n  Phase 5: ${playwright.length} Playwright scenarios (sequential, real browser)\n`);
+            for (const scenario of playwright) {
+              if (Date.now() - totalStart > MAX_TOTAL_TIMEOUT) break;
+              const entry = await runScenario(scenario, config, undefined, dbHarness);
+              ledger.append(entry);
+              printProgress(entry);
+            }
+          }
         }
       } catch (err: any) {
-        console.log(`    Phase 4 infrastructure failure: ${err.message}\n`);
+        console.log(`    Live infrastructure failure: ${err.message}\n`);
       } finally {
         await dbHarness.stop();
       }
-    }
-  }
-
-  // Phase 5: Playwright scenarios (--full tier) — real browser rendering
-  if (playwright.length > 0 && tier === 'full') {
-    if (!infra.docker || !infra.playwright) {
-      const reason = !infra.docker ? 'Docker not available' : 'Playwright not available';
-      console.log(`\n  Phase 5: ${playwright.length} Playwright scenarios — SKIPPED (${reason})\n`);
-    } else {
-      console.log(`\n  Phase 5: ${playwright.length} Playwright scenarios (sequential, real browser)\n`);
-      // TODO (Move 22): Start demo-app container, run Playwright against it
-      console.log('    Playwright harness not yet implemented — skipping.\n');
     }
   }
 

@@ -5,5 +5,9 @@ data/improve-baseline-*.jsonl
 data/improvement-ledger.jsonl
 data/subprocess-ledger.jsonl
 
+# Browser gate temp files
+.verify-tmp/
+fixtures/demo-app/.verify-tmp/
+
 # Keep the data directory itself
 !data/.gitkeep
