@@ -989,6 +989,329 @@ const MESSAGE_SHAPES: ShapeRule[] = [
   },
 ];
 
+// ---------------------------------------------------------------------------
+// Infrastructure Domain (INFRA-*)
+// ---------------------------------------------------------------------------
+
+const INFRA_SHAPES: ShapeRule[] = [
+  {
+    id: 'INFRA-01', domain: 'infrastructure', name: 'Resource does not exist in state',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'infra_resource',
+    predicateMatch: (p) => !p.passed && (p.actual?.includes('not found') ?? false),
+    confidence: 0.95,
+  },
+  {
+    id: 'INFRA-02', domain: 'infrastructure', name: 'Resource exists when should be absent',
+    claimType: 'absence', truthType: 'deterministic',
+    predicateType: 'infra_resource',
+    predicateMatch: (p) => !p.passed && (p.expected?.includes('absent') ?? false),
+    confidence: 0.95,
+  },
+  {
+    id: 'INFRA-03', domain: 'infrastructure', name: 'Wrong environment tag',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'infra_attribute',
+    predicateMatch: (p) => !p.passed && (p.expected !== p.actual) &&
+      ((p.fingerprint ?? '').includes('Environment') || (p.fingerprint ?? '').includes('environment')),
+    confidence: 0.9,
+  },
+  {
+    id: 'INFRA-04', domain: 'infrastructure', name: 'Missing deletion protection',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'infra_attribute',
+    predicateMatch: (p) => !p.passed &&
+      ((p.fingerprint ?? '').includes('deletion_protection') || (p.fingerprint ?? '').includes('delete_protection')),
+    confidence: 0.9,
+  },
+  {
+    id: 'INFRA-05', domain: 'infrastructure', name: 'State file drift from manifest',
+    claimType: 'invariance', truthType: 'deterministic',
+    predicateType: 'infra_manifest',
+    predicateMatch: (p) => !p.passed && (p.expected?.includes('matches manifest') ?? false),
+    confidence: 0.9,
+  },
+  {
+    id: 'INFRA-06', domain: 'infrastructure', name: 'Bulk destroy scope exceeds intent',
+    claimType: 'containment', truthType: 'deterministic',
+    predicateType: 'infra_resource',
+    // Matched via result-level check — multiple resource predicates failed
+    resultMatch: (r) => {
+      const infra = r.predicateResults?.filter(p => p.type === 'infra_resource' && !p.passed) ?? [];
+      return infra.length >= 3;
+    },
+    confidence: 0.85,
+  },
+  {
+    id: 'INFRA-07', domain: 'infrastructure', name: 'Archived/foreign config contamination',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'infra_manifest',
+    predicateMatch: (p) => !p.passed && (p.actual?.includes('orphan') ?? false),
+    confidence: 0.8,
+  },
+  {
+    id: 'INFRA-08', domain: 'infrastructure', name: 'Resource type mismatch',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'infra_attribute',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('attribute=type'),
+    confidence: 0.85,
+  },
+  {
+    id: 'INFRA-09', domain: 'infrastructure', name: 'Cross-account resource reference',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'infra_resource',
+    predicateMatch: (p) => !p.passed && (p.actual?.includes('not found') ?? false) &&
+      ((p.fingerprint ?? '').includes('arn:') || (p.expected ?? '').includes('arn:')),
+    confidence: 0.75,
+  },
+  {
+    id: 'INFRA-10', domain: 'infrastructure', name: 'Provider-specific naming mismatch',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'infra_attribute',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('attribute=name'),
+    confidence: 0.75,
+  },
+  {
+    id: 'INFRA-11', domain: 'infrastructure', name: 'Dependency chain break',
+    claimType: 'causal', truthType: 'deterministic',
+    predicateType: 'infra_resource',
+    // Matched by presence of dependent resources in state that would be orphaned
+    predicateMatch: (p) => !p.passed && (p.actual?.includes('dependent') ?? false),
+    confidence: 0.8,
+  },
+  {
+    id: 'INFRA-12', domain: 'infrastructure', name: 'State file format/version mismatch',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'infra_resource',
+    predicateMatch: (p) => !p.passed && (p.actual?.includes('no state file') ?? false),
+    confidence: 0.8,
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Quality Surface: Serialization (SER-01..SER-06)
+// ---------------------------------------------------------------------------
+
+const SER_SHAPES: ShapeRule[] = [
+  {
+    id: 'SER-01', domain: 'serialization', name: 'JSON parse error',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'serialization',
+    predicateMatch: (p) => !p.passed && (p.actual?.includes('parse error') ?? false),
+    confidence: 0.95,
+  },
+  {
+    id: 'SER-02', domain: 'serialization', name: 'Schema type mismatch',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'serialization',
+    predicateMatch: (p) => !p.passed && (p.actual?.includes('type mismatch') ?? false),
+    confidence: 0.9,
+  },
+  {
+    id: 'SER-03', domain: 'serialization', name: 'Missing required field',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'serialization',
+    predicateMatch: (p) => !p.passed && (p.actual?.includes('missing required') ?? false),
+    confidence: 0.9,
+  },
+  {
+    id: 'SER-04', domain: 'serialization', name: 'Value mismatch (strict)',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'serialization',
+    predicateMatch: (p) => !p.passed && (p.actual?.includes('value mismatch') ?? false),
+    confidence: 0.85,
+  },
+  {
+    id: 'SER-05', domain: 'serialization', name: 'Structural mismatch (missing keys)',
+    claimType: 'containment', truthType: 'deterministic',
+    predicateType: 'serialization',
+    predicateMatch: (p) => !p.passed && (p.actual?.includes('missing key') ?? false),
+    confidence: 0.85,
+  },
+  {
+    id: 'SER-06', domain: 'serialization', name: 'File not found for serialization check',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'serialization',
+    predicateMatch: (p) => !p.passed && (p.actual?.includes('file not found') ?? false),
+    confidence: 0.95,
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Quality Surface: Configuration (CFG-01..CFG-04)
+// ---------------------------------------------------------------------------
+
+const CONFIG_SHAPES: ShapeRule[] = [
+  {
+    id: 'CFG-01', domain: 'configuration', name: 'Config key not found',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'config',
+    predicateMatch: (p) => !p.passed && (p.actual?.includes('not found') ?? false),
+    confidence: 0.95,
+  },
+  {
+    id: 'CFG-02', domain: 'configuration', name: 'Config value mismatch',
+    claimType: 'equality', truthType: 'deterministic',
+    predicateType: 'config',
+    predicateMatch: (p) => !p.passed && p.expected !== undefined && !p.expected.includes('exists'),
+    confidence: 0.85,
+  },
+  {
+    id: 'CFG-03', domain: 'configuration', name: 'No config key specified',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'config',
+    predicateMatch: (p) => !p.passed && (p.actual?.includes('no key specified') ?? false),
+    confidence: 0.9,
+  },
+  {
+    id: 'CFG-04', domain: 'configuration', name: 'Config source not found',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'config',
+    predicateMatch: (p) => !p.passed && (p.actual?.includes('not found in') ?? false),
+    confidence: 0.85,
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Quality Surface: Security (SEC-01..SEC-06)
+// ---------------------------------------------------------------------------
+
+const SEC_SHAPES: ShapeRule[] = [
+  {
+    id: 'SEC-01', domain: 'security', name: 'XSS vulnerability detected',
+    claimType: 'absence', truthType: 'deterministic',
+    predicateType: 'security',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=xss'),
+    confidence: 0.85,
+  },
+  {
+    id: 'SEC-02', domain: 'security', name: 'SQL injection pattern detected',
+    claimType: 'absence', truthType: 'deterministic',
+    predicateType: 'security',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=sql_injection'),
+    confidence: 0.85,
+  },
+  {
+    id: 'SEC-03', domain: 'security', name: 'Hardcoded secrets detected',
+    claimType: 'absence', truthType: 'deterministic',
+    predicateType: 'security',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=secrets_in_code'),
+    confidence: 0.9,
+  },
+  {
+    id: 'SEC-04', domain: 'security', name: 'Missing CSP headers',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'security',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=csp'),
+    confidence: 0.8,
+  },
+  {
+    id: 'SEC-05', domain: 'security', name: 'CORS wildcard detected',
+    claimType: 'absence', truthType: 'deterministic',
+    predicateType: 'security',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=cors'),
+    confidence: 0.8,
+  },
+  {
+    id: 'SEC-06', domain: 'security', name: 'Expected security finding not found',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'security',
+    predicateMatch: (p) => !p.passed && (p.actual?.includes('no findings (expected some)') ?? false),
+    confidence: 0.85,
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Quality Surface: Accessibility (A11Y-01..A11Y-06)
+// ---------------------------------------------------------------------------
+
+const A11Y_SHAPES: ShapeRule[] = [
+  {
+    id: 'A11Y-01', domain: 'accessibility', name: 'Missing alt text on images',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'a11y',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=alt_text'),
+    confidence: 0.9,
+  },
+  {
+    id: 'A11Y-02', domain: 'accessibility', name: 'Heading hierarchy skipped',
+    claimType: 'ordering', truthType: 'deterministic',
+    predicateType: 'a11y',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=heading_hierarchy'),
+    confidence: 0.85,
+  },
+  {
+    id: 'A11Y-03', domain: 'accessibility', name: 'Missing landmark regions',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'a11y',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=landmark'),
+    confidence: 0.8,
+  },
+  {
+    id: 'A11Y-04', domain: 'accessibility', name: 'Missing aria labels on interactive elements',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'a11y',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=aria_label'),
+    confidence: 0.85,
+  },
+  {
+    id: 'A11Y-05', domain: 'accessibility', name: 'Focus management anti-pattern',
+    claimType: 'absence', truthType: 'deterministic',
+    predicateType: 'a11y',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=focus_management'),
+    confidence: 0.8,
+  },
+  {
+    id: 'A11Y-06', domain: 'accessibility', name: 'Expected a11y finding not found',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'a11y',
+    predicateMatch: (p) => !p.passed && (p.actual?.includes('no findings (expected some)') ?? false),
+    confidence: 0.85,
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Quality Surface: Performance (PERF-01..PERF-05)
+// ---------------------------------------------------------------------------
+
+const PERF_SHAPES: ShapeRule[] = [
+  {
+    id: 'PERF-01', domain: 'performance', name: 'Bundle size exceeds threshold',
+    claimType: 'threshold', truthType: 'deterministic',
+    predicateType: 'performance',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=bundle_size'),
+    confidence: 0.9,
+  },
+  {
+    id: 'PERF-02', domain: 'performance', name: 'Unoptimized images detected',
+    claimType: 'absence', truthType: 'deterministic',
+    predicateType: 'performance',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=image_optimization'),
+    confidence: 0.85,
+  },
+  {
+    id: 'PERF-03', domain: 'performance', name: 'Missing lazy loading on images',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'performance',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=lazy_loading'),
+    confidence: 0.85,
+  },
+  {
+    id: 'PERF-04', domain: 'performance', name: 'Too many external connections',
+    claimType: 'threshold', truthType: 'deterministic',
+    predicateType: 'performance',
+    predicateMatch: (p) => !p.passed && (p.fingerprint ?? '').includes('check=connection_count'),
+    confidence: 0.8,
+  },
+  {
+    id: 'PERF-05', domain: 'performance', name: 'Unknown performance check type',
+    claimType: 'existence', truthType: 'deterministic',
+    predicateType: 'performance',
+    predicateMatch: (p) => !p.passed && (p.actual?.includes('unknown check') ?? false),
+    confidence: 0.9,
+  },
+];
+
 // =============================================================================
 // MASTER CATALOG
 // =============================================================================
@@ -1000,6 +1323,12 @@ const ALL_SHAPES: ShapeRule[] = [
   ...CONTENT_SHAPES,
   ...DB_SHAPES,
   ...FS_SHAPES,
+  ...INFRA_SHAPES,
+  ...SER_SHAPES,
+  ...CONFIG_SHAPES,
+  ...SEC_SHAPES,
+  ...A11Y_SHAPES,
+  ...PERF_SHAPES,
   ...SYNTAX_SHAPES,
   ...GROUNDING_SHAPES,
   ...K5_SHAPES,

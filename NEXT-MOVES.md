@@ -1,303 +1,519 @@
-# Verify — Next Moves (Handoff Prompt)
+# Verify — Next Moves II: The Convergence Arc
 
-Written March 23, 2026. Read `ASSESSMENT.md` first for the value hierarchy. Read `FAILURE-TAXONOMY.md` for the algebra spec.
+Written March 23, 2026. Read `ASSESSMENT.md` first for the value hierarchy. Read `FAILURE-TAXONOMY.md` for the algebra spec. Read the previous NEXT-MOVES (Moves 1-6) in git history — those are exhausted and complete.
 
-## Current State
+## Where We Are
 
 | Metric | Value |
 |--------|-------|
 | npm version | 0.3.1 |
-| Total scenarios | 506 (12 families: A-H, I, M, P, V) |
-| Shape catalog (decompose.ts) | 91 rules across 12 domains |
-| Known taxonomy shapes | 567 |
-| Coverage | 258/567 (46% atomic) |
-| Decomposition tests | 360 tests (180 decompose + 50 composition + 130 phase2), 1,249 assertions |
-| Gates | 12 (all implemented) |
-| Predicate types | 10 (all implemented) |
+| Total scenarios | 553 (12 families: A-H, I, M, P, V) |
+| Shape catalog (decompose.ts) | 118 rules across 17 domains |
+| Known taxonomy shapes | 579 |
+| Coverage | 289/579 (50% atomic) |
+| Gates | 17 (all implemented) |
+| Predicate types | 18 (all implemented) |
+| **New: `govern()`** | **Convergence loop — verify() in a retry loop with narrowing** |
 
-**What's built and working:** Pipeline (12 gates), self-test harness (506 scenarios), K5 constraint learning, decomposition engine (Phase 2 complete with minimization, scoring, claim-type decomposition, temporal modes, diagnostics; composition operators: product ×, temporal ⊗, round-trip decomposition verified; Phase 3 shape expansion complete — 91 rules across 12 domains), fault ledger, external scenarios, improve loop, chaos engine, message gate.
+**What changed since Moves 1-6:** `govern()` was built. It wraps `verify()` in a convergence loop: Ground → Plan → Verify → Narrow → Retry. The agent receives grounding context, makes a plan, verify judges it through 17 gates, failures decompose into taxonomy shapes, and the agent retries with more information. Every shape in the taxonomy is now a word in the narrowing vocabulary. K5 constraints seed automatically. The taxonomy went from documentation to operational machinery.
 
-**Demo app fixture:** `fixtures/demo-app/server.js` (4 routes, inline HTML/CSS, 199 LOC) + `fixtures/demo-app/init.sql` (4 tables: users, posts, sessions, settings).
+**What `govern()` means for the build order:** Every new scenario family does triple duty — it's a test case for verify(), a narrowing signal for govern(), and a constraint seed for K5. Coverage work is now 3× more valuable than before.
 
-## The Build Order
+## The Three Phases
 
-### ~~Move 1: Composition Generators~~ — COMPLETE
+### Phase I: Static Coverage Sprint (50% → 65%)
 
-**Completed March 23, 2026.**
+Attack the ~90 shapes reachable with pure file parsing. No Docker, no Playwright, no network. This is the same work as Moves 1-6 — write scenarios against existing gates, add decomposition rules, run the self-test harness. But now every shape also enriches govern()'s failure vocabulary.
 
-**What was built:**
-1. **Product composition operator (×):** 6 new interaction shapes (I-05 through I-10) in the catalog. `productComposition(shapeIdA, shapeIdB)` computes the product of two shapes from different domains. Covers CSS×HTTP, CSS×HTML, HTML×Content, HTTP×DB, CSS×Content, HTML×HTTP. Commutativity enforced via sorted domain-pair keys.
+### Phase II: Ship v0.3.0
 
-2. **Temporal composition operator (⊗):** `temporalComposition(shapeId, mode)` produces time-dependent variants for all 5 temporal modes (snapshot, settled, ordered, stable, fresh). Preserves all fields from the base shape.
+Publish with govern() + expanded taxonomy. The package story: 17 gates, `verify()` for single-pass, `govern()` for convergence, ~650 scenarios, ~65% taxonomy coverage, 23+ domains. The demo: an agent that converges on a correct edit in 2-3 attempts instead of flailing blindly.
 
-3. **Round-trip decomposition:** `decomposeComposition(result, predicates)` verifies the algebra's closure property — compose → decompose recovers original components. All 6 product pairs verified. `getKnownCompositions()` enumerates the full composition map.
+### Phase III: Infrastructure Fixtures (65% → 95%)
 
-4. **17 new scenarios** in Family I: 6 product compositions + controls, 3 temporal compositions, 2 triple product compositions. Family I grew from 15 → 28 scenarios (11 failure classes).
-
-5. **50 composition tests, 145 assertions** in `tests/unit/composition.test.ts` covering catalog shapes, product/temporal operators, known compositions enumeration, detection via decomposeFailure, round-trip closure, sorting/scoring, triple products, temporal annotation, and idempotence.
-
-**Results:** Shape catalog 46 → 52. Total scenarios 471 → 488. Self-test harness: ALL CLEAN.
+Docker, Playwright, HTTP server mocks, Postgres. The ~200 shapes that need runtime. This is the ceiling-breaker — DB deadlocks, browser hydration, HTTP sequences, staging lifecycle. The hardest failures to diagnose, the most valuable for govern() to learn from.
 
 ---
 
-### ~~Move 2: DB Tier 2 (Mock Schema via init.sql)~~ — COMPLETE
-
-**Completed March 23, 2026.**
-
-**What was built:**
-1. **`fixtures/demo-app/init.sql`** — 4-table PostgreSQL schema (users, posts, sessions, settings) covering: SERIAL, VARCHAR, TEXT, BOOLEAN, INTEGER, UUID, JSONB, TIMESTAMP types; NOT NULL, UNIQUE, PRIMARY KEY, FOREIGN KEY, DEFAULT constraints; 2 indexes.
-
-2. **DB grounding parser** (`src/gates/grounding.ts`):
-   - `parseInitSQL(sql)` — regex-based CREATE TABLE parser extracting table/column/type/nullable/hasDefault
-   - `normalizeDBType(raw)` — type alias resolution (serial→integer, varchar(N)→varchar, bool→boolean, etc.)
-   - `findAndParseSchema(appDir)` — searches init.sql in appDir, db/, sql/, schema.sql
-   - DB validation in `validateAgainstGrounding()`: table_exists, column_exists, column_type with case-insensitive lookup and alias normalization
-   - Populated `GroundingContext.dbSchema` (was defined in types.ts but never wired)
-
-3. **D-* shape catalog expansion** (3 → 12 shapes in `decompose.ts`):
-   - D-01/02/03: Fixed to use `pred.assertion` field instead of fragile regex on `p.expected`
-   - D-04: Table name case sensitivity
-   - D-05: Column name case sensitivity
-   - D-06: Type alias normalization (serial, varchar(N), bool, etc.)
-   - D-07: Fabricated table reference (grounding rejects)
-   - D-08: Fabricated column reference (grounding rejects)
-   - D-09: Type mismatch after normalization
-   - D-10: Row count assertion stub (no live DB)
-   - D-11: Row value assertion stub (no live DB)
-   - D-12: Constraint/index exists stub
-
-4. **18 new DB scenarios** in scenario-generator.ts: grounding validation (fabricated tables/columns, type mismatches), case sensitivity, type alias normalization (serial, varchar, bool), valid grounded predicates, JSONB type, multi-predicate submission, data assertion stubs.
-
-**Results:** Shape catalog 52 → 64. Total scenarios 488 → 506. Self-test harness: ALL CLEAN. 310 tests, 0 failures.
-
----
-
-### ~~Move 3: Decomposition Engine Phase 3 — Shape Catalog Expansion~~ — COMPLETE
-
-**Completed March 23, 2026.**
-
-**What was built:**
-1. **CSS shape expansion (16 new):** C-02 (RGB↔hex), C-03 (HSL↔hex), C-04 (RGBA alpha=1), C-06 (whitespace normalization), C-11 (auto/inherit/initial keywords), C-13 (em context-dependent), C-14 (percentage context-dependent), C-15 (new property not in source), C-32 (property not in selector source), C-34 (cross-route variance), C-35 (specificity/cascade), C-40 (inherited vs authored), C-42 (multi-block merge failure), C-45 (keyword↔numeric e.g. normal/400), C-49 (modern color syntax), C-52 (rem context-dependent). Helper functions: `isRgbValue()`, `isHexValue()`, `isHslValue()`, `isRelativeUnitMismatch()`, `isKeywordNumericMismatch()`.
-
-2. **HTML shape expansion (3 new):** H-03 (wrong element tag), H-20 (element count mismatch), H-23 (dynamic/JS-rendered element grounding miss).
-
-3. **HTTP shape expansion (2 new):** P-12 (method mismatch), P-15 (expected redirect got direct).
-
-4. **Content shape expansion (2 new):** N-04 (regex-special chars matched literally), N-08 (partial substring false positive).
-
-5. **Filesystem shape expansion (3 new):** FS-07 (hash drift detected), FS-12 (missing file/path field — structural predicate deficiency), FS-17 (extra files detected with directional count check).
-
-6. **Cross-cutting shape expansion (2 new):** X-40 (empty search string), X-41 (line ending mismatch).
-
-7. **Attribution shape expansion (2 new):** AT-03 (compound error first-match extraction), AT-04 (first gate failure masks downstream — requires known F9 error pattern).
-
-8. **DOMINANCE map expanded** with 4 new entries (C-35→C-33, C-42→C-33, FS-03→FS-07, FS-04→FS-17) to prevent false co-occurrence.
-
-9. **Key invariant enforced:** Shapes must NOT match on `p.passed === true` — passing predicates pollute failure decompositions. 5 shapes removed/commented (H-04, P-01, P-10, C-43) that were structurally indistinguishable from more general passing shapes.
-
-**Results:** Shape catalog 64 → 91 (target was 80-90). Self-test harness: 506 scenarios, ALL CLEAN. Unit tests: 310 pass, 0 fail.
-
----
-
-### Move 4: Quality Surface Predicate Types (Wave 5)
-
-**Why fourth:** Opens 5 entirely new domains that don't exist today. Each needs a new predicate type in `types.ts`, a new gate (or gate branch), and new scenarios. This is the most architecturally significant work — it expands what verify CAN verify.
-
-**New domains (in priority order):**
-
-1. **Serialization (SER-01 through SER-07):** JSON schema validation, float precision, null semantics, date serialization, boolean handling, nested object comparison, array ordering. Predicate type: `json_schema` or `serialization`. Gate: compare parsed structures, not string equality.
-
-2. **Configuration (CFG-01 through CFG-08):** Environment variable presence, feature flag state, config precedence, dotenv parsing, missing required config, type coercion, default fallback, override chain. Predicate type: `config`. Gate: parse .env/.json/.yaml config files.
-
-3. **Security (SEC-01 through SEC-07):** XSS detection in output, SQL injection in queries, CSRF token presence, auth header requirements, secrets in logs, content security policy, CORS configuration. Predicate type: `security`. Gate: pattern matching + content scanning.
-
-4. **Accessibility (A11Y-01 through A11Y-08):** ARIA labels, keyboard navigation, color contrast, alt text, heading hierarchy, focus management, screen reader compatibility, landmark regions. Predicate type: `a11y`. Gate: HTML structure analysis (pure) or axe-core (Docker).
-
-5. **Performance (PERF-01 through PERF-06):** Response time threshold, bundle size limit, LCP target, image optimization, lazy loading, connection count. Predicate type: `performance`. Gate: HTTP timing + content size analysis.
-
-**Dependencies:** Each domain is independent. Start with serialization (most pure, no Docker).
-
-**Estimated work per domain:** 5-8 scenarios, 1 new gate file, 1 new predicate type. Total: 25-40 scenarios across 5 domains.
-
-**Files to modify:**
-- `src/types.ts` — new predicate types in Predicate union
-- `src/gates/` — new gate file per domain
-- `src/verify.ts` — wire new gates into pipeline
-- `scripts/harness/scenario-generator.ts` — new families
-- `src/store/decompose.ts` — new domain shape rules
-
----
-
-### ~~Move 5: Improve Loop Hardening (10 Known Gaps)~~ — COMPLETE
-
-**Completed March 23, 2026.**
-
-**What was fixed (all 10 gaps in `@sovereign-labs/improve`):**
-
-1. **Gap 1 — Timeout scoring** (`subprocess.ts`): Subprocess timeout scored as 0 (inconclusive), not -50 (regression). Timeout is infrastructure, not agent fault. Retry with 2× timeout before giving up.
-
-2. **Gap 2 — JSON parsing** (`utils.ts`): `extractJSON` refactored with proper brace/bracket matching. Strategy 3 now tries both `[` and `{` starting characters. Extracted `extractBalancedBlock()` helper with string-aware depth tracking. Fence stripping regex handles inline and multi-line fence styles.
-
-3. **Gap 3 — Edit error propagation** (`subprocess.ts`, `types.ts`): Added `editErrors` field to `CandidateResult`. Zero-applied-edits returns error details instead of silent failure. Per-edit failure reasons (search not found, file missing) propagated through the pipeline.
-
-4. **Gap 4 — Rate limit handling** (`utils.ts`, `providers.ts`): Exponential backoff with jitter (30s × 2^attempt, capped at 5 min). All 4 providers (Gemini, Anthropic, Claude, Ollama) now propagate `err.status` and `err.headers` on HTTP errors. Network errors retry up to `maxRetries` with increasing delay.
-
-5. **Gap 5 — Holdout bias** (`subprocess.ts`): Regression threshold changed from `holdoutSize < 10 ? 2 : 1` to always 1. Any regression on a small holdout is significant. Minimum holdout guarantee: at least 3 scenarios when 6+ clean available.
-
-6. **Gap 6 — Cross-run dedup** (`improve.ts`): Track ALL tried hashes in cross-run history (not just failed ones). LLM won't regenerate candidates already tried in prior runs, regardless of outcome.
-
-7. **Gap 7 — Prior attempts in all bundles** (`improve.ts`): Prior attempt context injected into fix generation for ALL confidence levels (mechanical, heuristic, needs_llm), not just when LLM diagnosis exists.
-
-8. **Gap 8 — Partial credit ranking** (`improve.ts`): Ranking now uses `partialScore` as tie-breaker when `score` is equal. Partial improvements surface when no candidate achieves positive score.
-
-9. **Gap 9 — Holdout confidence enforcement** (`improve.ts`, `types.ts`): New `minHoldoutConfidence` config option ('low' | 'medium' | 'high'). When holdout confidence is below threshold, fix is rejected as overfitting even if holdout passed clean.
-
-10. **Gap 10 — Cross-run constraint memory** (`improve.ts`, `types.ts`): `ImproveHistoryRun` now records per-candidate files/regressions and derives `learnedConstraints` (file_causes_regression, strategy_ineffective, scenario_fragile). Constraints injected into LLM context for future runs.
-
-**Files modified:**
-- `packages/improve/src/utils.ts` — extractJSON rewrite, callLLMWithRetry exponential backoff
-- `packages/improve/src/providers.ts` — HTTP error status/headers propagation (all 4 providers)
-- `packages/improve/src/subprocess.ts` — timeout scoring, edit error propagation, holdout threshold
-- `packages/improve/src/types.ts` — editErrors field, minHoldoutConfidence, learnedConstraints
-- `packages/improve/src/improve.ts` — cross-run dedup, prior attempts injection, partial ranking, confidence enforcement, constraint derivation/injection
-
----
-
-### Move 6: Infrastructure Predicates (The Alexei Gate)
-
-**Why this matters:** Two weeks ago, an AI coding agent wiped a production database — 1.9 million rows of student data, backups included. The agent made no technical errors. Every action was logically correct. It simply didn't know it was operating on production infrastructure. The only thing that could have prevented it was a structural check that ran before the destroy command — exactly what verify's gate sequence does, but for a domain verify doesn't cover yet.
-
-This is the domain with the most dramatic failure case, the clearest market signal, and the highest leverage for verify's positioning as a domain-agnostic governance layer.
-
-**The core insight:** Alexei's agent needed three checks that didn't exist:
-1. "Is this resource tagged as production?" (before destroying)
-2. "Does the state file I'm operating on match the known production manifest?" (before any bulk change)
-3. "After this change, do the production resources still exist?" (after the change)
-
-These map directly to verify's existing patterns: grounding (check reality before acting), predicates (testable claims), invariants (must hold after every change).
-
-**New predicate types (3):**
-
-```typescript
-// 1. Resource existence — does a named resource exist in a state file or API?
-{ type: 'infra_resource', resource: 'aws_db_instance.production', assertion: 'exists' }
-{ type: 'infra_resource', resource: 'aws_db_instance.production', assertion: 'absent' }
-
-// 2. Resource attribute — does a resource have a specific tag/property?
-{ type: 'infra_attribute', resource: 'aws_db_instance.production', attribute: 'tags.Environment', expected: 'production' }
-{ type: 'infra_attribute', resource: 'aws_rds_cluster.main', attribute: 'deletion_protection', expected: 'true' }
-
-// 3. State manifest — does the current state match a known-good manifest?
-{ type: 'infra_manifest', stateFile: 'terraform.tfstate', assertion: 'matches_manifest' }
-{ type: 'infra_manifest', stateFile: 'terraform.tfstate', assertion: 'no_production_drift' }
-```
-
-**New gate: `src/gates/infrastructure.ts`**
-
-The gate checks infrastructure state **without executing commands**. Three verification modes:
-
-| Mode | How it checks | No network? |
-|------|---------------|-------------|
-| **State file** | Parse `terraform.tfstate` / `pulumi.state.json` / CloudFormation template as JSON. Extract resources, attributes, tags. | Yes — pure file parsing |
-| **Manifest comparison** | Diff current state file against a known-good manifest (committed baseline). Flag drift. | Yes — file comparison |
-| **Live query** (optional) | Call cloud API to verify resource exists. Requires credentials. | No — network call |
-
-**For self-test (pure mode only):** Fixtures include mock state files. No cloud credentials needed. The gate parses JSON, not AWS APIs.
-
-**Fixture: `fixtures/demo-infra/terraform.tfstate`**
-
-Mock Terraform state file with ~10 resources: a production RDS instance, a staging RDS instance, an S3 bucket, a VPC, security groups, an ECS cluster. Tagged with `Environment: production` vs `Environment: staging`. This is the equivalent of `init.sql` for the infrastructure domain — a representative fixture the grounding gate can parse.
-
-**Fixture: `fixtures/demo-infra/manifest.json`**
-
-Known-good baseline: list of production resource IDs + types + critical attributes. The `infra_manifest` predicate compares current state against this.
-
-**Infrastructure shapes (INFRA-01 through INFRA-12):**
-
-| # | Shape | Claim Type | Notes |
-|---|---|---|---|
-| INFRA-01 | Resource doesn't exist | existence | Resource expected but not in state file |
-| INFRA-02 | Resource exists when should be absent | absence | Duplicate/orphan resource detected |
-| INFRA-03 | Wrong environment tag | equality | Resource is production, agent thinks it's staging |
-| INFRA-04 | Missing deletion protection | existence | Critical resource lacks safeguard attribute |
-| INFRA-05 | State file drift from manifest | invariance | Current state doesn't match committed baseline |
-| INFRA-06 | Bulk destroy scope exceeds intent | containment | Agent wants to remove 3 resources, command affects 47 |
-| INFRA-07 | Archived config contamination | existence | Old state file mixed with current — foreign resources appear |
-| INFRA-08 | Resource type mismatch | equality | Expected `aws_db_instance`, found `aws_rds_cluster` |
-| INFRA-09 | Cross-account resource reference | existence | Resource ID references wrong AWS account |
-| INFRA-10 | Provider-specific naming | equality | Same resource, different name convention across clouds |
-| INFRA-11 | Dependency chain break | causal | Destroying VPC would orphan 12 dependent resources |
-| INFRA-12 | State file format mismatch | existence | Terraform v0.12 state parsed as v1.0 — silent field drops |
-
-**Grounding for infrastructure:**
-
-Add `infra` branch to `validateAgainstGrounding()` in `grounding.ts`:
-- Parse state file from fixture directory (same pattern as `findAndParseSchema` for DB)
-- Validate `infra_resource` predicates against parsed resources
-- Mark `groundingMiss` on resources not found in state
-- Mark `groundingMiss` on attributes not present on resource
-
-**K5 learning — what Alexei's scenario seeds:**
-
-After a bulk destroy hits production resources:
-- Constraint: `forbidden_action` on bulk infrastructure mutations without manifest comparison
-- Constraint: `predicate_fingerprint` ban on the specific resource set that was incorrectly targeted
-- Next attempt: agent must verify environment tags before any destroy operation
-
-**The Alexei scenario as a self-test case:**
-
-```typescript
-// The exact failure mode: agent operates on archived production state
-{
-  id: 'INFRA_alexei_scenario',
-  family: 'G',
-  description: 'Alexei scenario: bulk destroy targets production resources from archived config',
-  edits: [],  // No file edits — this is about infrastructure state
-  predicates: [
-    { type: 'infra_resource', resource: 'aws_db_instance.production', assertion: 'exists' },
-    { type: 'infra_attribute', resource: 'aws_db_instance.production', attribute: 'tags.Environment', expected: 'production' },
-  ],
-  invariants: [
-    shouldNotCrash('INFRA alexei scenario'),
-    groundingRan(),
-    predicateIsGrounded(0),  // Production DB exists in state
-  ],
-}
-```
+## Phase I Moves (Static Coverage Sprint)
+
+### Move 7: Core Pipeline Edge Cases (Grounding + F9 + K5 + G5)
+
+The core pipeline gates have ~37 uncovered shapes — edge cases in the gates that already work. These are the cheapest shapes to cover because the gate code exists, the fixtures exist, the decomposition engine exists. Just write the scenarios.
+
+**Target shapes (~25 reachable):**
+
+**Grounding gaps:**
+- GR-07: Grounding runs on stale file cache (file changed between ground and verify)
+- GR-08: Grounding parses minified CSS (no whitespace between rules)
+- GR-09: Grounding misses inline styles (only parses `<style>` blocks)
+- GR-10: Grounding miss on dynamically constructed selector (template literal)
+- GR-11: Grounding false positive from CSS-in-JS string literal
+- GR-12: Grounding parser chokes on CSS `@media` / `@keyframes` nested blocks
+
+**F9 (syntax) gaps:**
+- F9-05: Edit search string matches inside a string literal, not code
+- F9-06: Edit creates valid syntax but wrong semantics (valid CSS, wrong property)
+- F9-07: Edit search string spans a line boundary (multi-line match)
+- F9-08: Edit creates duplicate declarations (same property twice in same block)
+
+**K5 (constraint) gaps:**
+- K5-07: Constraint expired but not garbage collected (TTL boundary)
+- K5-08: Constraint applies to wrong scope (job-scoped constraint leaks to app scope)
+- K5-09: Multiple constraints interact — one bans a strategy, another requires it (deadlock)
+- K5-10: Constraint seeded from harness fault (infrastructure error, not agent fault)
+- K5-11: Predicate fingerprint ban on compound predicate (multiple fields change fingerprint)
+
+**G5 (containment) gaps:**
+- G5-05: Scaffolding mutation misclassified as unexplained (deploy command not recognized)
+- G5-06: Direct attribution on wrong predicate (two predicates match same file)
+- G5-07: Identity binding false positive (WHERE clause ID from different table)
+- G5-08: Surface drift on CSS shorthand expansion (one property, three computed values)
 
 **What to build:**
-1. `fixtures/demo-infra/terraform.tfstate` — Mock state file (~10 resources, production + staging)
-2. `fixtures/demo-infra/manifest.json` — Known-good production baseline
-3. `src/gates/infrastructure.ts` — State file parser + resource/attribute/manifest verification
-4. Infrastructure predicate types in `src/types.ts`
-5. Wire gate into `src/verify.ts`
-6. Grounding branch in `src/gates/grounding.ts` for infrastructure state parsing
-7. INFRA-01 through INFRA-12 shapes in `src/store/decompose.ts`
-8. ~15-20 scenarios in `scripts/harness/scenario-generator.ts`
+1. ~25 new scenarios in `scripts/harness/scenario-generator.ts`
+2. ~12 new shapes in `src/store/decompose.ts`
+3. Fixture additions to `fixtures/demo-app/server.js` if needed (minified CSS block, inline styles)
+4. No new gate files — these exercise existing gates
 
-**Dependencies:** None. Infrastructure parsing is pure JSON — no cloud credentials, no Docker, no network.
-
-**Estimated work:** 3 new predicate types, 1 new gate file, 2 fixture files, 12 shapes, ~20 scenarios. Self-test stays pure (mock state files only).
-
-**The headline:** `verify` could have stopped Alexei's disaster. Not with a fancier model. Not with a bigger context window. With a predicate: `{ type: 'infra_attribute', resource: 'aws_db_instance.production', attribute: 'tags.Environment', expected: 'production' }`.
+**Coverage impact:** +25 scenarios, +12 shapes. Coverage: 289 → ~301/579 (52%).
 
 ---
 
-## What NOT to Build Next
+### Move 8: CSS Completion (22 remaining shapes)
 
-- **Browser predicate types (Phase 4):** Deferred. Needs 4 new predicate types (interaction, navigation, visibility, storage) that require Playwright infrastructure. High effort, low coverage gain per shape.
-- **Wave 3 infrastructure expansion:** Most of these are structural stubs already placed. The next coverage gain comes from composition (Move 1) and DB (Move 2), not from expanding stubs.
-- **npm publish:** Don't publish until at least Move 3 is complete. Move 6 (infrastructure) is the headline for market positioning.
+CSS is verify's most mature domain but has 22 uncovered shapes — mostly computed-style edge cases that are still reachable via source parsing.
 
-## Summary: The Correct Order
+**Target shapes (~18 reachable):**
 
-| Move | What | Why Now | Coverage Impact |
-|------|------|---------|-----------------|
-| ~~**1**~~ | ~~Composition generators~~ | ~~COMPLETE~~ | +6 interaction shapes, 17 scenarios, 50 tests |
-| ~~**2**~~ | ~~DB Tier 2 (init.sql)~~ | ~~COMPLETE~~ | +12 DB shapes, 18 scenarios, grounding parser |
-| ~~**3**~~ | ~~Shape catalog expansion~~ | ~~COMPLETE~~ | +27 shapes (64→91), 8 domains expanded |
-| **4** | Quality surface predicates | Opens 5 new domains, expands what verify CAN verify | +5 new domains |
-| ~~**5**~~ | ~~Improve loop hardening~~ | ~~COMPLETE~~ | 10/10 gaps fixed, cross-run learning |
-| **6** | Infrastructure predicates | The Alexei Gate — stop production destruction | +1 new domain, 12 shapes, 3 predicate types |
+| # | Shape | What it tests |
+|---|-------|--------------|
+| C-05 | Named color → computed RGB | `orange` in source → `rgb(255, 165, 0)` in computed |
+| C-08 | `!important` priority | Declaration with `!important` overrides later rule |
+| C-09 | Shorthand partial override | `margin: 10px` then `margin-left: 20px` — what's margin-left? |
+| C-10 | `calc()` expression | `width: calc(100% - 20px)` — can't resolve without viewport |
+| C-12 | `var()` custom property | `color: var(--primary)` — needs `--primary` definition |
+| C-16 | Media query scoping | `@media (max-width: 768px)` — style only applies at that width |
+| C-17 | Shorthand → longhand resolution | `border: 1px solid red` → `border-color: red` extraction |
+| C-18 | Pseudo-element styles | `::before` / `::after` computed values |
+| C-19 | Pseudo-class state-dependent | `:hover` / `:focus` can't verify without interaction |
+| C-20 | Multiple selectors same rule | `.a, .b { color: red }` — both should match |
+| C-21 | Selector specificity override | `#id` beats `.class` beats `element` |
+| C-36 | Negative value assertion | `margin: -10px` — negative values are valid CSS |
+| C-37 | Zero value units | `margin: 0` vs `margin: 0px` — equivalent? |
+| C-38 | Unitless number properties | `line-height: 1.5` vs `line-height: 1.5em` — different |
+| C-46 | CSS function values | `transform: rotate(45deg)` — function syntax |
+| C-47 | Multi-value properties | `font-family: 'Arial', sans-serif` — ordered list |
+| C-48 | CSS comment interference | `/* color: red; */` — commented-out property matched |
+| C-50 | Percentage of parent | `width: 50%` — resolved value depends on parent width |
 
-Moves 1-3 are the decomposition engine completing its contract. Move 4 is pipeline expansion. Move 5 is loop reliability. Move 6 is the market story — the domain where verify's value proposition is most viscerally obvious.
+**What to build:**
+1. 18 new scenarios targeting CSS edge cases
+2. 10 new shapes in decompose.ts (some already partially exist)
+3. Helper functions for shorthand resolution, specificity calculation where needed
+4. Fixture: add a `<style>` block to demo-app with calc, var, media queries, shorthand
+
+**Coverage impact:** +18 scenarios, +10 shapes. Running total: ~319/579 (55%).
+
+---
+
+### Move 9: HTML + Content Completion
+
+HTML has 16 uncovered shapes and Content has 12. Both are file-parseable.
+
+**HTML target shapes (~12 reachable):**
+
+| # | Shape | What it tests |
+|---|-------|--------------|
+| H-05 | Attribute value mismatch | `<a href="/about">` expected `href="/contact"` |
+| H-06 | Boolean attribute presence | `<input disabled>` vs `<input disabled="disabled">` |
+| H-07 | Data attribute assertion | `data-id="5"` — custom attribute existence/value |
+| H-08 | Nested element structure | `<div><span>text</span></div>` — child not just text |
+| H-10 | Multiple matching elements | `<li>` appears 5 times — which one is the predicate about? |
+| H-11 | Empty element | `<div></div>` — exists but no content |
+| H-12 | Self-closing element | `<img />` vs `<img>` — parser disagreement |
+| H-14 | Whitespace normalization | `<p>  hello   world  </p>` → `hello world` |
+| H-15 | Entity encoding | `&amp;` vs `&` in textContent |
+| H-16 | Template expression in attribute | `href="${path}"` — not yet resolved |
+| H-21 | Element order assertion | First `<li>` vs third `<li>` — position matters |
+| H-22 | Sibling element relationship | `<label for="name">` → `<input id="name">` — binding |
+
+**Content target shapes (~10 reachable):**
+
+| # | Shape | What it tests |
+|---|-------|--------------|
+| N-02 | Pattern match in wrong file | Pattern found in `package.json`, not in `server.js` |
+| N-03 | Pattern match in binary file | `.png` file matched by string search |
+| N-05 | Encoding mismatch | UTF-8 vs Latin-1 — pattern bytes differ |
+| N-06 | Pattern in comment | `// color: red` matched as if it were code |
+| N-07 | Pattern spans line boundary | Multi-line pattern requires `\n` handling |
+| N-09 | Case sensitivity | `Color` vs `color` — should match or not? |
+| N-10 | Path traversal | `../../etc/passwd` as file reference |
+| N-11 | Symlink resolution | File is symlink — read target or link? |
+| N-12 | Empty file assertion | File exists but is 0 bytes |
+| N-13 | Large file assertion | File exceeds reasonable size (binary dump) |
+
+**What to build:**
+1. ~22 new scenarios
+2. ~15 new shapes in decompose.ts
+3. Fixture additions: entity-encoded HTML, binary test file, symlink (if platform allows)
+
+**Coverage impact:** +22 scenarios, +15 shapes. Running total: ~334/579 (58%).
+
+---
+
+### Move 10: Config + Serialization + Cross-cutting Edge Cases
+
+The long tail of static shapes. Config has 5 uncovered, Serialization has 3, and Cross-cutting has ~15 that are reachable without runtime.
+
+**Config shapes (~4 reachable):**
+
+| # | Shape | What it tests |
+|---|-------|--------------|
+| CFG-05 | Nested env var reference | `DATABASE_URL=${DB_HOST}:${DB_PORT}` |
+| CFG-06 | Env var with special characters | `PASSWORD=p@ss$word!` — quoting matters |
+| CFG-07 | JSON config deep path | `server.ssl.cert.path` — 4 levels deep |
+| CFG-08 | YAML config support | `.yml` file with nested structure |
+
+**Serialization shapes (~3 reachable):**
+
+| # | Shape | What it tests |
+|---|-------|--------------|
+| SER-07 | Deeply nested JSON validation | Schema check 5 levels deep |
+| SER-08 | Array item schema | `items[*].id` must be integer |
+| SER-09 | JSON with comments | `// comment` in JSON — parse error or strip? |
+
+**Cross-cutting shapes (~12 reachable):**
+
+| # | Shape | What it tests |
+|---|-------|--------------|
+| X-01 | Gate order dependency | Gate A passes information Gate B needs |
+| X-02 | Narrowing injection from wrong gate | F9 error message fed to K5 as if it were G5 |
+| X-05 | Empty predicate list | Zero predicates submitted — what happens? |
+| X-06 | Duplicate predicates | Same predicate submitted twice |
+| X-07 | Contradictory predicates | Predicate A: color=red, Predicate B: color=blue |
+| X-10 | Edit + predicate mismatch | Edit changes CSS, predicate checks HTML |
+| X-15 | Constraint + predicate circular | K5 bans the only valid predicate fingerprint |
+| X-20 | All gates pass but narrowing still non-empty | Success with advisory warnings |
+| X-30 | Zero edits with predicates | No edits but predicates expect changes |
+| X-35 | Maximum predicate cap | 50 predicates submitted — bounding behavior |
+| X-42 | Edit search string is regex-special | `color: rgb(0, 0, 0)` — parens in search |
+| X-43 | Unicode in edit content | `content: '→'` — non-ASCII in search/replace |
+
+**What to build:**
+1. ~19 new scenarios
+2. ~12 new shapes in decompose.ts
+3. Possible: YAML parser stub in config gate (or shape it as "unsupported format" failure)
+4. Fixture additions: deep JSON, YAML config file, edge-case .env
+
+**Coverage impact:** +19 scenarios, +12 shapes. Running total: ~346/579 (60%).
+
+---
+
+### Move 11: Security + A11y + Performance Static Expansion
+
+These three quality-surface gates were built in Move 4 but only have 5-6 shapes each. Each has static-analysis headroom.
+
+**Security shapes (~6 reachable):**
+
+| # | Shape | What it tests |
+|---|-------|--------------|
+| SEC-07 | Eval usage detection | `eval()` / `new Function()` in source |
+| SEC-08 | Prototype pollution | `__proto__` / `constructor.prototype` access patterns |
+| SEC-09 | Path traversal in file operations | `fs.readFile(userInput)` without sanitization |
+| SEC-10 | Insecure deserialization | `JSON.parse` on untrusted input without validation |
+| SEC-11 | Open redirect | `res.redirect(req.query.url)` without allowlist |
+| SEC-12 | Missing rate limiting | Auth endpoint without rate limit pattern |
+
+**A11y shapes (~6 reachable):**
+
+| # | Shape | What it tests |
+|---|-------|--------------|
+| A11Y-07 | Color contrast ratio | Text/background color pair below WCAG threshold |
+| A11Y-08 | Missing form labels | `<input>` without associated `<label>` |
+| A11Y-09 | Non-descriptive link text | `<a>click here</a>` — no semantic meaning |
+| A11Y-10 | Missing language attribute | `<html>` without `lang` attribute |
+| A11Y-11 | Auto-playing media | `<video autoplay>` without user control |
+| A11Y-12 | Missing skip navigation | No skip-to-content link at top of page |
+
+**Performance shapes (~5 reachable):**
+
+| # | Shape | What it tests |
+|---|-------|--------------|
+| PERF-06 | Unminified CSS/JS in production | Large files without minification markers |
+| PERF-07 | Render-blocking resource | `<script>` in `<head>` without `async`/`defer` |
+| PERF-08 | Excessive DOM nesting | `<div>` depth > 15 levels |
+| PERF-09 | Missing caching headers | No `Cache-Control` in server response setup |
+| PERF-10 | Duplicate dependency loading | Same library loaded twice from different paths |
+
+**What to build:**
+1. ~17 new scenarios
+2. ~12 new shapes in decompose.ts
+3. Pattern additions to existing gate files (security.ts, a11y.ts, performance.ts)
+4. Fixture additions: demo-app server.js with intentional security/a11y/perf issues in a test route
+
+**Coverage impact:** +17 scenarios, +12 shapes. Running total: ~358/579 (62%).
+
+---
+
+### Move 12: govern() Test Expansion + Taxonomy Integration
+
+The convergence loop has 12 tests. This move expands govern() coverage and verifies that taxonomy shapes actually flow through the narrowing system end-to-end.
+
+**What to build:**
+
+1. **Decomposition → govern() integration tests** — verify that when a specific gate fails, `decomposeFailure()` produces the expected shape ID, and that shape ID appears in `GovernContext.failureShapes` on the next attempt. At least one test per domain: CSS shape flows through, DB shape flows through, infrastructure shape flows through.
+
+2. **Convergence scenarios** — real multi-attempt scenarios where the agent uses narrowing to fix mistakes:
+   - CSS specificity failure → agent uses shape C-21 hint → adds more specific selector
+   - K5 constraint seeded → agent changes strategy → succeeds on attempt 3
+   - Infrastructure predicate fails → agent reads shape INFRA-03 → checks environment tag
+
+3. **govern() edge cases:**
+   - Max attempts = 1 (single shot, no convergence)
+   - Agent returns different predicates on retry (predicate evolution)
+   - Constraint store persistence across govern() calls (separate sessions)
+   - Multiple govern() calls on same appDir (shared constraint state)
+   - onAttempt callback throws (should not break loop)
+   - onApproval takes a long time (timeout behavior)
+
+4. **Receipt completeness tests** — verify every field on GovernReceipt is populated correctly for success, failure, and abort paths.
+
+**What to build:**
+1. ~20 new tests in `tests/govern.test.ts`
+2. ~5 integration-level tests that exercise real gate failures through govern()
+3. Possible: `tests/govern-integration.test.ts` for heavier multi-domain scenarios
+
+**Coverage impact:** +25 tests. No new taxonomy shapes — this move proves the existing shapes work through the convergence loop.
+
+---
+
+## Phase I Summary
+
+| Move | What | Coverage Impact | Running Total |
+|------|------|----------------|---------------|
+| **7** | Core pipeline edge cases (GR/F9/K5/G5) | +25 scenarios, +12 shapes | ~301/579 (52%) |
+| **8** | CSS completion | +18 scenarios, +10 shapes | ~319/579 (55%) |
+| **9** | HTML + Content completion | +22 scenarios, +15 shapes | ~334/579 (58%) |
+| **10** | Config + Serialization + Cross-cutting | +19 scenarios, +12 shapes | ~346/579 (60%) |
+| **11** | Security + A11y + Performance expansion | +17 scenarios, +12 shapes | ~358/579 (62%) |
+| **12** | govern() test expansion + integration | +25 tests, integration proof | 62% + convergence proof |
+
+**Phase I end state:** ~660 scenarios, ~358 covered shapes (62%), govern() proven end-to-end. Ready to ship.
+
+---
+
+## Phase II: Ship v0.3.0
+
+Not a Move — a milestone. When Phase I is done:
+
+1. **Update package.json** version to 0.3.0
+2. **Update README** with govern() documentation and the convergence story
+3. **Update ASSESSMENT.md** with post-Phase I metrics
+4. **Self-test harness must be clean** — all ~660 scenarios passing
+5. **Publish to npm** — `npm publish --access public` from `/tmp/verify-push/`
+6. **Push to GitHub** — `Born14/verify` repo
+7. **Fault telemetry opt-in** — three tiers for taxonomy growth from real usage
+
+**The v0.3.0 story:**
+
+> `@sovereign-labs/verify` — Verification gate for AI-generated code.
+>
+> `verify()` runs your agent's edits through 17 gates. On failure, it tells you what went wrong and what to try next. `govern()` runs verify in a convergence loop — ground reality, plan, verify, narrow, retry. The agent learns from every failure. 660 scenarios. 62% taxonomy coverage across 23 domains. Every failure has a name.
+
+### Fault Telemetry (the taxonomy growth engine)
+
+`govern()` already records every failure to `.verify/faults.jsonl` via the `FaultLedger`. Unclassified failures — where `decomposeFailure()` returns zero shapes — are flagged on `GovernReceipt.unclassifiedFailures`. This is the local foundation.
+
+To make the taxonomy grow from real-world usage, three opt-in tiers:
+
+**Tier 1: Local only (default).** Fault ledger writes locally. User inspects with `npx @sovereign-labs/verify faults`. They file a GitHub issue with the output if they want. No network.
+
+**Tier 2: Anonymous shape gaps.** `telemetry: 'shapes'` in govern config. On unclassified failure, sends only: gate name, shape domain, "unclassified." No detail text, no predicates, no goal, no source code. Enough to prioritize which shapes to build. Not enough to know anything about their app.
+
+**Tier 3: Full fault report.** `telemetry: 'full'` in govern config. Sends stripped fault entry: gate, detail pattern, decomposition attempt, nearest shape match. Enough for the improve loop to auto-generate a shape rule fix. Requires real trust.
+
+**The product loop (full flow):**
+
+1. **SWIM calls `govern()`.** Their agent fails on attempt 2. The browser gate reports "computed style differs from source — `font-weight: bold` vs `font-weight: 700`."
+
+2. **`decomposeFailure()` runs.** It searches all 118 shape rules. Nothing matches. `fullyClassified: false`. `GovernReceipt.unclassifiedFailures: 1`.
+
+3. **Fault ledger captures it.** `.verify/faults.jsonl` gets a new entry: gate=browser, detail pattern, zero matched shapes, auto-classified as `ambiguous`. This happens automatically — SWIM doesn't do anything.
+
+4. **govern() still works.** The narrowing hint says "computed style differs from source" even without a shape ID. K5 seeds a constraint. The agent retries. It may converge anyway — the shape gap doesn't block convergence, it just means the taxonomy didn't learn.
+
+5. **Telemetry sends the gap (if opted in).** Tier 2: "unclassified failure, browser gate, CSS domain." Tier 3: the stripped fault entry with the detail pattern.
+
+6. **We receive it.** The shape gap maps to an obvious taxonomy entry: `C-45` (keyword↔numeric equivalence, `bold`↔`700`). We already knew this shape existed in `FAILURE-TAXONOMY.md` — it just didn't have a decomposition rule in `decompose.ts`.
+
+7. **The improve loop closes it.** The fault is encoded as an external scenario via `ExternalScenarioStore.encodeFromFault()`. The improve loop picks it up in its next run: diagnose → generate candidate rule → validate against holdout → apply. A new `detailPattern` is added to `decompose.ts` for shape C-45.
+
+8. **Next npm release includes the fix.** `decompose.ts` now has a rule for C-45. SWIM runs `npm update`. Next time their agent hits bold↔700, `decomposeFailure()` returns `C-45`, the narrowing hint says "CSS keyword `bold` is equivalent to numeric `700` — check computed style normalization," and the agent converges on attempt 2 instead of flailing.
+
+9. **The taxonomy grew from real usage.** Not from theory, not from generators — from a real agent hitting a real wall. The fault ledger made it visible. The improve loop made it automatic. The npm release made it universal.
+
+**Without telemetry (Tier 1), the loop still works — just slower.** SWIM runs `npx @sovereign-labs/verify faults`, sees the unclassified entry, files a GitHub issue. We add the shape manually. Same outcome, human-mediated.
+
+**What to build:**
+1. `GovernConfig.telemetry?: 'off' | 'shapes' | 'full'` (default: `'off'`)
+2. Tier 1: `npx @sovereign-labs/verify faults` CLI command — reads `.verify/faults.jsonl`, summarizes unclassified gaps, formats for GitHub issue
+3. Tier 2: `reportShapeGap()` — minimal `fetch()` to a shape registry endpoint (build the endpoint when there are users)
+4. Tier 3: `reportFault()` — stripped fault entry to the registry (build when there are design partners)
+5. `ExternalScenarioStore` bridge — auto-encode received faults as scenarios for the improve loop
+
+**When to build:** After v0.3.0 ships and real users exist. The local fault ledger already works. The transport is a few hours of work. The registry endpoint is a weekend project. Don't build for zero users.
+
+---
+
+## Phase III: Infrastructure Fixtures (Moves 13-18)
+
+This is the ceiling-breaker. The ~200 shapes that need runtime. Each move introduces one infrastructure dependency and the shapes it unlocks.
+
+### Move 13: HTTP Server Mock (~31 shapes)
+
+**Infrastructure needed:** A minimal HTTP server that starts in the test harness. Node's `http.createServer()` — no Express, no framework. Start before test, stop after.
+
+**What it unlocks:**
+- P-01 through P-30+: Status codes (200/201/301/302/400/401/403/404/500), response bodies, headers, content-type, redirects, timeouts, sequences, CORS preflight, rate limiting response, chunked transfer, streaming response, error pages, method routing, path parameters, query string handling, request body validation, multipart, cookies, caching headers
+- HTTP × CSS compositions: server returns CSS via endpoint, verify checks both
+- HTTP × DB compositions: endpoint returns data from mock schema
+
+**What to build:**
+1. `fixtures/http-server.ts` — test helper that starts/stops a mock server
+2. ~25 new scenarios requiring live HTTP
+3. ~20 new shapes in decompose.ts
+4. Wire HTTP gate to use live server in test mode
+
+**Coverage impact:** +25 scenarios, +20 shapes. Running total: ~383/579 (66%).
+
+---
+
+### Move 14: Playwright + Browser DOM (~35 shapes)
+
+**Infrastructure needed:** Playwright installed as dev dependency. Headless Chromium. The browser gate already supports Playwright in Sovereign's staging pipeline — this extracts it for standalone use.
+
+**What it unlocks:**
+- BR-01 through BR-35: Computed styles (the real ones, not parsed), `:hover`/`:focus` states, animations, transitions, layout (viewport-dependent values), scroll behavior, intersection observer, DOM mutations, hydration timing, JavaScript-rendered content, shadow DOM, Web Components, event handlers, form validation, navigation, History API, localStorage/sessionStorage, cookies, media queries at runtime
+- CSS shapes that need computed style: C-10 (calc), C-12 (var), C-16 (media), C-18 (pseudo-element), C-19 (pseudo-class)
+
+**What to build:**
+1. `fixtures/browser-harness.ts` — Playwright launcher + page helper
+2. ~30 new scenarios requiring browser runtime
+3. ~25 new shapes in decompose.ts
+4. Fixture: demo-app served via http-server (Move 13), loaded in browser
+
+**Dependencies:** Move 13 (needs HTTP server to serve pages).
+
+**Coverage impact:** +30 scenarios, +25 shapes. Running total: ~413/579 (71%).
+
+---
+
+### Move 15: Postgres Instance (~46 shapes)
+
+**Infrastructure needed:** Docker Compose with Postgres. `fixtures/docker-compose.test.yml` with a single Postgres service. Test helper that runs `init.sql` and provides connection.
+
+**What it unlocks:**
+- D-10 through D-46: Row count assertions, row value assertions, constraint violations (NOT NULL, UNIQUE, FK), migration ordering, migration rollback, deadlock detection, transaction isolation, index effectiveness, JSONB queries, type casting, default values at runtime, sequence behavior, trigger side-effects, view assertions, schema diff, data integrity across migrations
+- DB × HTTP compositions: API endpoint returns correct data after migration
+- DB × Content compositions: exported data matches expected format
+
+**What to build:**
+1. `fixtures/docker-compose.test.yml` — Postgres service for testing
+2. `fixtures/db-harness.ts` — connection helper, schema loader, teardown
+3. ~35 new scenarios requiring live Postgres
+4. ~30 new shapes in decompose.ts
+5. Migration fixtures in `fixtures/demo-app/migrations/`
+
+**Dependencies:** Docker on the test machine. No other Moves required.
+
+**Coverage impact:** +35 scenarios, +30 shapes. Running total: ~448/579 (77%).
+
+---
+
+### Move 16: Docker Staging Lifecycle (~15 shapes)
+
+**Infrastructure needed:** Docker Compose for full staging. Build + start + health check lifecycle. This is the staging gate's actual runtime — currently exercised by Sovereign's staging pipeline but not by verify's self-test.
+
+**What it unlocks:**
+- STG-01 through STG-15: Docker build failure (bad Dockerfile), container start failure (port conflict), health check timeout, migration execution failure, environment variable injection, volume mounting, network creation, multi-service dependency, build cache behavior, log capture, graceful shutdown, resource limits (memory/CPU), entrypoint override, multi-stage build, `.dockerignore` effectiveness
+
+**What to build:**
+1. `fixtures/docker-staging/` — Dockerfile, docker-compose.yml for staging tests
+2. `fixtures/staging-harness.ts` — build/start/stop/cleanup helper
+3. ~12 new scenarios
+4. ~10 new shapes in decompose.ts
+
+**Dependencies:** Docker on the test machine. Move 15 Postgres can share the Docker setup.
+
+**Coverage impact:** +12 scenarios, +10 shapes. Running total: ~460/579 (79%).
+
+---
+
+### Move 17: Cross-cutting Runtime (~47 shapes)
+
+**Infrastructure needed:** Multiple gates running in sequence with real side effects. This is where the interesting failures live — temporal ordering, observer effects, concurrency, gate interaction.
+
+**What it unlocks:**
+- X-45 through X-90+: Gate ordering violations (grounding stale by the time browser runs), temporal race conditions (file changes during verify), observer effect (HTTP check triggers rate limit, breaking the next check), concurrency (parallel gate execution with shared state), multi-gate correlation (staging passes but browser fails — why?), constraint propagation across sessions, narrowing quality (did the hint actually help?), convergence physics (does the loop terminate?), audit trail integrity (receipt matches reality)
+- TO-* temporal shapes: snapshot staleness, settled-state timing, ordering guarantees, stability windows, freshness requirements
+- OE-* observer effect shapes: verification changes the system being verified
+
+**What to build:**
+1. Integration test harness that runs multi-gate scenarios with real timing
+2. ~35 new scenarios (many are integration-level, slower)
+3. ~30 new shapes in decompose.ts
+4. Temporal mode annotations on existing shapes where applicable
+
+**Dependencies:** Moves 13-16 (needs all infrastructure running to test cross-cutting behavior).
+
+**Coverage impact:** +35 scenarios, +30 shapes. Running total: ~495/579 (85%).
+
+---
+
+### Move 18: Coverage Completion + Thesis Defense
+
+The final push. Whatever shapes remain uncovered after Moves 13-17, plus the shapes we'll discover along the way (the taxonomy always grows when you exercise new domains).
+
+**What to build:**
+1. Audit uncovered shapes — some may be unreachable (theoretical, not practical)
+2. Close reachable gaps
+3. Mark unreachable shapes as `theoretical` in the taxonomy (honest coverage reporting)
+4. Update FAILURE-TAXONOMY.md with final state
+5. Final self-test: all scenarios passing, all shapes accounted for
+6. **Ship v1.0.0**
+
+**The thesis:** A finite algebra of failure shapes can make AI agents converge instead of flail. Every known way a predicate can disagree with reality has a name, a generator, a decomposition rule, and a narrowing hint. `govern()` speaks this language. The taxonomy is complete — not because we've tested everything, but because we've named everything.
+
+**Coverage target:** 90%+ with honest `theoretical` annotations on the remainder.
+
+---
+
+## Phase III Summary
+
+| Move | What | Infrastructure | Coverage Impact |
+|------|------|---------------|----------------|
+| **13** | HTTP server mock | Node `http.createServer` | ~383/579 (66%) |
+| **14** | Playwright + Browser DOM | Playwright + Chromium | ~413/579 (71%) |
+| **15** | Postgres instance | Docker + Postgres | ~448/579 (77%) |
+| **16** | Docker staging lifecycle | Docker Compose | ~460/579 (79%) |
+| **17** | Cross-cutting runtime | All infrastructure | ~495/579 (85%) |
+| **18** | Coverage completion + thesis defense | None new | 90%+ → **v1.0.0** |
+
+---
+
+## What NOT to Build
+
+- **A separate `govern` package.** govern() is verify with a heartbeat. Same import. Same package. If it ever outgrows verify, that's a future decision — not a present one.
+- **Runtime infrastructure in Phase I.** Phase I is pure file parsing. Resist the temptation to "just add a quick Docker test." That's Phase III.
+- **LLM-dependent scenarios.** Every scenario must be deterministic. The self-test harness runs in 2 seconds with zero API calls. If a scenario needs an LLM to generate input, it's not a scenario — it's a chaos engine probe.
+- **Abstract shape theory without generators.** A shape without a scenario is a hypothesis. The taxonomy is empirical — if you can't generate a failing case, the shape doesn't count as covered.
+
+## The Full Arc
+
+```
+Phase I  (Moves 7-12):   50% → 62%   Static analysis ceiling. Ship v0.3.0.
+Phase III (Moves 13-18):  62% → 90%+  Infrastructure runtime. Ship v1.0.0.
+```
+
+The taxonomy is the map. The gates are the checkpoints. `verify()` is the referee. `govern()` is the match. Every new shape teaches the system a new way things can go wrong — and a new way to make them go right.

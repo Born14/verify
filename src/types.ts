@@ -32,7 +32,9 @@ export interface Edit {
 export interface Predicate {
   /** What kind of check */
   type: 'css' | 'html' | 'content' | 'db' | 'http' | 'http_sequence'
-    | 'filesystem_exists' | 'filesystem_absent' | 'filesystem_unchanged' | 'filesystem_count';
+    | 'filesystem_exists' | 'filesystem_absent' | 'filesystem_unchanged' | 'filesystem_count'
+    | 'infra_resource' | 'infra_attribute' | 'infra_manifest'
+    | 'serialization' | 'config' | 'security' | 'a11y' | 'performance';
 
   /** CSS selector (for css/html types) */
   selector?: string;
@@ -87,6 +89,40 @@ export interface Predicate {
   count?: number;
   /** SHA-256 hash captured at grounding time (for filesystem_unchanged) */
   hash?: string;
+
+  // --- Infrastructure predicate fields ---
+  /** Resource address (e.g., "aws_db_instance.production") for infra_resource/infra_attribute */
+  resource?: string;
+  /** Resource attribute path (e.g., "tags.Environment", "deletion_protection") for infra_attribute */
+  attribute?: string;
+  /** State file path relative to infra dir (for infra_manifest) */
+  stateFile?: string;
+
+  // --- Serialization predicate fields ---
+  /** JSON schema to validate against (for serialization) */
+  schema?: Record<string, unknown>;
+  /** Comparison mode: 'strict' (exact), 'structural' (shape only), 'subset' (contains) */
+  comparison?: 'strict' | 'structural' | 'subset';
+
+  // --- Config predicate fields ---
+  /** Config key to check (e.g., "DATABASE_URL", "features.darkMode") */
+  key?: string;
+  /** Config source: 'env', 'json', 'yaml', 'dotenv' */
+  source?: 'env' | 'json' | 'yaml' | 'dotenv';
+
+  // --- Security predicate fields ---
+  /** Security check type */
+  securityCheck?: 'xss' | 'sql_injection' | 'csrf' | 'secrets_in_code' | 'csp' | 'cors' | 'auth_header';
+
+  // --- A11y predicate fields ---
+  /** Accessibility check type */
+  a11yCheck?: 'aria_label' | 'alt_text' | 'heading_hierarchy' | 'landmark' | 'color_contrast' | 'focus_management';
+
+  // --- Performance predicate fields ---
+  /** Performance check type */
+  perfCheck?: 'response_time' | 'bundle_size' | 'image_optimization' | 'lazy_loading' | 'connection_count';
+  /** Threshold value (ms for timing, bytes for size) */
+  threshold?: number;
 }
 
 /**
@@ -204,7 +240,8 @@ export interface VerifyConfig {
  */
 export interface GateResult {
   /** Gate identifier */
-  gate: 'grounding' | 'F9' | 'K5' | 'G5' | 'staging' | 'browser' | 'http' | 'invariants' | 'vision' | 'triangulation';
+  gate: 'grounding' | 'F9' | 'K5' | 'G5' | 'staging' | 'browser' | 'http' | 'invariants' | 'vision' | 'triangulation'
+    | 'infrastructure' | 'serialization' | 'config' | 'security' | 'a11y' | 'performance';
   /** Did this gate pass? */
   passed: boolean;
   /** Human-readable detail */
@@ -410,4 +447,44 @@ export interface GroundingContext {
 
   /** Route → class tokens found in HTML template text (for data-dependent soft-fail) */
   routeClassTokens?: Map<string, Set<string>>;
+
+  /** Infrastructure state (parsed from terraform.tfstate / pulumi state) */
+  infraState?: InfraStateContext;
+}
+
+/**
+ * Parsed infrastructure state from Terraform/Pulumi state files.
+ */
+export interface InfraStateContext {
+  /** Parsed resources from the state file */
+  resources: InfraResource[];
+  /** State file format version */
+  version?: number;
+  /** Terraform/Pulumi version */
+  toolVersion?: string;
+}
+
+export interface InfraResource {
+  /** Full resource address (e.g., "aws_db_instance.production") */
+  address: string;
+  /** Resource type (e.g., "aws_db_instance") */
+  type: string;
+  /** Resource ID */
+  id: string;
+  /** Flat attribute map (nested keys use dot notation: "tags.Environment") */
+  attributes: Record<string, unknown>;
+}
+
+/**
+ * Infrastructure manifest — known-good baseline for drift detection.
+ */
+export interface InfraManifest {
+  version: number;
+  resources: Array<{
+    address: string;
+    type: string;
+    id: string;
+    critical: boolean;
+    attributes: Record<string, string>;
+  }>;
 }

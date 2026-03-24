@@ -144,7 +144,19 @@ export function groundInReality(appDir: string): GroundingContext {
   // Parse DB schema from init.sql (if present)
   const dbSchema = findAndParseSchema(appDir);
 
-  const context: GroundingContext = { routeCSSMap, htmlElements, routes: uniqueRoutes, routeClassTokens, ...(dbSchema ? { dbSchema } : {}) };
+  // Parse infrastructure state (terraform.tfstate etc.) if present
+  let infraState: import('../types.js').InfraStateContext | undefined;
+  try {
+    const { findInfraDir, findAndParseState } = require('./infrastructure.js');
+    const infraDir = findInfraDir(appDir);
+    if (infraDir) infraState = findAndParseState(infraDir);
+  } catch { /* infrastructure gate not available — optional */ }
+
+  const context: GroundingContext = {
+    routeCSSMap, htmlElements, routes: uniqueRoutes, routeClassTokens,
+    ...(dbSchema ? { dbSchema } : {}),
+    ...(infraState ? { infraState } : {}),
+  };
 
   // Cache with current max mtime
   _groundingCache.set(appDir, { context, maxMtimeMs: getMaxMtime(appDir) });
@@ -488,6 +500,30 @@ export function validateAgainstGrounding<T extends {
           if (actualNorm !== expectedNorm) {
             return { ...p, groundingMiss: true, groundingReason: `Column "${tableName}.${columnName}" type is "${colEntry.type}" (normalized: "${actualNorm}") but predicate claims "${p.expected}" (normalized: "${expectedNorm}")` };
           }
+        }
+      }
+    }
+
+    // ── Infrastructure predicates: validate resource/attribute against state file ──
+    if (p.type === 'infra_resource' && grounding.infraState && grounding.infraState.resources.length > 0) {
+      const resourceAddr = (p as any).resource as string | undefined;
+      if (resourceAddr) {
+        const found = grounding.infraState.resources.some(r => r.address === resourceAddr);
+        const assertion = (p as any).assertion ?? 'exists';
+        if (assertion === 'exists' && !found) {
+          return { ...p, groundingMiss: true, groundingReason: `Resource "${resourceAddr}" not found in infrastructure state file` };
+        }
+        // For 'absent' assertion, resource existing is expected (we're checking it should be absent after changes)
+      }
+    }
+
+    if (p.type === 'infra_attribute' && grounding.infraState && grounding.infraState.resources.length > 0) {
+      const resourceAddr = (p as any).resource as string | undefined;
+      const attribute = (p as any).attribute as string | undefined;
+      if (resourceAddr) {
+        const found = grounding.infraState.resources.some(r => r.address === resourceAddr);
+        if (!found) {
+          return { ...p, groundingMiss: true, groundingReason: `Resource "${resourceAddr}" not found in infrastructure state file (checking attribute "${attribute}")` };
         }
       }
     }

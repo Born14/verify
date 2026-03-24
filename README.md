@@ -8,13 +8,13 @@ Verification gate for AI agent actions. Every edit gets a fair trial before it t
 
 In v0.1.1, HTTP predicates with different `bodyContains` values produced identical fingerprints — K5 couldn't tell them apart. A human caught it by reading the code.
 
-Now 506 automated scenarios across 12 families catch it in under 30 seconds:
+Now 553 automated scenarios across 12 families catch it in under 30 seconds:
 
 ```bash
 npx @sovereign-labs/verify self-test
 
-#   0 bugs | 506 scenarios | 0 unexpected | A: clean, ..., I: clean, ..., P: clean, V: clean
-#   Failure Class Coverage: 258/258 clean
+#   0 bugs | 553 scenarios | 0 unexpected | A: clean, ..., I: clean, ..., P: clean, V: clean
+#   Failure Class Coverage: 289/289 clean
 #   ALL CLEAN — No invariant violations detected.
 ```
 
@@ -26,9 +26,10 @@ Your agent proposes edits. `verify()` checks them:
 
 ```
 Grounding → F9 (syntax) → K5 (constraints) → G5 (containment) →
-Filesystem (post-edit state) → Staging (Docker) →
-Browser (Playwright) → HTTP (fetch) → Invariants (health) →
-Vision (screenshot) → Triangulation (3-authority verdict)
+Filesystem (post-edit state) → Infrastructure (state files) →
+Serialization → Config → Security → A11y → Performance →
+Staging (Docker) → Browser (Playwright) → HTTP (fetch) →
+Invariants (health) → Vision (screenshot) → Triangulation (3-authority verdict)
 ```
 
 On **success**: returns proof that the edits work.
@@ -41,7 +42,7 @@ The gates are domain-agnostic. K5 fingerprints any predicate type. G5 attributes
 
 Today verify gates code edits. But the same pipeline works for file system agents (move, rename, organize), communication agents (message the right channel), document agents (don't overwrite the wrong cells), and infrastructure agents (don't delete the production database).
 
-**Built today:** Code predicates (css, html, content, http, db) + Filesystem predicates (exists, absent, unchanged, count) + Communication predicates (destination, forbidden content, claims with evidence, negation detection, topic trust enforcement, epoch-based evidence staleness, review bundles for human surfaces).
+**Built today:** Code predicates (css, html, content, http, db) + Filesystem predicates (exists, absent, unchanged, count) + Infrastructure predicates (resource existence, attribute values, manifest drift — The Alexei Gate) + Quality surface predicates (serialization, config, security, a11y, performance) + Communication predicates (destination, forbidden content, claims with evidence, negation detection, topic trust enforcement, epoch-based evidence staleness, review bundles for human surfaces).
 
 ## Install
 
@@ -146,7 +147,7 @@ Add to your agent's MCP config:
 
 ## Self-Test Harness
 
-506 scenarios across 12 families exercise the verification pipeline's invariants — including 14 filesystem, 29 CSS (value normalization + shorthand), 8 content pattern, 10 F9 syntax gate, 8 fingerprinting/K5, 10 attribution error, 9 HTTP gate, 28 cross-predicate interaction (including 6 product compositions and 3 temporal compositions), 14 communication/message gate (including topic trust enforcement and epoch-based evidence staleness), 18 DB schema grounding (type aliases, fabricated references, case sensitivity), and 9 HTML predicate failure classes tracked by the [failure taxonomy](FAILURE-TAXONOMY.md). A decomposition engine (`decomposeFailure()`) maps observations to taxonomy shape IDs — 91 shape rules across 12 domains, pure functions, zero LLM, with diagnostics (`computeDecompositionDiagnostics()`), composition operators (product ×, temporal ⊗), and round-trip decomposition verification. Run them to prove your install works, or use `--fail-on-bug` in CI.
+553 scenarios across 12 families exercise the verification pipeline's invariants — including 14 filesystem, 29 CSS (value normalization + shorthand), 8 content pattern, 10 F9 syntax gate, 8 fingerprinting/K5, 10 attribution error, 9 HTTP gate, 28 cross-predicate interaction (including 6 product compositions and 3 temporal compositions), 14 communication/message gate (including topic trust enforcement and epoch-based evidence staleness), 18 DB schema grounding (type aliases, fabricated references, case sensitivity), 18 infrastructure (The Alexei Gate — Terraform/Pulumi/CloudFormation state file verification), 8 serialization (JSON schema validation), 6 configuration (.env + JSON config parsing), 5 security (XSS, injection, CSP, CORS), 5 accessibility (heading hierarchy, landmarks, ARIA, alt text), 6 performance (bundle size, image optimization, lazy loading), and 9 HTML predicate failure classes tracked by the [failure taxonomy](FAILURE-TAXONOMY.md). A decomposition engine (`decomposeFailure()`) maps observations to taxonomy shape IDs — 118 shape rules across 17 domains, pure functions, zero LLM, with diagnostics (`computeDecompositionDiagnostics()`), composition operators (product ×, temporal ⊗), and round-trip decomposition verification. Run them to prove your install works, or use `--fail-on-bug` in CI.
 
 ```bash
 # Pure-only (~2s, no Docker needed)
@@ -170,7 +171,7 @@ npx @sovereign-labs/verify self-test --fail-on-bug
 | **D** | 23 | G5 containment attribution + attribution errors (AT-01–AT-10) | No |
 | **E** | 95 | Grounding: CSS normalization/shorthand + content patterns (C-01–C-62, N-04–N-08) | No |
 | **F** | 6 | Full Docker pipeline (build → stage → verify) | Yes |
-| **G** | 209 | Edge cases, F9 syntax, HTML (H-01–H-40), content (N-03–N-12), CSS selectors deep (C-34–C-62), HTTP deep (P-10–P-35), scope/identity, cross-cutting (X-05–X-75), invariants, DB grounding (D-01–D-12, fabricated refs, type aliases), temporal/concurrency/observer/drift + universal scenarios | No |
+| **G** | 284 | Edge cases, F9 syntax, HTML (H-01–H-40), content (N-03–N-12), CSS selectors deep (C-34–C-62), HTTP deep (P-10–P-35), scope/identity, cross-cutting (X-05–X-75), invariants, DB grounding (D-01–D-12), infrastructure (INFRA-01–INFRA-12, The Alexei Gate), serialization (SER-01–SER-06), config (CFG-01–CFG-04), security (SEC-01–SEC-06), a11y (A11Y-01–A11Y-06), performance (PERF-01–PERF-05), temporal/concurrency/observer/drift + universal scenarios | No |
 | **H** | 47 | Filesystem gate — 22 failure classes (FS-01 through FS-34) | No |
 | **I** | 28 | Cross-predicate interactions + product/temporal compositions (I-01–I-12, I-05×–I-10×, I-T01–T03) | No |
 | **M** | 21 | Message gate — 14 failure classes (MSG-01 through MSG-14) | No |
@@ -178,7 +179,7 @@ npx @sovereign-labs/verify self-test --fail-on-bug
 | **V** | 14 | Vision + triangulation (3-authority verdict) | No |
 | **UV** | 28 | Universal full-pipeline integration (color normalization, multi-predicate, F9 rejection, HTML predicates) | No |
 
-492 pure scenarios + 14 multi-step K5 scenarios = 506 total. 28 universal scenarios test cross-gate integration including HTML predicates. 24 need Docker (6 F + 18 P). 258 failure classes covered across 567 known failure shapes (46% atomic coverage). Decomposition engine maps observations to taxonomy shape IDs — 91 shape rules across 12 domains (16 CSS, 6 HTML, 6 HTTP, 12 DB, 5 content, 7 filesystem, 11 cross-cutting, 6 interaction, 4 attribution, plus staging/vision/invariant/message), with Phase 2 hardening: minimal basis enforcement, deterministic sort, decomposition scoring, claim-type driven decomposition, temporal mode integration, and composition operators (product ×, temporal ⊗) with round-trip verification. DB grounding validates predicates against init.sql schema with type alias normalization (serial→integer, varchar(N)→varchar, bool→boolean). 310 decomposition/composition tests, 1,249+ assertions. Plus external fault-derived scenarios from `.verify/custom-scenarios.json` when testing against a real app. The harness is deterministic — no LLM calls, no network, no flakiness.
+538 pure scenarios + 15 multi-step K5 scenarios = 553 total. 28 universal scenarios test cross-gate integration including HTML predicates. 24 need Docker (6 F + 18 P). 289 failure classes covered across 579 known failure shapes (50% atomic coverage). Decomposition engine maps observations to taxonomy shape IDs — 118 shape rules across 17 domains (16 CSS, 6 HTML, 6 HTTP, 12 DB, 5 content, 7 filesystem, 11 cross-cutting, 6 interaction, 4 attribution, 12 infrastructure, 6 serialization, 4 config, 6 security, 6 a11y, 5 performance, plus staging/vision/invariant/message), with Phase 2 hardening: minimal basis enforcement, deterministic sort, decomposition scoring, claim-type driven decomposition, temporal mode integration, and composition operators (product ×, temporal ⊗) with round-trip verification. DB grounding validates predicates against init.sql schema with type alias normalization (serial→integer, varchar(N)→varchar, bool→boolean). Infrastructure grounding validates predicates against Terraform/Pulumi/CloudFormation state files (resource existence, attribute values, manifest drift). Quality surface gates (serialization, config, security, a11y, performance) perform pure static analysis — no Docker, no network. 310 decomposition/composition tests, 1,249+ assertions. Plus external fault-derived scenarios from `.verify/custom-scenarios.json` when testing against a real app. The harness is deterministic — no LLM calls, no network, no flakiness.
 
 ## Gates
 
@@ -188,6 +189,12 @@ npx @sovereign-labs/verify self-test --fail-on-bug
 | **K5** (Constraints) | Edit doesn't repeat a known-failed pattern | No |
 | **G5** (Containment) | Every edit traces to a predicate (no sneaky changes) | No |
 | **Filesystem** | Post-edit filesystem state (exists, absent, unchanged, count) | No |
+| **Infrastructure** | Terraform/Pulumi/CloudFormation state file verification (The Alexei Gate) | No |
+| **Serialization** | JSON schema validation, type checking, required fields, structure comparison | No |
+| **Config** | Environment variable presence, config file value equality (.env + JSON) | No |
+| **Security** | XSS patterns, SQL injection, secrets exposure, CSP, CORS | No |
+| **A11y** | Heading hierarchy, landmark regions, ARIA labels, alt text, focus management | No |
+| **Performance** | Bundle size, image optimization, lazy loading, connection count | No |
 | **Staging** | Docker build + start succeeds | Yes |
 | **Browser** | CSS/HTML predicates pass in Playwright | Yes |
 | **HTTP** | API endpoints return expected responses | Yes |
@@ -228,6 +235,14 @@ Predicates declare what should be true after the edits are applied.
 | `filesystem_absent` | File does NOT exist | `{ type: 'filesystem_absent', file: 'tmp/scratch.log' }` |
 | `filesystem_unchanged` | File hash unchanged | `{ type: 'filesystem_unchanged', file: 'LICENSE', hash: 'sha256:...' }` |
 | `filesystem_count` | Directory entry count | `{ type: 'filesystem_count', path: 'migrations/', count: 3 }` |
+| `infra_resource` | Infrastructure resource exists | `{ type: 'infra_resource', resource: 'aws_db_instance.prod', assertion: 'exists' }` |
+| `infra_attribute` | Resource attribute value | `{ type: 'infra_attribute', resource: 'aws_db_instance.prod', attribute: 'tags.Environment', expected: 'production' }` |
+| `infra_manifest` | State file matches manifest | `{ type: 'infra_manifest', stateFile: 'terraform.tfstate', assertion: 'matches_manifest' }` |
+| `serialization` | JSON schema compliance | `{ type: 'serialization', file: 'data.json', schema: { name: 'string' }, mode: 'strict' }` |
+| `config` | Config key/value | `{ type: 'config', source: '.env', key: 'NODE_ENV', expected: 'production' }` |
+| `security` | Vulnerability patterns | `{ type: 'security', check: 'xss', file: 'server.js', expected: 'no_findings' }` |
+| `a11y` | Accessibility compliance | `{ type: 'a11y', check: 'heading_hierarchy', file: 'index.html', expected: 'no_findings' }` |
+| `performance` | Performance budgets | `{ type: 'performance', check: 'bundle_size', file: 'dist/app.js', threshold: 500000 }` |
 
 ## Communication Governance
 

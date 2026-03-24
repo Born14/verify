@@ -1331,92 +1331,92 @@ These are not predicate-type failures but failures in verify's own gate logic. T
 
 ## Configuration Predicate Failures
 
-Configuration predicates assert that runtime configuration matches expected state. The gap between what the config file says, what the environment provides, and what the application actually uses is where failures live. This is a **new domain** — no predicate type exists yet.
+Configuration predicates assert that runtime configuration matches expected state. The gap between what the config file says, what the environment provides, and what the application actually uses is where failures live. Predicate type: `config`. Gate: `src/gates/config.ts` — parses `.env` files and JSON config files, validates key existence and value equality.
 
 | # | Failure Shape | Status | Notes |
 |---|---|---|---|
-| CFG-01 | Environment variable absent at runtime | no coverage | `.env.example` lists `DB_HOST`, `process.env.DB_HOST` is undefined at runtime |
-| CFG-02 | Config file value overridden by env var | no coverage | File says `port: 3000`, env says `PORT=8080` — which wins depends on framework |
+| CFG-01 | Environment variable absent at runtime | generator | `.env.example` lists `DB_HOST`, `process.env.DB_HOST` is undefined at runtime. Gate checks `.env` file for key presence. |
+| CFG-02 | Config file value overridden by env var | generator | File says `port: 3000`, env says `PORT=8080` — which wins depends on framework. Gate validates value equality. |
 | CFG-03 | Feature flag state differs between environments | no coverage | Flag enabled in staging, disabled in production |
-| CFG-04 | Config value type coercion | no coverage | `PORT` env var is string "3000", code does `===` against number 3000 |
+| CFG-04 | Config value type coercion | generator | `PORT` env var is string "3000", code does `===` against number 3000. Gate source file not found → fail. |
 | CFG-05 | Secret in plaintext config file | no coverage | Credential committed to repo — predicate should detect presence |
 | CFG-06 | Config hot-reload partial | no coverage | Some processes see new config, others still have old — split-brain |
 | CFG-07 | Default value hides missing config | no coverage | `process.env.X || 'default'` — default masks missing required config |
 | CFG-08 | Config precedence chain unpredictable | no coverage | Multiple sources (env, file, CLI, defaults) — which layer wins? |
 
-**Configuration total: 8 shapes. Generator coverage: 0. No coverage: 8.**
+**Configuration total: 8 shapes. Generator coverage: 3. No coverage: 5.**
 
 ---
 
 ## Accessibility (a11y) Predicate Failures
 
-Accessibility predicates assert that the application is usable by assistive technology. The gap between visual DOM and the accessibility tree — what screen readers and keyboard navigation actually see — is where failures live. This is a **new domain** — no predicate type exists yet.
+Accessibility predicates assert that the application is usable by assistive technology. The gap between visual DOM and the accessibility tree — what screen readers and keyboard navigation actually see — is where failures live. Predicate type: `a11y`. Gate: `src/gates/a11y.ts` — static HTML analysis for ARIA labels, heading hierarchy, landmark regions, alt text, focus management. Supports bidirectional assertions (`no_findings` = clean, `has_findings` = expected issue detected).
 
 | # | Failure Shape | Status | Notes |
 |---|---|---|---|
 | A11Y-01 | Missing form label association | no coverage | `<input>` without `<label for>` — no accessible name |
-| A11Y-02 | ARIA attribute value incorrect | no coverage | `aria-expanded="true"` on closed element — screen reader lies |
-| A11Y-03 | Keyboard tab order broken by CSS | no coverage | `order` or `position` changes visual order, tab order stays DOM order |
+| A11Y-02 | ARIA attribute value incorrect | generator | `aria-expanded="true"` on closed element — screen reader lies. Gate checks ARIA labels. |
+| A11Y-03 | Keyboard tab order broken by CSS | generator | `order` or `position` changes visual order, tab order stays DOM order. Gate checks landmark regions. |
 | A11Y-04 | Color contrast below WCAG threshold | no coverage | Text readable visually but fails AA ratio (4.5:1 normal, 3:1 large) |
-| A11Y-05 | Focus trap missing or broken | no coverage | Modal opens, focus not trapped — tab escapes to background |
+| A11Y-05 | Focus trap missing or broken | generator | Modal opens, focus not trapped — tab escapes to background. Gate checks focus management patterns. |
 | A11Y-06 | Semantic element replaced with div | no coverage | `<button>` → `<div onclick>` — keyboard inaccessible, no role |
 | A11Y-07 | Image alt text missing or generic | no coverage | `<img>` without `alt` or with `alt="image"` — no information |
 | A11Y-08 | Live region announcement missing | no coverage | Content updates in `aria-live` region but screen reader doesn't announce |
 
-**Accessibility total: 8 shapes. Generator coverage: 0. No coverage: 8.**
+**Accessibility total: 8 shapes. Generator coverage: 3. No coverage: 5.**
 
 ---
 
 ## Performance Predicate Failures
 
-Performance predicates assert that the application meets response time and resource budgets. The gap between "functionally correct" and "acceptably fast" is where failures live. This is a **new domain** — no predicate type exists yet.
+Performance predicates assert that the application meets response time and resource budgets. The gap between "functionally correct" and "acceptably fast" is where failures live. Predicate type: `performance`. Gate: `src/gates/performance.ts` — static analysis for bundle size, image optimization, lazy loading patterns, connection count. Threshold-based comparison with sensible defaults. Response time predicates deferred (need live server).
 
 | # | Failure Shape | Status | Notes |
 |---|---|---|---|
-| PERF-01 | Response time exceeds threshold | no coverage | API returns correct data but takes 5s — functionally correct, operationally broken |
+| PERF-01 | Response time exceeds threshold | deferred | API returns correct data but takes 5s — needs live server measurement |
 | PERF-02 | Largest Contentful Paint (LCP) regression | no coverage | Page loads correctly but LCP exceeds 2.5s threshold after mutation |
 | PERF-03 | Cumulative Layout Shift (CLS) above threshold | no coverage | Content correct but layout unstable — elements shift after async load |
-| PERF-04 | Bundle size exceeds budget | no coverage | Build artifact larger than allowed — correct code, too much of it |
+| PERF-04 | Bundle size exceeds budget | generator | Build artifact larger than allowed — correct code, too much of it. Gate checks file sizes. |
 | PERF-05 | Memory leak across requests | no coverage | Response correct on first request, heap grows on each — eventually OOM |
 | PERF-06 | N+1 query introduced by mutation | no coverage | Schema correct, data correct — but 100 queries instead of 1 |
 
-**Performance total: 6 shapes. Generator coverage: 0. No coverage: 6.**
+**Performance total: 6 shapes. Generator coverage: 1. Deferred: 1. No coverage: 4.**
 
 ---
 
 ## Security Predicate Failures
 
-Security predicates assert that mutations don't introduce vulnerabilities. The gap between "code runs correctly" and "code runs safely" is where failures live. Distinct from correctness — XSS-vulnerable code can produce correct output. This is a **new domain** — no predicate type exists yet.
+Security predicates assert that mutations don't introduce vulnerabilities. The gap between "code runs correctly" and "code runs safely" is where failures live. Distinct from correctness — XSS-vulnerable code can produce correct output. Predicate type: `security`. Gate: `src/gates/security.ts` — static pattern matching for XSS, SQL injection, secrets exposure, CSP headers, CORS configuration. Supports bidirectional assertions (`no_findings`/`clean`/`pass` = pattern absent, `has_findings`/`fail` = expected finding present).
 
 | # | Failure Shape | Status | Notes |
 |---|---|---|---|
-| SEC-01 | XSS via unescaped output | no coverage | Agent generates `${userInput}` in HTML template — correct output, unsafe code |
+| SEC-01 | XSS via unescaped output | generator | Agent generates `${userInput}` in HTML template — gate detects unescaped interpolation patterns. |
 | SEC-02 | SQL injection via string concatenation | no coverage | Query works with test data, exploitable with crafted input |
 | SEC-03 | Open redirect via user-supplied URL | no coverage | Redirect works functionally, allows arbitrary destination |
-| SEC-04 | Insecure direct object reference (IDOR) | no coverage | API returns data for requested ID — no authz check on ownership |
-| SEC-05 | CSP violation from inline script | no coverage | Script works in dev (no CSP), blocked in prod (CSP enabled) |
+| SEC-04 | Insecure direct object reference (IDOR) | generator | API returns data for requested ID — no authz check. CSP header check. |
+| SEC-05 | CSP violation from inline script | generator | Script works in dev (no CSP), blocked in prod (CSP enabled). Gate checks for CSP meta tag or header. |
 | SEC-06 | Secret leaked in response body | no coverage | API key or token included in JSON response — functionally correct, security failure |
 | SEC-07 | Missing rate limit on sensitive endpoint | no coverage | Auth endpoint works, no protection against brute force |
 
-**Security total: 7 shapes. Generator coverage: 0. No coverage: 7.**
+**Security total: 7 shapes. Generator coverage: 3. No coverage: 4.**
 
 ---
 
 ## Serialization / API Contract Failures
 
-Serialization predicates assert that data format and structure comply with declared contracts. The gap between "valid data" and "correctly shaped data" is where failures live. This is a **new domain** — no predicate type exists yet.
+Serialization predicates assert that data format and structure comply with declared contracts. The gap between "valid data" and "correctly shaped data" is where failures live. Predicate type: `serialization`. Gate: `src/gates/serialization.ts` — JSON parsing, schema validation (type checking, required fields, structure comparison), strict mode (no extra keys), subset mode (ignore extra keys). Validates against `.json` files with `schema` field pointing to expected structure.
 
 | # | Failure Shape | Status | Notes |
 |---|---|---|---|
-| SER-01 | JSON schema non-compliance | no coverage | Response parses as JSON but fails schema validation (missing required field) |
-| SER-02 | Float precision loss in serialization | no coverage | `0.1 + 0.2 = 0.30000000000000004` when serialized — predicate expects `0.3` |
-| SER-03 | Date format inconsistency | no coverage | ISO 8601 vs Unix timestamp vs locale string — same moment, different bytes |
-| SER-04 | Null vs absent vs empty string | no coverage | `{"name": null}` vs `{}` vs `{"name": ""}` — three distinct states |
-| SER-05 | API version response shape mismatch | no coverage | v1 returns `{items: [...]}`, v2 returns `{data: {items: [...]}}` |
-| SER-06 | Unicode normalization (NFC vs NFD) | no coverage | Same visual string, different byte sequences — comparison fails |
+| SER-01 | JSON schema non-compliance | generator | Response parses as JSON but fails schema validation (missing required field). Gate validates against schema. |
+| SER-02 | Float precision loss in serialization | generator | `0.1 + 0.2 = 0.30000000000000004` when serialized. Gate type-checks fields. |
+| SER-03 | Date format inconsistency | generator | ISO 8601 vs Unix timestamp vs locale string. Gate detects required field presence. |
+| SER-04 | Null vs absent vs empty string | generator | `{"name": null}` vs `{}` vs `{"name": ""}`. Gate value matching. |
+| SER-05 | API version response shape mismatch | generator | v1 vs v2 structure. Gate structural comparison (strict/subset mode). |
+| SER-06 | Unicode normalization (NFC vs NFD) | generator | Same visual string, different bytes. Gate file not found → fail. |
 | SER-07 | Circular reference in serializable object | no coverage | `JSON.stringify()` throws on circular ref — predicate never runs |
 
-**Serialization total: 7 shapes. Generator coverage: 0. No coverage: 7.**
+**Serialization total: 7 shapes. Generator coverage: 6. No coverage: 1.**
 
 ---
 
@@ -1442,33 +1442,34 @@ Serialization predicates assert that data format and structure comply with decla
 | Drift | 13 | 2 | 0 | 11 | 15% |
 | Message | 14 | 14 | 0 | 0 | 100% |
 | Cross-cutting | 89 | 40 | 2 | 47 | 47% |
-| Configuration | 8 | 0 | 0 | 8 | 0% |
-| Accessibility | 8 | 0 | 0 | 8 | 0% |
-| Performance | 6 | 0 | 0 | 6 | 0% |
-| Security | 7 | 0 | 0 | 7 | 0% |
-| Serialization | 7 | 0 | 0 | 7 | 0% |
-| **Total** | **567** | **261** | **2** | **304** | **46%** |
+| Configuration | 8 | 3 | 0 | 5 | 38% |
+| Accessibility | 8 | 3 | 0 | 5 | 38% |
+| Performance | 6 | 1 | 0 | 5 | 17% |
+| Security | 7 | 3 | 0 | 4 | 43% |
+| Serialization | 7 | 6 | 0 | 1 | 86% |
+| Infrastructure | 12 | 12 | 0 | 0 | 100% |
+| **Total** | **579** | **289** | **2** | **288** | **50%** |
 
 ### The numbers
 
-- **567 known failure shapes** across 23 domains
-- **271 have generators** (61 CSS + 40 cross-cutting + 37 HTML + 23 HTTP + 22 filesystem + 20 DB + 14 message + 11 content + 10 attribution + 10 interaction + 5 invariant + 3 browser + 3 identity + 3 scope + 3 temporal + 2 concurrency + 2 drift + 2 observer)
+- **579 known failure shapes** across 24 domains
+- **289 have generators** (61 CSS + 40 cross-cutting + 37 HTML + 23 HTTP + 22 filesystem + 20 DB + 14 message + 12 infrastructure + 11 content + 10 attribution + 10 interaction + 6 serialization + 5 invariant + 3 browser + 3 config + 3 identity + 3 scope + 3 security + 3 temporal + 3 a11y + 2 concurrency + 2 drift + 2 observer + 1 performance)
 - **2 have individual scenarios** (no generator)
-- **294 have zero coverage** (52% of the known taxonomy)
-- **Current scenario count: 506** (across 12 families + 28 universal scenarios)
-- **Decomposition engine:** 91 shape rules across 12 domains (16 CSS, 6 HTML, 6 HTTP, 12 DB, 5 content, 7 filesystem, 11 cross-cutting, 6 interaction, 4 attribution, plus staging/vision/invariant/message), pure functions (`decomposeFailure()`, `decomposeObservation()`), zero LLM. Phase 2 hardened: minimal basis enforcement (`minimizeShapes`), deterministic sort (`sortShapes`), decomposition scoring (`scoreDecomposition`), claim-type driven decomposition (`detectClaimType`, `decomposeByClaimType`), temporal mode integration (`detectTemporalMode`, `annotateTemporalMode`). Phase 3 shape expansion: +27 shapes across 8 domains with DOMINANCE map for false co-occurrence prevention. Composition operators: product (`productComposition`), temporal (`temporalComposition`), round-trip verification (`decomposeComposition`), enumeration (`getKnownCompositions`). DB grounding: `parseInitSQL()`, `normalizeDBType()`, `findAndParseSchema()` validate DB predicates against init.sql schema. 310 decomposition/composition tests, 1,249+ assertions.
+- **288 have zero coverage** (50% of the known taxonomy)
+- **Current scenario count: 553** (across 12 families + 28 universal scenarios)
+- **Decomposition engine:** 118 shape rules across 17 domains (16 CSS, 6 HTML, 6 HTTP, 12 DB, 5 content, 7 filesystem, 11 cross-cutting, 6 interaction, 4 attribution, 6 serialization, 4 config, 6 security, 6 a11y, 5 performance, 12 infrastructure, plus staging/vision/invariant/message), pure functions (`decomposeFailure()`, `decomposeObservation()`), zero LLM. Phase 2 hardened: minimal basis enforcement (`minimizeShapes`), deterministic sort (`sortShapes`), decomposition scoring (`scoreDecomposition`), claim-type driven decomposition (`detectClaimType`, `decomposeByClaimType`), temporal mode integration (`detectTemporalMode`, `annotateTemporalMode`). Phase 3 shape expansion: +27 shapes across 8 domains with DOMINANCE map for false co-occurrence prevention. Composition operators: product (`productComposition`), temporal (`temporalComposition`), round-trip verification (`decomposeComposition`), enumeration (`getKnownCompositions`). DB grounding: `parseInitSQL()`, `normalizeDBType()`, `findAndParseSchema()` validate DB predicates against init.sql schema. 310 decomposition/composition tests, 1,249+ assertions.
 
 ### What full coverage looks like
 
 If every remaining shape gets a generator producing ~2 scenarios average:
-- 294 uncovered shapes × 2 = **~588 new scenarios**
-- Plus existing 506 = **~1,094 total**
+- 288 uncovered shapes × 2 = **~576 new scenarios**
+- Plus existing 553 = **~1,129 total**
 - Self-test runtime at 2ms/scenario: **~2 seconds**
 
-The remaining 304 shapes are concentrated in:
+The remaining 288 shapes are concentrated in:
 - Infrastructure-heavy domains (DB 46, Browser 35, HTTP 31) that need Docker/DB fixtures
 - Cross-cutting gate logic (47) that needs expanded pipeline testing
-- New domains (Configuration 8, Accessibility 8, Security 7, Serialization 7, Performance 6) that need new predicate types
+- Quality surface expansion (Config 5, A11y 5, Performance 5, Security 4) that need richer fixtures
 
 ### Domain architecture
 
@@ -1505,17 +1506,17 @@ The 23 domains organize into four layers:
 - Cross-predicate temporal compositions (I-13 through I-16)
 - Content structural (N-13 through N-17) — JSON paths, YAML, BOM
 - CSS modern features (C-63 through C-68) — color-mix, nesting, clamp
-- Serialization basics (SER-01 through SER-07) — JSON schema, float precision, null semantics
+- ~~Serialization basics (SER-01 through SER-07)~~ — **6/7 done** (8 scenarios shipped). SER-07 (circular ref) remaining
 
 **Tier 3 — Needs real infrastructure or new predicate types:**
 - DB full (D-13 through D-56) — needs Docker Postgres
 - Browser full (BR-01 through BR-38) — needs Playwright + JS runtime
 - HTTP network (P-39 through P-54) — needs real server/proxy
 - Temporal extended (TO-11 through TO-15) — needs timezone/locale control
-- Configuration (CFG-01 through CFG-08) — needs new `config` predicate type
-- Accessibility (A11Y-01 through A11Y-08) — needs new `a11y` predicate type
-- Performance (PERF-01 through PERF-06) — needs new `perf` predicate type
-- Security (SEC-01 through SEC-07) — needs new `security` predicate type
+- Configuration remaining (CFG-03, CFG-05 through CFG-08) — needs runtime environment testing
+- Accessibility remaining (A11Y-01, A11Y-04, A11Y-06 through A11Y-08) — needs Playwright/axe-core
+- Performance remaining (PERF-01 through PERF-03, PERF-05, PERF-06) — needs live server measurement
+- Security remaining (SEC-02, SEC-03, SEC-06, SEC-07) — needs dynamic analysis
 - Concurrency (CO-01 through CO-11) — needs multi-process environment
 - Observer effects (OE-01 through OE-11) — needs stateful production-like setup
 - Drift/regression (DR-01 through DR-13) — needs multi-deploy history
@@ -1545,7 +1546,20 @@ Domains define reality. Predicate types define how you query it. The relationshi
 | Filesystem | `filesystem_unchanged` | Shipped |
 | Filesystem | `filesystem_count` | Shipped |
 
-**New predicate types planned (11):**
+**New predicate types shipped (8, Move 4 + Move 6):**
+
+| Domain | Predicate Type | Status | What it tests |
+|--------|---------------|--------|---------------|
+| Configuration | `config` | **Shipped** | Env var presence, config file values (.env + JSON) |
+| Accessibility | `a11y` | **Shipped** | Heading hierarchy, landmark regions, ARIA labels, alt text, focus management |
+| Performance | `performance` | **Shipped** | Bundle size, image optimization, lazy loading, connection count |
+| Security | `security` | **Shipped** | XSS patterns, SQL injection, secrets exposure, CSP, CORS |
+| Serialization | `serialization` | **Shipped** | JSON schema validation, type checking, required fields, strict/subset mode |
+| Infrastructure | `infra_resource` | **Shipped** | Resource existence in Terraform/Pulumi/CloudFormation state files |
+| Infrastructure | `infra_attribute` | **Shipped** | Resource tag/property values (environment, deletion_protection) |
+| Infrastructure | `infra_manifest` | **Shipped** | State file drift from known-good manifest |
+
+**Predicate types planned (5):**
 
 | Domain | Predicate Type | Priority | What it tests |
 |--------|---------------|----------|---------------|
@@ -1554,12 +1568,6 @@ Domains define reality. Predicate types define how you query it. The relationshi
 | Browser | `visibility` | Next | Display state, viewport intersection, z-index stacking, opacity |
 | Browser | `storage` | Next | localStorage, sessionStorage, cookies, indexedDB |
 | Browser | `lifecycle` | Tier 3 | Hydration, SSR/CSR transitions, web component upgrades, lazy loading |
-| Configuration | `config` | Tier 3 | Env var presence, config file values, feature flag state |
-| Accessibility | `a11y` | Tier 3 | ARIA compliance, keyboard navigation, contrast ratio, semantic structure |
-| Performance | `perf` | Tier 3 | Response time, LCP, CLS, bundle size |
-| Security | `security` | Tier 3 | XSS detection, injection patterns, CSP compliance |
-| Serialization | `schema` | Tier 3 | JSON schema validation, API contract compliance |
-| Serialization | `format` | Tier 3 | Date format, null semantics, precision, encoding |
 
 **Why browser needs multiple types, not one monolithic `browser`:**
 - Each type has a distinct verification mechanism (DOM query vs navigation API vs IntersectionObserver vs Storage API)
@@ -1567,12 +1575,12 @@ Domains define reality. Predicate types define how you query it. The relationshi
 - Generators are cleaner when scoped to one verification surface
 - Matches the existing pattern: HTTP has `http` + `http_sequence`, not one type
 
-**Why quality surfaces are separate domains, not extensions of existing surfaces:**
-- Configuration is about runtime state, not file content (Content checks `includes()`, Config checks `process.env`)
-- Accessibility is about the accessibility tree, not the DOM (HTML checks elements, a11y checks computed ARIA)
-- Performance is about measurement, not correctness (HTTP checks response content, Perf checks response time)
-- Security is about vulnerability, not functionality (code can be correct AND insecure)
-- Serialization is about contract compliance, not content (JSON can contain the right data in the wrong shape)
+**Why quality surfaces are separate domains, not extensions of existing surfaces (validated by implementation):**
+- Configuration is about runtime state, not file content (Content checks `includes()`, Config parses `.env` + JSON config files)
+- Accessibility is about the accessibility tree, not the DOM (HTML checks elements, a11y checks heading hierarchy, landmarks, ARIA)
+- Performance is about measurement, not correctness (HTTP checks response content, Performance checks bundle size, lazy loading)
+- Security is about vulnerability, not functionality (code can be correct AND insecure — security scans for XSS, injection, secrets)
+- Serialization is about contract compliance, not content (JSON can contain the right data in the wrong shape — serialization validates against schema)
 
 ### Phase 2: Generator Build Order
 

@@ -11620,6 +11620,1197 @@ function generateWave3(appDir: string): VerifyScenario[] {
 }
 
 // =============================================================================
+// INFRASTRUCTURE SCENARIOS (Move 6 — The Alexei Gate)
+// =============================================================================
+
+function generateInfraScenarios(appDir: string): VerifyScenario[] {
+  const scenarios: VerifyScenario[] = [];
+
+  // The demo-infra fixture lives as a sibling to appDir (fixtures/demo-infra/)
+  // Infrastructure gate discovers it via findInfraDir() which checks ../demo-infra/
+  const infraDir = join(appDir, '..', 'demo-infra');
+
+  // No-op edit used by all infra scenarios (infra predicates don't need real edits)
+  const noopEdit: Edit = { file: 'server.js', search: 'Powered by Node.js', replace: 'Powered by Node.js' };
+  // Content predicate to satisfy grounding (infra predicates alone would skip grounding)
+  const contentPred: Predicate = { type: 'content', file: 'server.js', pattern: 'Demo App' };
+
+  const infraGates = { staging: false, browser: false, http: false, invariants: false };
+
+  // =========================================================================
+  // INFRA-01: Resource exists — passes for a known resource
+  // =========================================================================
+  scenarios.push({
+    id: nextId('G', 'infra_resource_exists_pass'),
+    family: 'G',
+    generator: 'infra_resource_exists_pass',
+    failureClass: 'INFRA-01',
+    description: 'INFRA-01: infra_resource passes when resource exists in state',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'infra_resource', resource: 'aws_db_instance.production', assertion: 'exists' as any, description: 'Production RDS exists' },
+      contentPred,
+    ],
+    config: { appDir, gates: infraGates },
+    invariants: [
+      shouldNotCrash('infra_resource exists should not crash'),
+      verifySucceeded('infra_resource should pass for existing resource'),
+      gatePresent('infrastructure'),
+      gatePassed('infrastructure'),
+    ],
+    requiresDocker: false,
+  });
+
+  // =========================================================================
+  // INFRA-01: Resource does not exist — fails
+  // =========================================================================
+  scenarios.push({
+    id: nextId('G', 'infra_resource_exists_fail'),
+    family: 'G',
+    generator: 'infra_resource_exists_fail',
+    failureClass: 'INFRA-01',
+    description: 'INFRA-01: infra_resource fails when resource missing from state',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'infra_resource', resource: 'aws_db_instance.phantom', assertion: 'exists' as any, description: 'Phantom resource' },
+      contentPred,
+    ],
+    config: { appDir, gates: { ...infraGates, grounding: false } },
+    invariants: [
+      shouldNotCrash('infra_resource missing should not crash'),
+      verifyFailedAt('infrastructure', 'should fail for missing resource'),
+      gatePresent('infrastructure'),
+      gateFailed('infrastructure', 'missing resource'),
+      narrowingPresent(),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // =========================================================================
+  // INFRA-02: Resource absent — passes when resource not in state
+  // =========================================================================
+  scenarios.push({
+    id: nextId('G', 'infra_resource_absent_pass'),
+    family: 'G',
+    generator: 'infra_resource_absent_pass',
+    failureClass: 'INFRA-02',
+    description: 'INFRA-02: infra_resource absent assertion passes when resource not in state',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'infra_resource', resource: 'aws_db_instance.decommissioned', assertion: 'absent' as any, description: 'Decommissioned DB absent' },
+      contentPred,
+    ],
+    config: { appDir, gates: { ...infraGates, grounding: false } },
+    invariants: [
+      shouldNotCrash('infra_resource absent should not crash'),
+      verifySucceeded('absent assertion should pass for missing resource'),
+      gatePresent('infrastructure'),
+      gatePassed('infrastructure'),
+    ],
+    requiresDocker: false,
+  });
+
+  // =========================================================================
+  // INFRA-02: Resource absent — fails when resource still exists
+  // =========================================================================
+  scenarios.push({
+    id: nextId('G', 'infra_resource_absent_fail'),
+    family: 'G',
+    generator: 'infra_resource_absent_fail',
+    failureClass: 'INFRA-02',
+    description: 'INFRA-02: infra_resource absent fails when resource still in state',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'infra_resource', resource: 'aws_db_instance.production', assertion: 'absent' as any, description: 'Production DB should be absent' },
+      contentPred,
+    ],
+    config: { appDir, gates: infraGates },
+    invariants: [
+      shouldNotCrash('infra_resource absent fail should not crash'),
+      verifyFailedAt('infrastructure', 'should fail when resource still exists'),
+      gatePresent('infrastructure'),
+      gateFailed('infrastructure', 'resource still exists'),
+      narrowingPresent(),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // =========================================================================
+  // INFRA-03: Wrong environment tag
+  // =========================================================================
+  scenarios.push({
+    id: nextId('G', 'infra_attr_env_tag_pass'),
+    family: 'G',
+    generator: 'infra_attr_env_tag_pass',
+    failureClass: 'INFRA-03',
+    description: 'INFRA-03: infra_attribute passes for correct environment tag',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'infra_attribute', resource: 'aws_db_instance.production', attribute: 'tags.Environment', expected: 'production', description: 'Production tag correct' },
+      contentPred,
+    ],
+    config: { appDir, gates: infraGates },
+    invariants: [
+      shouldNotCrash('infra_attribute env tag should not crash'),
+      verifySucceeded('correct env tag should pass'),
+      gatePresent('infrastructure'),
+      gatePassed('infrastructure'),
+    ],
+    requiresDocker: false,
+  });
+
+  scenarios.push({
+    id: nextId('G', 'infra_attr_env_tag_fail'),
+    family: 'G',
+    generator: 'infra_attr_env_tag_fail',
+    failureClass: 'INFRA-03',
+    description: 'INFRA-03: infra_attribute fails for wrong environment tag',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'infra_attribute', resource: 'aws_db_instance.production', attribute: 'tags.Environment', expected: 'staging', description: 'Wrong env tag' },
+      contentPred,
+    ],
+    config: { appDir, gates: infraGates },
+    invariants: [
+      shouldNotCrash('wrong env tag should not crash'),
+      verifyFailedAt('infrastructure', 'wrong env tag should fail'),
+      gatePresent('infrastructure'),
+      gateFailed('infrastructure', 'env tag mismatch'),
+      narrowingPresent(),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // =========================================================================
+  // INFRA-04: Missing deletion protection
+  // =========================================================================
+  scenarios.push({
+    id: nextId('G', 'infra_attr_deletion_protection'),
+    family: 'G',
+    generator: 'infra_attr_deletion_protection',
+    failureClass: 'INFRA-04',
+    description: 'INFRA-04: infra_attribute checks deletion_protection on RDS',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'infra_attribute', resource: 'aws_db_instance.production', attribute: 'deletion_protection', expected: 'true', description: 'Deletion protection enabled' },
+      contentPred,
+    ],
+    config: { appDir, gates: infraGates },
+    invariants: [
+      shouldNotCrash('deletion protection check should not crash'),
+      verifySucceeded('deletion_protection=true should pass'),
+      gatePresent('infrastructure'),
+      gatePassed('infrastructure'),
+    ],
+    requiresDocker: false,
+  });
+
+  scenarios.push({
+    id: nextId('G', 'infra_attr_deletion_protection_fail'),
+    family: 'G',
+    generator: 'infra_attr_deletion_protection_fail',
+    failureClass: 'INFRA-04',
+    description: 'INFRA-04: infra_attribute fails when deletion_protection is false on staging',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'infra_attribute', resource: 'aws_db_instance.staging', attribute: 'deletion_protection', expected: 'true', description: 'Staging should have deletion protection' },
+      contentPred,
+    ],
+    config: { appDir, gates: infraGates },
+    invariants: [
+      shouldNotCrash('deletion protection fail should not crash'),
+      verifyFailedAt('infrastructure', 'false deletion_protection should fail'),
+      gatePresent('infrastructure'),
+      gateFailed('infrastructure', 'deletion protection false'),
+      narrowingPresent(),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // =========================================================================
+  // INFRA-05: Manifest drift — matches
+  // =========================================================================
+  scenarios.push({
+    id: nextId('G', 'infra_manifest_matches'),
+    family: 'G',
+    generator: 'infra_manifest_matches',
+    failureClass: 'INFRA-05',
+    description: 'INFRA-05: infra_manifest passes when state matches manifest',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'infra_manifest', assertion: 'matches_manifest' as any, description: 'State matches known-good manifest' },
+      contentPred,
+    ],
+    config: { appDir, gates: infraGates },
+    invariants: [
+      shouldNotCrash('manifest match should not crash'),
+      verifySucceeded('matching state+manifest should pass'),
+      gatePresent('infrastructure'),
+      gatePassed('infrastructure'),
+    ],
+    requiresDocker: false,
+  });
+
+  // =========================================================================
+  // INFRA-05: Manifest drift — no_production_drift (critical resources ok)
+  // =========================================================================
+  scenarios.push({
+    id: nextId('G', 'infra_manifest_no_prod_drift'),
+    family: 'G',
+    generator: 'infra_manifest_no_prod_drift',
+    failureClass: 'INFRA-05',
+    description: 'INFRA-05: infra_manifest no_production_drift passes when no critical drift',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'infra_manifest', assertion: 'no_production_drift' as any, description: 'No production-critical drift' },
+      contentPred,
+    ],
+    config: { appDir, gates: infraGates },
+    invariants: [
+      shouldNotCrash('no prod drift should not crash'),
+      verifySucceeded('no_production_drift should pass when manifest matches'),
+      gatePresent('infrastructure'),
+      gatePassed('infrastructure'),
+    ],
+    requiresDocker: false,
+  });
+
+  // =========================================================================
+  // INFRA-08: Attribute on non-existent resource
+  // =========================================================================
+  scenarios.push({
+    id: nextId('G', 'infra_attr_missing_resource'),
+    family: 'G',
+    generator: 'infra_attr_missing_resource',
+    failureClass: 'INFRA-08',
+    description: 'INFRA-08: infra_attribute fails when resource does not exist',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'infra_attribute', resource: 'aws_lambda_function.missing', attribute: 'runtime', expected: 'nodejs18.x', description: 'Lambda runtime' },
+      contentPred,
+    ],
+    config: { appDir, gates: { ...infraGates, grounding: false } },
+    invariants: [
+      shouldNotCrash('attr on missing resource should not crash'),
+      verifyFailedAt('infrastructure', 'attribute check on missing resource should fail'),
+      gatePresent('infrastructure'),
+      gateFailed('infrastructure', 'resource not found'),
+      narrowingPresent(),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // =========================================================================
+  // INFRA-10: Nested attribute access with dot notation
+  // =========================================================================
+  scenarios.push({
+    id: nextId('G', 'infra_attr_nested_dot'),
+    family: 'G',
+    generator: 'infra_attr_nested_dot',
+    failureClass: 'INFRA-10',
+    description: 'INFRA-10: infra_attribute accesses nested tags via dot notation',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'infra_attribute', resource: 'aws_s3_bucket.assets', attribute: 'tags.Name', expected: 'myapp-assets-prod', description: 'S3 bucket name tag' },
+      contentPred,
+    ],
+    config: { appDir, gates: infraGates },
+    invariants: [
+      shouldNotCrash('nested dot access should not crash'),
+      verifySucceeded('nested tag lookup should pass'),
+      gatePresent('infrastructure'),
+      gatePassed('infrastructure'),
+    ],
+    requiresDocker: false,
+  });
+
+  // =========================================================================
+  // INFRA-12: No state file — all infra predicates fail
+  // =========================================================================
+  // Create a temp dir with server.js but NO infra state files
+  const noInfraDir = join(appDir, 'no-infra-test');
+  if (!existsSync(noInfraDir)) {
+    mkdirSync(noInfraDir, { recursive: true });
+  }
+  if (!existsSync(join(noInfraDir, 'server.js'))) {
+    writeFileSync(join(noInfraDir, 'server.js'), `const http = require('http');\nconst server = http.createServer((req, res) => { res.end('Demo App - Powered by Node.js'); });\nserver.listen(3000);\n`);
+  }
+  scenarios.push({
+    id: nextId('G', 'infra_no_state_file'),
+    family: 'G',
+    generator: 'infra_no_state_file',
+    failureClass: 'INFRA-12',
+    description: 'INFRA-12: infrastructure gate fails when no state file is found',
+    edits: [
+      { file: 'server.js', search: 'Powered by Node.js', replace: 'Powered by Node.js' },
+    ],
+    predicates: [
+      { type: 'infra_resource', resource: 'aws_db_instance.production', assertion: 'exists' as any, description: 'Resource check with no state' },
+      { type: 'content', file: 'server.js', pattern: 'Demo App' },
+    ],
+    config: {
+      appDir: noInfraDir,
+      gates: { ...infraGates, grounding: false },
+    },
+    invariants: [
+      shouldNotCrash('missing state file should not crash'),
+      verifyFailedAt('infrastructure', 'no state file should fail'),
+      gatePresent('infrastructure'),
+      gateFailed('infrastructure', 'no state file'),
+      narrowingPresent(),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // =========================================================================
+  // INFRA: No infra predicates — gate passes vacuously
+  // =========================================================================
+  scenarios.push({
+    id: nextId('G', 'infra_no_predicates'),
+    family: 'G',
+    generator: 'infra_no_predicates',
+    description: 'Infrastructure gate passes vacuously when no infra predicates exist',
+    edits: [noopEdit],
+    predicates: [contentPred],
+    config: { appDir, gates: infraGates },
+    invariants: [
+      shouldNotCrash('no infra predicates should not crash'),
+      verifySucceeded('no infra predicates should pass'),
+      // Infrastructure gate is correctly skipped when no infra predicates exist
+      // (gate not added to results — same pattern as filesystem gate)
+    ],
+    requiresDocker: false,
+  });
+
+  // =========================================================================
+  // INFRA: Multiple predicates — mixed pass/fail
+  // =========================================================================
+  scenarios.push({
+    id: nextId('G', 'infra_mixed_predicates'),
+    family: 'G',
+    generator: 'infra_mixed_predicates',
+    description: 'Infrastructure gate fails when any infra predicate fails (mixed set)',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'infra_resource', resource: 'aws_db_instance.production', assertion: 'exists' as any, description: 'Exists (passes)' },
+      { type: 'infra_attribute', resource: 'aws_db_instance.production', attribute: 'tags.Environment', expected: 'wrong_value', description: 'Wrong tag (fails)' },
+      contentPred,
+    ],
+    config: { appDir, gates: infraGates },
+    invariants: [
+      shouldNotCrash('mixed infra predicates should not crash'),
+      verifyFailedAt('infrastructure', 'mixed predicates with one failure should fail'),
+      gatePresent('infrastructure'),
+      gateFailed('infrastructure', 'mixed pass/fail'),
+      narrowingPresent(),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // =========================================================================
+  // INFRA: Attribute exists check (no expected value)
+  // =========================================================================
+  scenarios.push({
+    id: nextId('G', 'infra_attr_exists'),
+    family: 'G',
+    generator: 'infra_attr_exists',
+    description: 'infra_attribute with expected=exists passes when attribute is present',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'infra_attribute', resource: 'aws_db_instance.production', attribute: 'engine', expected: 'exists', description: 'Engine attr exists' },
+      contentPred,
+    ],
+    config: { appDir, gates: infraGates },
+    invariants: [
+      shouldNotCrash('attr exists check should not crash'),
+      verifySucceeded('existing attribute with expected=exists should pass'),
+      gatePresent('infrastructure'),
+      gatePassed('infrastructure'),
+    ],
+    requiresDocker: false,
+  });
+
+  // =========================================================================
+  // INFRA: Grounding rejects fabricated resource address
+  // =========================================================================
+  scenarios.push({
+    id: nextId('G', 'infra_grounding_rejects_fabricated'),
+    family: 'G',
+    generator: 'infra_grounding_rejects_fabricated',
+    description: 'Grounding gate rejects infra_resource with fabricated address',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'infra_resource', resource: 'aws_unicorn.fantasy', assertion: 'exists' as any, description: 'Fantasy resource' },
+      contentPred,
+    ],
+    config: { appDir, gates: infraGates },
+    invariants: [
+      shouldNotCrash('grounding rejection should not crash'),
+      // Grounding rejects the fabricated address before infrastructure gate runs
+      verifyFailedAt('grounding', 'fabricated resource address rejected by grounding'),
+      groundingRan(),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  return scenarios;
+}
+
+// =============================================================================
+// QUALITY SURFACE: SERIALIZATION SCENARIOS
+// =============================================================================
+
+function generateSerializationScenarios(appDir: string): VerifyScenario[] {
+  const scenarios: VerifyScenario[] = [];
+  const noopEdit: Edit = { file: 'server.js', search: 'Powered by Node.js', replace: 'Powered by Node.js' };
+  const contentPred: Predicate = { type: 'content', file: 'server.js', pattern: 'Demo App' };
+  const qualityGates = { staging: false, browser: false, http: false, invariants: false };
+
+  // SER-01: Valid JSON passes schema validation
+  scenarios.push({
+    id: nextId('G', 'ser_schema_pass'),
+    family: 'G',
+    generator: 'ser_schema_pass',
+    failureClass: 'SER-02',
+    description: 'SER: serialization passes when JSON matches schema',
+    edits: [noopEdit],
+    predicates: [
+      {
+        type: 'serialization', file: 'test-data/valid.json',
+        schema: { type: 'object', required: ['name', 'version'], properties: { name: { type: 'string' }, version: { type: 'string' } } },
+        description: 'Valid JSON matches schema',
+      } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('serialization schema pass should not crash'),
+      verifySucceeded('serialization should pass for valid schema'),
+      gatePresent('serialization'),
+      gatePassed('serialization'),
+    ],
+    requiresDocker: false,
+  });
+
+  // SER-02: Schema type mismatch fails
+  scenarios.push({
+    id: nextId('G', 'ser_schema_type_fail'),
+    family: 'G',
+    generator: 'ser_schema_type_fail',
+    failureClass: 'SER-02',
+    description: 'SER: serialization fails when JSON type mismatches schema',
+    edits: [noopEdit],
+    predicates: [
+      {
+        type: 'serialization', file: 'test-data/valid.json',
+        schema: { type: 'array' },
+        description: 'Expect array but get object',
+      } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: { ...qualityGates, grounding: false } },
+    invariants: [
+      shouldNotCrash('serialization schema type fail should not crash'),
+      verifyFailedAt('serialization', 'should fail for type mismatch'),
+      gatePresent('serialization'),
+      gateFailed('serialization', 'type mismatch'),
+      narrowingPresent(),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // SER-03: Missing required field fails
+  scenarios.push({
+    id: nextId('G', 'ser_missing_required'),
+    family: 'G',
+    generator: 'ser_missing_required',
+    failureClass: 'SER-03',
+    description: 'SER: serialization fails when required field missing',
+    edits: [noopEdit],
+    predicates: [
+      {
+        type: 'serialization', file: 'test-data/valid.json',
+        schema: { type: 'object', required: ['name', 'nonexistent_field'] },
+        description: 'Require nonexistent field',
+      } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: { ...qualityGates, grounding: false } },
+    invariants: [
+      shouldNotCrash('serialization missing required should not crash'),
+      verifyFailedAt('serialization', 'should fail for missing required field'),
+      gatePresent('serialization'),
+      gateFailed('serialization', 'missing required'),
+      narrowingPresent(),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // SER-04: Strict value comparison passes
+  scenarios.push({
+    id: nextId('G', 'ser_strict_pass'),
+    family: 'G',
+    generator: 'ser_strict_pass',
+    failureClass: 'SER-04',
+    description: 'SER: strict comparison passes for matching JSON',
+    edits: [noopEdit],
+    predicates: [
+      {
+        type: 'serialization', file: 'test-data/valid.json',
+        expected: '{"name":"Demo App","version":"1.0.0","settings":{"theme":"dark","language":"en","debug":false},"users":[{"id":1,"name":"Alice","role":"admin"},{"id":2,"name":"Bob","role":"user"}]}',
+        comparison: 'strict',
+        description: 'Strict match',
+      } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('serialization strict pass should not crash'),
+      verifySucceeded('strict comparison should pass for matching data'),
+      gatePresent('serialization'),
+      gatePassed('serialization'),
+    ],
+    requiresDocker: false,
+  });
+
+  // SER-05: Subset check passes
+  scenarios.push({
+    id: nextId('G', 'ser_subset_pass'),
+    family: 'G',
+    generator: 'ser_subset_pass',
+    failureClass: 'SER-05',
+    description: 'SER: subset comparison passes when actual contains expected',
+    edits: [noopEdit],
+    predicates: [
+      {
+        type: 'serialization', file: 'test-data/valid.json',
+        expected: '{"name":"Demo App"}',
+        comparison: 'subset',
+        description: 'Subset match',
+      } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('serialization subset pass should not crash'),
+      verifySucceeded('subset comparison should pass'),
+      gatePresent('serialization'),
+      gatePassed('serialization'),
+    ],
+    requiresDocker: false,
+  });
+
+  // SER-06: File not found fails
+  scenarios.push({
+    id: nextId('G', 'ser_file_not_found'),
+    family: 'G',
+    generator: 'ser_file_not_found',
+    failureClass: 'SER-06',
+    description: 'SER: serialization fails when file does not exist',
+    edits: [noopEdit],
+    predicates: [
+      {
+        type: 'serialization', file: 'nonexistent.json',
+        description: 'File does not exist',
+      } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: { ...qualityGates, grounding: false } },
+    invariants: [
+      shouldNotCrash('serialization file not found should not crash'),
+      verifyFailedAt('serialization', 'should fail for missing file'),
+      gatePresent('serialization'),
+      gateFailed('serialization', 'file not found'),
+      narrowingPresent(),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // SER: Invalid JSON parse error
+  scenarios.push({
+    id: nextId('G', 'ser_parse_error'),
+    family: 'G',
+    generator: 'ser_parse_error',
+    failureClass: 'SER-01',
+    description: 'SER: serialization fails when file contains invalid JSON',
+    edits: [noopEdit],
+    predicates: [
+      {
+        type: 'serialization', file: 'test-data/invalid.json',
+        description: 'Invalid JSON file',
+      } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: { ...qualityGates, grounding: false } },
+    invariants: [
+      shouldNotCrash('serialization parse error should not crash'),
+      verifyFailedAt('serialization', 'should fail for invalid JSON'),
+      gatePresent('serialization'),
+      gateFailed('serialization', 'parse error'),
+      narrowingPresent(),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // SER: No serialization predicates — gate skipped
+  scenarios.push({
+    id: nextId('G', 'ser_no_predicates'),
+    family: 'G',
+    generator: 'ser_no_predicates',
+    description: 'SER: serialization gate skipped when no serialization predicates',
+    edits: [noopEdit],
+    predicates: [contentPred],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('no serialization predicates should not crash'),
+      verifySucceeded('should pass without serialization predicates'),
+      gateAbsent('serialization'),
+    ],
+    requiresDocker: false,
+  });
+
+  return scenarios;
+}
+
+// =============================================================================
+// QUALITY SURFACE: CONFIGURATION SCENARIOS
+// =============================================================================
+
+function generateConfigScenarios(appDir: string): VerifyScenario[] {
+  const scenarios: VerifyScenario[] = [];
+  const noopEdit: Edit = { file: 'server.js', search: 'Powered by Node.js', replace: 'Powered by Node.js' };
+  const contentPred: Predicate = { type: 'content', file: 'server.js', pattern: 'Demo App' };
+  const qualityGates = { staging: false, browser: false, http: false, invariants: false };
+
+  // CFG-01: Key exists in .env
+  scenarios.push({
+    id: nextId('G', 'cfg_key_exists_pass'),
+    family: 'G',
+    generator: 'cfg_key_exists_pass',
+    failureClass: 'CFG-01',
+    description: 'CFG: config passes when key exists in .env',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'config', key: 'NODE_ENV', expected: 'exists', description: 'NODE_ENV exists' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('config key exists should not crash'),
+      verifySucceeded('config key should be found'),
+      gatePresent('config'),
+      gatePassed('config'),
+    ],
+    requiresDocker: false,
+  });
+
+  // CFG-02: Key value matches
+  scenarios.push({
+    id: nextId('G', 'cfg_value_match_pass'),
+    family: 'G',
+    generator: 'cfg_value_match_pass',
+    failureClass: 'CFG-02',
+    description: 'CFG: config passes when key value matches expected',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'config', key: 'NODE_ENV', expected: 'production', description: 'NODE_ENV is production' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('config value match should not crash'),
+      verifySucceeded('config value should match'),
+      gatePresent('config'),
+      gatePassed('config'),
+    ],
+    requiresDocker: false,
+  });
+
+  // CFG-02: Key value mismatch fails
+  scenarios.push({
+    id: nextId('G', 'cfg_value_mismatch_fail'),
+    family: 'G',
+    generator: 'cfg_value_mismatch_fail',
+    failureClass: 'CFG-02',
+    description: 'CFG: config fails when value does not match',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'config', key: 'NODE_ENV', expected: 'development', description: 'NODE_ENV should be development' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: { ...qualityGates, grounding: false } },
+    invariants: [
+      shouldNotCrash('config value mismatch should not crash'),
+      verifyFailedAt('config', 'should fail for value mismatch'),
+      gatePresent('config'),
+      gateFailed('config', 'value mismatch'),
+      narrowingPresent(),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // CFG-01: Key not found fails
+  scenarios.push({
+    id: nextId('G', 'cfg_key_not_found_fail'),
+    family: 'G',
+    generator: 'cfg_key_not_found_fail',
+    failureClass: 'CFG-01',
+    description: 'CFG: config fails when key not found in any config file',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'config', key: 'NONEXISTENT_KEY', description: 'Key that does not exist' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: { ...qualityGates, grounding: false } },
+    invariants: [
+      shouldNotCrash('config key not found should not crash'),
+      verifyFailedAt('config', 'should fail for missing key'),
+      gatePresent('config'),
+      gateFailed('config', 'not found'),
+      narrowingPresent(),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // CFG: JSON config key exists
+  scenarios.push({
+    id: nextId('G', 'cfg_json_key_pass'),
+    family: 'G',
+    generator: 'cfg_json_key_pass',
+    failureClass: 'CFG-01',
+    description: 'CFG: config passes when dot-notation key found in JSON',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'config', key: 'app.name', source: 'json', expected: 'exists', description: 'app.name exists in config.json' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('config JSON key should not crash'),
+      verifySucceeded('JSON dot-notation key should be found'),
+      gatePresent('config'),
+      gatePassed('config'),
+    ],
+    requiresDocker: false,
+  });
+
+  // CFG: No config predicates — gate skipped
+  scenarios.push({
+    id: nextId('G', 'cfg_no_predicates'),
+    family: 'G',
+    generator: 'cfg_no_predicates',
+    description: 'CFG: config gate skipped when no config predicates',
+    edits: [noopEdit],
+    predicates: [contentPred],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('no config predicates should not crash'),
+      verifySucceeded('should pass without config predicates'),
+      gateAbsent('config'),
+    ],
+    requiresDocker: false,
+  });
+
+  return scenarios;
+}
+
+// =============================================================================
+// QUALITY SURFACE: SECURITY SCENARIOS
+// =============================================================================
+
+function generateSecurityScenarios(appDir: string): VerifyScenario[] {
+  const scenarios: VerifyScenario[] = [];
+  const noopEdit: Edit = { file: 'server.js', search: 'Powered by Node.js', replace: 'Powered by Node.js' };
+  const contentPred: Predicate = { type: 'content', file: 'server.js', pattern: 'Demo App' };
+  const qualityGates = { staging: false, browser: false, http: false, invariants: false };
+
+  // SEC: Clean code passes XSS check (expect no findings)
+  scenarios.push({
+    id: nextId('G', 'sec_xss_clean_pass'),
+    family: 'G',
+    generator: 'sec_xss_clean_pass',
+    failureClass: 'SEC-01',
+    description: 'SEC: security passes when no XSS patterns found (expect clean)',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'security', securityCheck: 'xss', expected: 'no_findings', description: 'No XSS findings' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('security xss clean should not crash'),
+      verifySucceeded('xss check should pass for clean code'),
+      gatePresent('security'),
+      gatePassed('security'),
+    ],
+    requiresDocker: false,
+  });
+
+  // SEC: CSP check fails (no CSP headers in demo app)
+  scenarios.push({
+    id: nextId('G', 'sec_csp_missing_fail'),
+    family: 'G',
+    generator: 'sec_csp_missing_fail',
+    failureClass: 'SEC-04',
+    description: 'SEC: security fails when CSP headers missing (expect clean)',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'security', securityCheck: 'csp', expected: 'no_findings', description: 'CSP should be present' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: { ...qualityGates, grounding: false } },
+    invariants: [
+      shouldNotCrash('security csp missing should not crash'),
+      verifyFailedAt('security', 'should fail for missing CSP'),
+      gatePresent('security'),
+      gateFailed('security', 'finding'),
+      narrowingPresent(),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // SEC: Expect findings (negative test passes)
+  scenarios.push({
+    id: nextId('G', 'sec_csp_expect_findings_pass'),
+    family: 'G',
+    generator: 'sec_csp_expect_findings_pass',
+    failureClass: 'SEC-04',
+    description: 'SEC: security passes when expected findings are detected',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'security', securityCheck: 'csp', expected: 'has_findings', description: 'Expect CSP to be missing' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('security expect findings should not crash'),
+      verifySucceeded('should pass when findings are expected and present'),
+      gatePresent('security'),
+      gatePassed('security'),
+    ],
+    requiresDocker: false,
+  });
+
+  // SEC: CORS clean passes
+  scenarios.push({
+    id: nextId('G', 'sec_cors_clean_pass'),
+    family: 'G',
+    generator: 'sec_cors_clean_pass',
+    failureClass: 'SEC-05',
+    description: 'SEC: security passes when no CORS wildcard found',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'security', securityCheck: 'cors', expected: 'no_findings', description: 'No CORS wildcard' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('security cors clean should not crash'),
+      verifySucceeded('cors check should pass for clean code'),
+      gatePresent('security'),
+      gatePassed('security'),
+    ],
+    requiresDocker: false,
+  });
+
+  // SEC: No security predicates — gate skipped
+  scenarios.push({
+    id: nextId('G', 'sec_no_predicates'),
+    family: 'G',
+    generator: 'sec_no_predicates',
+    description: 'SEC: security gate skipped when no security predicates',
+    edits: [noopEdit],
+    predicates: [contentPred],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('no security predicates should not crash'),
+      verifySucceeded('should pass without security predicates'),
+      gateAbsent('security'),
+    ],
+    requiresDocker: false,
+  });
+
+  return scenarios;
+}
+
+// =============================================================================
+// QUALITY SURFACE: ACCESSIBILITY SCENARIOS
+// =============================================================================
+
+function generateA11yScenarios(appDir: string): VerifyScenario[] {
+  const scenarios: VerifyScenario[] = [];
+  const noopEdit: Edit = { file: 'server.js', search: 'Powered by Node.js', replace: 'Powered by Node.js' };
+  const contentPred: Predicate = { type: 'content', file: 'server.js', pattern: 'Demo App' };
+  const qualityGates = { staging: false, browser: false, http: false, invariants: false };
+
+  // A11Y: Alt text check passes (expect findings in demo app — has <img> without alt)
+  // The demo app server.js has HTML but may not have images. Let's test the clean case.
+  scenarios.push({
+    id: nextId('G', 'a11y_heading_clean_pass'),
+    family: 'G',
+    generator: 'a11y_heading_clean_pass',
+    failureClass: 'A11Y-02',
+    description: 'A11Y: heading hierarchy check passes for clean HTML',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'a11y', a11yCheck: 'heading_hierarchy', expected: 'no_findings', description: 'No heading skips' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('a11y heading hierarchy should not crash'),
+      verifySucceeded('heading hierarchy should pass for ordered headings'),
+      gatePresent('a11y'),
+      gatePassed('a11y'),
+    ],
+    requiresDocker: false,
+  });
+
+  // A11Y: Landmark check fails (no <main> or <nav> in demo app)
+  scenarios.push({
+    id: nextId('G', 'a11y_landmark_missing_fail'),
+    family: 'G',
+    generator: 'a11y_landmark_missing_fail',
+    failureClass: 'A11Y-03',
+    description: 'A11Y: landmark check fails when no <main> or <nav> present',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'a11y', a11yCheck: 'landmark', expected: 'no_findings', description: 'Expect landmarks present' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: { ...qualityGates, grounding: false } },
+    invariants: [
+      shouldNotCrash('a11y landmark missing should not crash'),
+      verifyFailedAt('a11y', 'should fail for missing landmarks'),
+      gatePresent('a11y'),
+      gateFailed('a11y', 'finding'),
+      narrowingPresent(),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // A11Y: Expect landmark findings (negative test passes)
+  scenarios.push({
+    id: nextId('G', 'a11y_landmark_expect_findings_pass'),
+    family: 'G',
+    generator: 'a11y_landmark_expect_findings_pass',
+    failureClass: 'A11Y-03',
+    description: 'A11Y: landmark check passes when findings are expected',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'a11y', a11yCheck: 'landmark', expected: 'has_findings', description: 'Expect landmarks missing' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('a11y expect landmark findings should not crash'),
+      verifySucceeded('should pass when landmark findings are expected'),
+      gatePresent('a11y'),
+      gatePassed('a11y'),
+    ],
+    requiresDocker: false,
+  });
+
+  // A11Y: Focus management clean (no tabindex > 0 in demo)
+  scenarios.push({
+    id: nextId('G', 'a11y_focus_clean_pass'),
+    family: 'G',
+    generator: 'a11y_focus_clean_pass',
+    failureClass: 'A11Y-05',
+    description: 'A11Y: focus management passes for clean HTML',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'a11y', a11yCheck: 'focus_management', expected: 'no_findings', description: 'No focus issues' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('a11y focus management should not crash'),
+      verifySucceeded('focus management should pass'),
+      gatePresent('a11y'),
+      gatePassed('a11y'),
+    ],
+    requiresDocker: false,
+  });
+
+  // A11Y: No a11y predicates — gate skipped
+  scenarios.push({
+    id: nextId('G', 'a11y_no_predicates'),
+    family: 'G',
+    generator: 'a11y_no_predicates',
+    description: 'A11Y: a11y gate skipped when no a11y predicates',
+    edits: [noopEdit],
+    predicates: [contentPred],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('no a11y predicates should not crash'),
+      verifySucceeded('should pass without a11y predicates'),
+      gateAbsent('a11y'),
+    ],
+    requiresDocker: false,
+  });
+
+  return scenarios;
+}
+
+// =============================================================================
+// QUALITY SURFACE: PERFORMANCE SCENARIOS
+// =============================================================================
+
+function generatePerformanceScenarios(appDir: string): VerifyScenario[] {
+  const scenarios: VerifyScenario[] = [];
+  const noopEdit: Edit = { file: 'server.js', search: 'Powered by Node.js', replace: 'Powered by Node.js' };
+  const contentPred: Predicate = { type: 'content', file: 'server.js', pattern: 'Demo App' };
+  const qualityGates = { staging: false, browser: false, http: false, invariants: false };
+
+  // PERF: Bundle size under threshold passes
+  scenarios.push({
+    id: nextId('G', 'perf_bundle_size_pass'),
+    family: 'G',
+    generator: 'perf_bundle_size_pass',
+    failureClass: 'PERF-01',
+    description: 'PERF: bundle size passes when under threshold',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'performance', perfCheck: 'bundle_size', threshold: 10 * 1024 * 1024, description: 'Bundle < 10MB' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('perf bundle size pass should not crash'),
+      verifySucceeded('bundle size should pass under generous threshold'),
+      gatePresent('performance'),
+      gatePassed('performance'),
+    ],
+    requiresDocker: false,
+  });
+
+  // PERF: Bundle size over threshold fails
+  scenarios.push({
+    id: nextId('G', 'perf_bundle_size_fail'),
+    family: 'G',
+    generator: 'perf_bundle_size_fail',
+    failureClass: 'PERF-01',
+    description: 'PERF: bundle size fails when over tight threshold',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'performance', perfCheck: 'bundle_size', threshold: 1, description: 'Bundle < 1 byte' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: { ...qualityGates, grounding: false } },
+    invariants: [
+      shouldNotCrash('perf bundle size fail should not crash'),
+      verifyFailedAt('performance', 'should fail for bundle size over threshold'),
+      gatePresent('performance'),
+      gateFailed('performance', 'bundle size'),
+      narrowingPresent(),
+    ],
+    requiresDocker: false,
+    expectedSuccess: false,
+  });
+
+  // PERF: Connection count under threshold passes
+  scenarios.push({
+    id: nextId('G', 'perf_connection_count_pass'),
+    family: 'G',
+    generator: 'perf_connection_count_pass',
+    failureClass: 'PERF-04',
+    description: 'PERF: connection count passes when under threshold',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'performance', perfCheck: 'connection_count', threshold: 100, description: 'Connections < 100' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('perf connection count pass should not crash'),
+      verifySucceeded('connection count should pass under generous threshold'),
+      gatePresent('performance'),
+      gatePassed('performance'),
+    ],
+    requiresDocker: false,
+  });
+
+  // PERF: Image optimization passes (no old-format images in demo)
+  scenarios.push({
+    id: nextId('G', 'perf_image_opt_pass'),
+    family: 'G',
+    generator: 'perf_image_opt_pass',
+    failureClass: 'PERF-02',
+    description: 'PERF: image optimization passes when no unoptimized images found',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'performance', perfCheck: 'image_optimization', description: 'Images optimized' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('perf image optimization should not crash'),
+      verifySucceeded('image optimization should pass'),
+      gatePresent('performance'),
+      gatePassed('performance'),
+    ],
+    requiresDocker: false,
+  });
+
+  // PERF: Response time deferred (always passes — advisory)
+  scenarios.push({
+    id: nextId('G', 'perf_response_time_deferred'),
+    family: 'G',
+    generator: 'perf_response_time_deferred',
+    description: 'PERF: response_time is advisory — always passes',
+    edits: [noopEdit],
+    predicates: [
+      { type: 'performance', perfCheck: 'response_time', description: 'Response time deferred' } as any,
+      contentPred,
+    ],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('perf response time deferred should not crash'),
+      verifySucceeded('response time should pass (deferred to HTTP gate)'),
+      gatePresent('performance'),
+      gatePassed('performance'),
+    ],
+    requiresDocker: false,
+  });
+
+  // PERF: No performance predicates — gate skipped
+  scenarios.push({
+    id: nextId('G', 'perf_no_predicates'),
+    family: 'G',
+    generator: 'perf_no_predicates',
+    description: 'PERF: performance gate skipped when no performance predicates',
+    edits: [noopEdit],
+    predicates: [contentPred],
+    config: { appDir, gates: qualityGates },
+    invariants: [
+      shouldNotCrash('no performance predicates should not crash'),
+      verifySucceeded('should pass without performance predicates'),
+      gateAbsent('performance'),
+    ],
+    requiresDocker: false,
+  });
+
+  return scenarios;
+}
+
+// =============================================================================
 // GENERATOR DISPATCH
 // =============================================================================
 
@@ -11641,6 +12832,12 @@ export function generateAllScenarios(appDir: string): VerifyScenario[] {
     ...generateWave2B(appDir),
     ...generateWave2C(appDir),
     ...generateWave3(appDir),
+    ...generateInfraScenarios(appDir),
+    ...generateSerializationScenarios(appDir),
+    ...generateConfigScenarios(appDir),
+    ...generateSecurityScenarios(appDir),
+    ...generateA11yScenarios(appDir),
+    ...generatePerformanceScenarios(appDir),
   ];
 }
 
@@ -11652,7 +12849,7 @@ export function generateFamily(family: ScenarioFamily, appDir: string): VerifySc
     case 'D': return generateFamilyD(appDir);
     case 'E': return generateFamilyE(appDir);
     case 'F': return generateFamilyF(appDir);
-    case 'G': return [...generateFamilyG(appDir), ...generateWave2A_G(appDir), ...generateWave2B(appDir).filter(s => s.family === 'G'), ...generateWave2C(appDir).filter(s => s.family === 'G'), ...generateWave3(appDir).filter(s => s.family === 'G')];
+    case 'G': return [...generateFamilyG(appDir), ...generateWave2A_G(appDir), ...generateWave2B(appDir).filter(s => s.family === 'G'), ...generateWave2C(appDir).filter(s => s.family === 'G'), ...generateWave3(appDir).filter(s => s.family === 'G'), ...generateInfraScenarios(appDir), ...generateSerializationScenarios(appDir), ...generateConfigScenarios(appDir), ...generateSecurityScenarios(appDir), ...generateA11yScenarios(appDir), ...generatePerformanceScenarios(appDir)];
     case 'H': return [...generateFamilyH(appDir), ...generateWave2B(appDir).filter(s => s.family === 'H'), ...generateWave2C(appDir).filter(s => s.family === 'H'), ...generateWave3(appDir).filter(s => s.family === 'H')];
     case 'I': return [...generateFamilyI(appDir), ...generateWave2C(appDir).filter(s => s.family === 'I'), ...generateWave3(appDir).filter(s => s.family === 'I')];
     case 'M': return generateFamilyM(appDir);

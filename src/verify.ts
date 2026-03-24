@@ -7,7 +7,8 @@
  *
  * Gate sequence:
  *   Grounding → F9 (syntax) → K5 (constraints) → G5 (containment) →
- *   Filesystem → [Staging (Docker) → Browser (Playwright) → HTTP (fetch) →
+ *   Filesystem → Infrastructure → Serialization → Config → Security → A11y → Performance →
+ *   [Staging (Docker) → Browser (Playwright) → HTTP (fetch) →
  *   Invariants (health)] → Vision (screenshot) → Triangulation → Narrowing (learning)
  *
  * On failure: returns what went wrong + what to try next.
@@ -34,6 +35,12 @@ import { runTriangulationGate } from './gates/triangulation.js';
 import { runInvariantsGate } from './gates/invariants.js';
 import { groundInReality, validateAgainstGrounding } from './gates/grounding.js';
 import { runFilesystemGate } from './gates/filesystem.js';
+import { runInfrastructureGate } from './gates/infrastructure.js';
+import { runSerializationGate } from './gates/serialization.js';
+import { runConfigGate } from './gates/config.js';
+import { runSecurityGate } from './gates/security.js';
+import { runA11yGate } from './gates/a11y.js';
+import { runPerformanceGate } from './gates/performance.js';
 import { LocalDockerRunner, isDockerAvailable, hasDockerCompose } from './runners/docker-runner.js';
 
 /**
@@ -214,6 +221,128 @@ export async function verify(
           return buildResult({
             gates, config, store, sessionId, totalStart, logs,
             failedGate: 'filesystem', error: fsResult.detail, edits, predicates: groundedPredicates,
+          });
+        }
+      }
+    }
+
+    // =========================================================================
+    // INFRASTRUCTURE: State File Verification (The Alexei Gate)
+    // =========================================================================
+    {
+      const hasInfraPreds = groundedPredicates.some(p =>
+        p.type === 'infra_resource' || p.type === 'infra_attribute' || p.type === 'infra_manifest'
+      );
+      if (hasInfraPreds) {
+        log('[infrastructure] Running infrastructure predicate validation...');
+        const infraResult = runInfrastructureGate(ctx);
+        gates.push(infraResult);
+
+        if (!infraResult.passed) {
+          log(`[infrastructure] FAILED: ${infraResult.detail}`);
+          return buildResult({
+            gates, config, store, sessionId, totalStart, logs,
+            failedGate: 'infrastructure', error: infraResult.detail, edits, predicates: groundedPredicates,
+          });
+        }
+      }
+    }
+
+    // =========================================================================
+    // SERIALIZATION: JSON Schema + Structure Validation
+    // =========================================================================
+    {
+      const hasSerPreds = groundedPredicates.some(p => p.type === 'serialization');
+      if (hasSerPreds) {
+        log('[serialization] Running serialization validation...');
+        const serResult = runSerializationGate(ctx);
+        gates.push(serResult);
+
+        if (!serResult.passed) {
+          log(`[serialization] FAILED: ${serResult.detail}`);
+          return buildResult({
+            gates, config, store, sessionId, totalStart, logs,
+            failedGate: 'serialization', error: serResult.detail, edits, predicates: groundedPredicates,
+          });
+        }
+      }
+    }
+
+    // =========================================================================
+    // CONFIG: Configuration File Validation
+    // =========================================================================
+    {
+      const hasConfigPreds = groundedPredicates.some(p => p.type === 'config');
+      if (hasConfigPreds) {
+        log('[config] Running configuration validation...');
+        const configResult = runConfigGate(ctx);
+        gates.push(configResult);
+
+        if (!configResult.passed) {
+          log(`[config] FAILED: ${configResult.detail}`);
+          return buildResult({
+            gates, config, store, sessionId, totalStart, logs,
+            failedGate: 'config', error: configResult.detail, edits, predicates: groundedPredicates,
+          });
+        }
+      }
+    }
+
+    // =========================================================================
+    // SECURITY: Static Security Analysis
+    // =========================================================================
+    {
+      const hasSecPreds = groundedPredicates.some(p => p.type === 'security');
+      if (hasSecPreds) {
+        log('[security] Running security scan...');
+        const secResult = runSecurityGate(ctx);
+        gates.push(secResult);
+
+        if (!secResult.passed) {
+          log(`[security] FAILED: ${secResult.detail}`);
+          return buildResult({
+            gates, config, store, sessionId, totalStart, logs,
+            failedGate: 'security', error: secResult.detail, edits, predicates: groundedPredicates,
+          });
+        }
+      }
+    }
+
+    // =========================================================================
+    // A11Y: Accessibility Validation
+    // =========================================================================
+    {
+      const hasA11yPreds = groundedPredicates.some(p => p.type === 'a11y');
+      if (hasA11yPreds) {
+        log('[a11y] Running accessibility checks...');
+        const a11yResult = runA11yGate(ctx);
+        gates.push(a11yResult);
+
+        if (!a11yResult.passed) {
+          log(`[a11y] FAILED: ${a11yResult.detail}`);
+          return buildResult({
+            gates, config, store, sessionId, totalStart, logs,
+            failedGate: 'a11y', error: a11yResult.detail, edits, predicates: groundedPredicates,
+          });
+        }
+      }
+    }
+
+    // =========================================================================
+    // PERFORMANCE: Static Performance Analysis
+    // =========================================================================
+    {
+      const hasPerfPreds = groundedPredicates.some(p => p.type === 'performance');
+      if (hasPerfPreds) {
+        log('[performance] Running performance analysis...');
+        const perfResult = runPerformanceGate(ctx);
+        gates.push(perfResult);
+
+        if (!perfResult.passed) {
+          log(`[performance] FAILED: ${perfResult.detail}`);
+          return buildResult({
+            gates, config, store, sessionId, totalStart, logs,
+            failedGate: 'performance', error: perfResult.detail, edits, predicates: groundedPredicates,
           });
         }
       }
@@ -586,6 +715,12 @@ function buildResolutionHint(gate: string, error: string, violation?: any): stri
   if (gate === 'http') return 'HTTP endpoint validation failed. Check the API response.';
   if (gate === 'invariants') return 'System health checks failed after applying edits. The change may have broken something.';
   if (gate === 'filesystem') return 'Filesystem state does not match expectations after edits. Check file paths, existence, and content.';
+  if (gate === 'infrastructure') return 'Infrastructure state does not match expectations. Check resource existence, attributes, and manifest drift.';
+  if (gate === 'serialization') return 'JSON data does not match expected schema or structure. Check the file content, comparison mode, and expected values.';
+  if (gate === 'config') return 'Configuration key/value does not match expectations. Check the config source (.env, JSON, YAML) and key path.';
+  if (gate === 'security') return 'Security scan detected issues (or expected issues were not found). Review the specific security check findings.';
+  if (gate === 'a11y') return 'Accessibility check found issues (or expected issues were not found). Review alt text, headings, landmarks, aria labels.';
+  if (gate === 'performance') return 'Performance check failed threshold. Review bundle size, image optimization, lazy loading, or connection count.';
   return 'Verification failed. Review the gate details.';
 }
 
@@ -595,7 +730,13 @@ function gateToSource(gate: string): 'syntax' | 'staging' | 'evidence' | 'invari
     case 'staging': return 'staging';
     case 'browser':
     case 'http':
-    case 'filesystem': return 'evidence';
+    case 'filesystem':
+    case 'infrastructure':
+    case 'serialization':
+    case 'config':
+    case 'security':
+    case 'a11y':
+    case 'performance': return 'evidence';
     case 'invariants': return 'invariant';
     default: return 'staging';
   }

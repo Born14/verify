@@ -21,6 +21,17 @@
 // The one function
 export { verify } from './verify.js';
 
+// The governed loop — verify() in a convergence loop
+export { govern } from './govern.js';
+export type {
+  GovernConfig,
+  GovernResult,
+  GovernReceipt,
+  GovernContext,
+  GovernAgent,
+  AgentPlan,
+} from './govern.js';
+
 // Types — everything a consumer needs
 export type {
   // Core
@@ -48,6 +59,19 @@ export type {
 
 // Constraint store — for advanced users who want persistent learning
 export { ConstraintStore, extractSignature, predicateFingerprint, classifyChangeType } from './store/constraint-store.js';
+
+// Decomposition engine — maps observations to taxonomy shape IDs
+export {
+  decomposeFailure, decomposeObservation,
+  getShapeCatalog, getShapesByDomain, getShapesByClaimType, isKnownShape, isComposition,
+  // Phase 2: Decomposition hardening
+  minimizeShapes, sortShapes, scoreDecomposition,
+  detectClaimType, decomposeByClaimType,
+  detectTemporalMode, annotateTemporalMode,
+  // Phase 2: Diagnostics
+  computeDecompositionDiagnostics, computeMinimizerReduction,
+} from './store/decompose.js';
+export type { DecomposedShape, DecompositionResult, DecompositionDiagnostics, TemporalMode, ClaimType, TruthType, OutcomeType } from './store/decompose.js';
 
 // Docker runner — for users who need custom container setup
 export { LocalDockerRunner, isDockerAvailable, hasDockerCompose } from './runners/docker-runner.js';
