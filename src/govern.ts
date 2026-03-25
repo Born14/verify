@@ -580,6 +580,7 @@ export async function govern(config: GovernConfig): Promise<GovernResult> {
       vision,
       invariants,
       migrations: plan.migrations,
+      learning: 'persistent',
     };
 
     const result = await verify(plan.edits, plan.predicates, verifyConfig);

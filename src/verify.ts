@@ -590,6 +590,11 @@ export async function verify(
       gatesFailed: [],
     });
 
+    // Session isolation: clean up constraints seeded during this call
+    if (config.learning !== 'persistent') {
+      store.cleanupSession(sessionId);
+    }
+
     const containmentGate = gates.find(g => g.gate === 'G5') as any;
     const triangulationGate = gates.find(g => g.gate === 'triangulation') as any;
 
@@ -715,6 +720,18 @@ function buildResult(opts: BuildResultOpts): VerifyResult {
   const fingerprints = predicates.map(p => predicateFingerprint(p));
   const containmentGate = gates.find(g => g.gate === 'G5') as any;
 
+  // Capture delta before cleanup
+  const constraintDelta = {
+    before: store.getConstraintCount() - (seededConstraint ? 1 : 0),
+    after: store.getConstraintCount(),
+    seeded: seededConstraint ? [seededConstraint.signature] : [],
+  };
+
+  // Session isolation: clean up constraints seeded during this call
+  if (config.learning !== 'persistent') {
+    store.cleanupSession(sessionId);
+  }
+
   return {
     success: false,
     gates,
@@ -732,11 +749,7 @@ function buildResult(opts: BuildResultOpts): VerifyResult {
       groundingMiss: (p as any).groundingMiss,
     })),
     containment: containmentGate?.summary,
-    constraintDelta: {
-      before: store.getConstraintCount() - (seededConstraint ? 1 : 0),
-      after: store.getConstraintCount(),
-      seeded: seededConstraint ? [seededConstraint.signature] : [],
-    },
+    constraintDelta,
     triangulation: opts.triangulation,
   };
 }

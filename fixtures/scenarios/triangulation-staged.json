@@ -1,0 +1,126 @@
+[
+  {
+    "id": "tri-001",
+    "description": "deterministic pass: all pure gates pass, no browser/vision",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "filesystem_exists",
+        "file": "server.js"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "triangulation",
+      "deterministic_only"
+    ],
+    "rationale": "Filesystem predicate passes, no browser/vision → success (triangulation may not run with <2 authorities)"
+  },
+  {
+    "id": "tri-002",
+    "description": "deterministic fail: filesystem predicate fails",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "filesystem_exists",
+        "file": "nonexistent.js"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "triangulation",
+      "deterministic_fail"
+    ],
+    "rationale": "Filesystem predicate fails → deterministic=false, but gate catches failure earlier"
+  },
+  {
+    "id": "tri-003",
+    "description": "mixed deterministic: filesystem + config both pass",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "filesystem_exists",
+        "file": "server.js"
+      },
+      {
+        "type": "config",
+        "key": "PORT",
+        "expected": "3000"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "triangulation",
+      "mixed_predicates"
+    ],
+    "rationale": "Multiple deterministic predicates all pass"
+  },
+  {
+    "id": "tri-004",
+    "description": "mixed deterministic: filesystem passes, config fails",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "filesystem_exists",
+        "file": "server.js"
+      },
+      {
+        "type": "config",
+        "key": "PORT",
+        "expected": "9999"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "triangulation",
+      "mixed_predicates"
+    ],
+    "rationale": "Config predicate fails → overall failure, deterministic=false"
+  },
+  {
+    "id": "tri-005",
+    "description": "content predicate only (no filesystem/infra), success",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "http.createServer"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "triangulation",
+      "no_tri_predicates"
+    ],
+    "rationale": "Content predicate passes through grounding gate, no triangulation-specific gates"
+  },
+  {
+    "id": "tri-006",
+    "description": "clean pass: edit + filesystem + content all succeed",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "const PORT = process.env.PORT || 3000;",
+        "replace": "const PORT = process.env.PORT || 4000;"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "4000"
+      },
+      {
+        "type": "filesystem_exists",
+        "file": "server.js"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "triangulation",
+      "all_pass"
+    ],
+    "rationale": "Edit changes port, content predicate finds new value, filesystem confirms file exists"
+  }
+]

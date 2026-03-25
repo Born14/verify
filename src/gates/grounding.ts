@@ -235,7 +235,69 @@ export function validateAgainstGrounding<T extends {
           }
         }
         if (!propertyFound) {
-          return { ...p, groundingMiss: true, groundingReason: `CSS property "${p.property}" not found on selector "${p.selector}"` };
+          // Before rejecting, check if an edit would ADD this property to the selector.
+          // Three patterns to detect:
+          //   1. Direct: edit replace contains the exact property name (e.g., "transition: ...")
+          //   2. Shorthand: edit adds a shorthand that expands to this property (e.g., "flex:" → "flex-grow")
+          //   3. Vendor prefix: edit adds -webkit-X and predicate checks X (or vice versa)
+          const editAddsProperty = opts?.edits?.some(e => {
+            const prop = p.property!;
+            const rep = e.replace;
+            const srch = e.search;
+
+            // Direct match: replace contains the property, search doesn't
+            const directMatch = rep.includes(prop) && !srch.includes(prop);
+
+            // Shorthand match: replace contains a shorthand that maps to this longhand
+            let shorthandMatch = false;
+            for (const [sh, longhands] of Object.entries(_SH)) {
+              if (longhands.includes(prop) && rep.includes(sh) && !srch.includes(sh)) {
+                shorthandMatch = true;
+                break;
+              }
+            }
+            // Also check complex shorthands (edit detection only, not value resolution)
+            if (!shorthandMatch) {
+              for (const [sh, longhands] of Object.entries(_SH_EDIT_ONLY)) {
+                if (longhands.includes(prop) && rep.includes(sh) && !srch.includes(sh)) {
+                  shorthandMatch = true;
+                  break;
+                }
+              }
+            }
+
+            // Vendor prefix match: edit has -webkit-X for property X, or edit has X for -webkit-X
+            let vendorMatch = false;
+            const stripped = _stripVendor(prop);
+            if (stripped && rep.includes(stripped) && !srch.includes(stripped)) {
+              vendorMatch = true;  // predicate checks -webkit-X, edit has X
+            }
+            // Or: edit has -webkit-X, predicate checks X
+            if (!vendorMatch) {
+              for (const prefix of ['-webkit-', '-moz-', '-ms-', '-o-']) {
+                const vendored = prefix + prop;
+                if (rep.includes(vendored) && !srch.includes(vendored)) {
+                  vendorMatch = true;
+                  break;
+                }
+              }
+            }
+
+            if (!directMatch && !shorthandMatch && !vendorMatch) return false;
+
+            // Verify the edit is plausibly within this selector's block:
+            // The search string should contain content from the selector's existing properties
+            // OR the search string contains the selector name itself
+            const selectorProps = targetCSS.flatMap(rc => {
+              const props = rc.get(p.selector!);
+              return props ? Object.keys(props) : [];
+            });
+            return selectorProps.some(prp => e.search.includes(prp)) || e.search.includes(p.selector!);
+          });
+          if (!editAddsProperty) {
+            return { ...p, groundingMiss: true, groundingReason: `CSS property "${p.property}" not found on selector "${p.selector}"` };
+          }
+          // Edit adds this property — trust the edit
         }
 
         const editWouldChange = opts?.edits?.some(e => {
@@ -250,7 +312,7 @@ export function validateAgainstGrounding<T extends {
             const valMatch = afterProp.match(/\s*:\s*([^;}\n]+)/);
             if (valMatch) {
               const editVal = valMatch[1].trim();
-              if (_nC(editVal) === _nC(p.expected!)) return true;
+              if (_nC(editVal, p.property) === _nC(p.expected!, p.property)) return true;
             }
           }
           // Shorthand edit implies longhand change: edit has 'border: 3px solid',
@@ -262,7 +324,7 @@ export function validateAgainstGrounding<T extends {
               const shValMatch = afterSh.match(/\s*:\s*([^;}\n]+)/);
               if (shValMatch) {
                 const resolved = _rS(sh, shValMatch[1].trim(), p.property!);
-                if (resolved && _nC(resolved) === _nC(p.expected!)) return true;
+                if (resolved && _nC(resolved, p.property) === _nC(p.expected!, p.property)) return true;
               }
             }
           }
@@ -270,14 +332,14 @@ export function validateAgainstGrounding<T extends {
         });
         if (!editWouldChange) {
           if (_shVal !== undefined) {
-            if (_nC(_shVal) !== _nC(p.expected!)) {
+            if (_nC(_shVal, p.property) !== _nC(p.expected!, p.property)) {
               return { ...p, groundingMiss: true, groundingReason: `CSS "${p.selector}" "${p.property}" resolves to "${_shVal}" from shorthand but predicate claims "${p.expected}"` };
             }
           } else {
             for (const routeCSS of targetCSS) {
               const sp = routeCSS.get(p.selector!);
               if (sp && p.property! in sp) {
-                if (_nC(sp[p.property!]) !== _nC(p.expected!)) {
+                if (_nC(sp[p.property!], p.property) !== _nC(p.expected!, p.property)) {
                   return { ...p, groundingMiss: true, groundingReason: `CSS "${p.selector}" "${p.property}" is "${sp[p.property!]}" in source but predicate claims "${p.expected}"` };
                 }
               }
@@ -299,6 +361,46 @@ export function validateAgainstGrounding<T extends {
         const uniqueValues = new Set(routeValues);
         if (uniqueValues.size > 1) {
           return { ...p, groundingMiss: true, groundingReason: `CSS "${p.selector}" "${p.property}" has conflicting values across routes (${[...uniqueValues].join(' vs ')}). Add a path to scope the predicate.` };
+        }
+      }
+    }
+
+    // ── HTML predicates: check element existence (exists predicates) ──
+    // When expected === 'exists', verify the tag name appears in grounding.
+    // CSS-style selectors (a[href], .class, #id, :pseudo) must match by tag only.
+    if (p.type === 'html' && p.selector && p.expected === 'exists') {
+      // Extract bare tag from CSS-style selectors (e.g., "a[href='/']" → "a", "td:first-child" → "td")
+      const bareTag = p.selector.replace(/[.#\[:].*/s, '').trim().toLowerCase();
+      const targetRoutes = p.path ? [p.path] : [...grounding.htmlElements.keys()];
+      let found = false;
+
+      for (const route of targetRoutes) {
+        const elements = grounding.htmlElements.get(route) ?? [];
+        if (elements.some(el => el.tag === bareTag)) {
+          found = true;
+          break;
+        }
+      }
+
+      if (!found) {
+        // Check other routes for wrong-route diagnosis
+        if (p.path) {
+          const otherRoutes = [...grounding.htmlElements.keys()].filter(r => r !== p.path);
+          for (const route of otherRoutes) {
+            const elements = grounding.htmlElements.get(route) ?? [];
+            if (elements.some(el => el.tag === bareTag)) {
+              return { ...p, groundingMiss: true, groundingReason: `HTML element "${bareTag}" exists on route "${route}" but not on claimed route "${p.path}"` };
+            }
+          }
+        }
+        // Check if edits create it
+        if (opts?.edits) {
+          const tagPat = new RegExp(`<${bareTag}[\\s>/]`, 'i');
+          if (!opts.edits.some(edit => tagPat.test(edit.replace))) {
+            return { ...p, groundingMiss: true, groundingReason: `HTML element "${bareTag}" not found in app source and no edit creates it` };
+          }
+        } else {
+          return { ...p, groundingMiss: true, groundingReason: `HTML element "${bareTag}" not found in app source` };
         }
       }
     }
@@ -326,7 +428,24 @@ export function validateAgainstGrounding<T extends {
       }
 
       if (elementFound && !textMatches) {
-        return { ...p, groundingMiss: true, groundingReason: `HTML element "${p.selector}" exists but does not contain text "${p.expected}"` };
+        // Check if an edit changes the element's text to match the expected value
+        if (opts?.edits) {
+          const tagPattern = new RegExp(`<${p.selector}[^>]*>[^<]*</${p.selector}>`, 'gi');
+          let editFixesText = false;
+          for (const edit of opts.edits) {
+            const match = tagPattern.exec(edit.replace);
+            if (match && match[0].includes(p.expected)) {
+              editFixesText = true;
+              break;
+            }
+            tagPattern.lastIndex = 0; // reset for next edit
+          }
+          if (!editFixesText) {
+            return { ...p, groundingMiss: true, groundingReason: `HTML element "${p.selector}" exists but does not contain text "${p.expected}" and no edit changes it to match` };
+          }
+        } else {
+          return { ...p, groundingMiss: true, groundingReason: `HTML element "${p.selector}" exists but does not contain text "${p.expected}"` };
+        }
       }
       if (!elementFound) {
         // Path-scoped: check if element exists on OTHER routes (wrong-route error)
@@ -451,7 +570,19 @@ export function validateAgainstGrounding<T extends {
 
         for (const claim of claimedContent) {
           if (!allSource.includes(claim)) {
-            return { ...p, groundingMiss: true, groundingReason: `HTTP body content "${claim}" not found in any app source file` };
+            // Check if any edit introduces this content (same pattern as HTML text exemption)
+            let editAddsContent = false;
+            if (opts?.edits) {
+              for (const edit of opts.edits) {
+                if (edit.replace && edit.replace.includes(claim)) {
+                  editAddsContent = true;
+                  break;
+                }
+              }
+            }
+            if (!editAddsContent) {
+              return { ...p, groundingMiss: true, groundingReason: `HTTP body content "${claim}" not found in any app source file` };
+            }
           }
         }
       }
@@ -469,39 +600,68 @@ export function validateAgainstGrounding<T extends {
           t => t.table.toLowerCase() === tableName.toLowerCase()
         );
 
+        // Helper: check if any edit introduces a SQL identifier (table or column name)
+        const editIntroduces = (name: string): boolean => {
+          if (!opts?.edits) return false;
+          const lower = name.toLowerCase();
+          return opts.edits.some(e =>
+            e.replace && e.replace.toLowerCase().includes(lower) &&
+            (!e.search || !e.search.toLowerCase().includes(lower))
+          );
+        };
+
         if (assertion === 'table_exists') {
           if (!tableEntry) {
-            return { ...p, groundingMiss: true, groundingReason: `Table "${tableName}" not found in init.sql schema` };
+            // Check if an edit (migration) introduces this table
+            if (!editIntroduces(`CREATE TABLE ${tableName}`) && !editIntroduces(`create table ${tableName}`)) {
+              return { ...p, groundingMiss: true, groundingReason: `Table "${tableName}" not found in init.sql schema` };
+            }
           }
         }
 
         if (assertion === 'column_exists' && columnName) {
           if (!tableEntry) {
-            return { ...p, groundingMiss: true, groundingReason: `Table "${tableName}" not found in init.sql schema (checking column "${columnName}")` };
-          }
-          const colEntry = tableEntry.columns.find(
-            c => c.name.toLowerCase() === columnName.toLowerCase()
-          );
-          if (!colEntry) {
-            return { ...p, groundingMiss: true, groundingReason: `Column "${columnName}" not found in table "${tableName}"` };
+            if (!editIntroduces(`CREATE TABLE ${tableName}`) && !editIntroduces(`create table ${tableName}`)) {
+              return { ...p, groundingMiss: true, groundingReason: `Table "${tableName}" not found in init.sql schema (checking column "${columnName}")` };
+            }
+          } else {
+            const colEntry = tableEntry.columns.find(
+              c => c.name.toLowerCase() === columnName.toLowerCase()
+            );
+            if (!colEntry) {
+              // Check if edit adds this column (ALTER TABLE ADD COLUMN or within a CREATE TABLE)
+              if (!editIntroduces(columnName)) {
+                return { ...p, groundingMiss: true, groundingReason: `Column "${columnName}" not found in table "${tableName}"` };
+              }
+            }
           }
         }
 
         if (assertion === 'column_type' && columnName && p.expected) {
           if (!tableEntry) {
-            return { ...p, groundingMiss: true, groundingReason: `Table "${tableName}" not found in init.sql schema (checking column type)` };
-          }
-          const colEntry = tableEntry.columns.find(
-            c => c.name.toLowerCase() === columnName.toLowerCase()
-          );
-          if (!colEntry) {
-            return { ...p, groundingMiss: true, groundingReason: `Column "${columnName}" not found in table "${tableName}" (checking type)` };
-          }
-          // Compare types with alias normalization
-          const actualNorm = normalizeDBType(colEntry.type);
-          const expectedNorm = normalizeDBType(p.expected);
-          if (actualNorm !== expectedNorm) {
-            return { ...p, groundingMiss: true, groundingReason: `Column "${tableName}.${columnName}" type is "${colEntry.type}" (normalized: "${actualNorm}") but predicate claims "${p.expected}" (normalized: "${expectedNorm}")` };
+            if (!editIntroduces(`CREATE TABLE ${tableName}`) && !editIntroduces(`create table ${tableName}`)) {
+              return { ...p, groundingMiss: true, groundingReason: `Table "${tableName}" not found in init.sql schema (checking column type)` };
+            }
+          } else {
+            const colEntry = tableEntry.columns.find(
+              c => c.name.toLowerCase() === columnName.toLowerCase()
+            );
+            if (!colEntry) {
+              if (!editIntroduces(columnName)) {
+                return { ...p, groundingMiss: true, groundingReason: `Column "${columnName}" not found in table "${tableName}" (checking type)` };
+              }
+              // Edit introduces the column — trust it for type too
+            } else {
+              // Compare types with alias normalization
+              const actualNorm = normalizeDBType(colEntry.type);
+              const expectedNorm = normalizeDBType(p.expected);
+              if (actualNorm !== expectedNorm) {
+                // Check if edit changes the column type
+                if (!editIntroduces(p.expected)) {
+                  return { ...p, groundingMiss: true, groundingReason: `Column "${tableName}.${columnName}" type is "${colEntry.type}" (normalized: "${actualNorm}") but predicate claims "${p.expected}" (normalized: "${expectedNorm}")` };
+                }
+              }
+            }
           }
         }
       }
@@ -715,8 +875,13 @@ function extractHTMLElements(content: string): Array<{ tag: string; text?: strin
 
 const _NC: Record<string,string> = {black:'#000000',white:'#ffffff',red:'#ff0000',green:'#008000',blue:'#0000ff',navy:'#000080',orange:'#ffa500',yellow:'#ffff00',purple:'#800080',gray:'#808080',grey:'#808080',silver:'#c0c0c0',maroon:'#800000',teal:'#008080',cyan:'#00ffff',coral:'#ff7f50',tomato:'#ff6347',gold:'#ffd700',indigo:'#4b0082',crimson:'#dc143c',salmon:'#fa8072',lime:'#00ff00',aqua:'#00ffff',pink:'#ffc0cb',olive:'#808000',fuchsia:'#ff00ff',violet:'#ee82ee'};
 
-function _nC(v: string): string {
+function _nC(v: string, property?: string): string {
   const l = v.trim().toLowerCase();
+  // Font-weight equivalence: normal ↔ 400, bold ↔ 700
+  if (property === 'font-weight' || !property) {
+    if (l === 'normal' || l === '400') return '400';
+    if (l === 'bold' || l === '700') return '700';
+  }
   // Named color → hex
   if (_NC[l]) return _NC[l];
   // Zero unit equivalence: 0px, 0em, 0rem, 0%, 0pt, 0vh, 0vw → "0"
@@ -760,7 +925,16 @@ function _hslToHex(h: number, s: number, l: number): string {
   else { r = c; b = x; }
   return _rgbToHex((r + m) * 255, (g + m) * 255, (b + m) * 255);
 }
-const _SH: Record<string,string[]> = {border:['border-width','border-style','border-color'],'border-top':['border-top-width','border-top-style','border-top-color'],'border-right':['border-right-width','border-right-style','border-right-color'],'border-bottom':['border-bottom-width','border-bottom-style','border-bottom-color'],'border-left':['border-left-width','border-left-style','border-left-color'],margin:['margin-top','margin-right','margin-bottom','margin-left'],padding:['padding-top','padding-right','padding-bottom','padding-left'],background:['background-color'],font:['font-style','font-variant','font-weight','font-size','line-height','font-family'],outline:['outline-width','outline-style','outline-color']};
+const _SH: Record<string,string[]> = {border:['border-width','border-style','border-color'],'border-top':['border-top-width','border-top-style','border-top-color'],'border-right':['border-right-width','border-right-style','border-right-color'],'border-bottom':['border-bottom-width','border-bottom-style','border-bottom-color'],'border-left':['border-left-width','border-left-style','border-left-color'],margin:['margin-top','margin-right','margin-bottom','margin-left'],padding:['padding-top','padding-right','padding-bottom','padding-left'],background:['background-color'],font:['font-style','font-variant','font-weight','font-size','line-height','font-family'],outline:['outline-width','outline-style','outline-color'],flex:['flex-grow','flex-shrink','flex-basis'],overflow:['overflow-x','overflow-y']};
+
+// Shorthands whose value format is too complex for _rS (comma-separated, not positional).
+// Used ONLY for edit-adds-property detection, NOT for value resolution via _rS.
+const _SH_EDIT_ONLY: Record<string,string[]> = {transition:['transition-property','transition-duration','transition-timing-function','transition-delay'],animation:['animation-name','animation-duration','animation-timing-function','animation-delay','animation-iteration-count','animation-direction','animation-fill-mode','animation-play-state'],'grid-template':['grid-template-rows','grid-template-columns']};
+
+function _stripVendor(prop: string): string|undefined {
+  const m = prop.match(/^-(?:webkit|moz|ms|o)-(.+)$/);
+  return m ? m[1] : undefined;
+}
 function _rS(sp: string, sv: string, lp: string): string|undefined { const ls=_SH[sp]; if(!ls) return; const i=ls.indexOf(lp); if(i===-1) return; const t=sv.trim().split(/\s+/); return t[i]; }
 
 // =============================================================================

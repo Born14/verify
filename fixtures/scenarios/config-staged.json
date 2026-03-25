@@ -1,0 +1,410 @@
+[
+  {
+    "id": "cfg-001",
+    "description": "env exists: NODE_ENV exists in .env",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "config",
+        "key": "NODE_ENV",
+        "expected": "exists"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "config",
+      "env_exists"
+    ],
+    "rationale": "NODE_ENV is defined in demo-app .env"
+  },
+  {
+    "id": "cfg-002",
+    "description": "env exists: PORT exists in .env",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "config",
+        "key": "PORT",
+        "expected": "exists"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "config",
+      "env_exists"
+    ],
+    "rationale": "PORT is defined in demo-app .env"
+  },
+  {
+    "id": "cfg-003",
+    "description": "env exists: DATABASE_URL exists in .env",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "config",
+        "key": "DATABASE_URL",
+        "expected": "exists"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "config",
+      "env_exists"
+    ],
+    "rationale": "DATABASE_URL is defined in demo-app .env"
+  },
+  {
+    "id": "cfg-004",
+    "description": "env exists: SECRET_KEY exists in .env",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "config",
+        "key": "SECRET_KEY",
+        "expected": "exists"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "config",
+      "env_exists"
+    ],
+    "rationale": "SECRET_KEY is defined in demo-app .env"
+  },
+  {
+    "id": "cfg-005",
+    "description": "env exists: DEBUG exists in .env",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "config",
+        "key": "DEBUG",
+        "expected": "exists"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "config",
+      "env_exists"
+    ],
+    "rationale": "DEBUG is defined in demo-app .env"
+  },
+  {
+    "id": "cfg-006",
+    "description": "env exists: nonexistent key fails",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "config",
+        "key": "NONEXISTENT_KEY",
+        "expected": "exists"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "config",
+      "env_exists_fail"
+    ],
+    "rationale": "NONEXISTENT_KEY is not in any config file"
+  },
+  {
+    "id": "cfg-007",
+    "description": "env value: NODE_ENV == production",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "config",
+        "key": "NODE_ENV",
+        "expected": "production"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "config",
+      "env_value"
+    ],
+    "rationale": ".env has NODE_ENV=production"
+  },
+  {
+    "id": "cfg-008",
+    "description": "env value: PORT == 3000",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "config",
+        "key": "PORT",
+        "expected": "3000"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "config",
+      "env_value"
+    ],
+    "rationale": ".env has PORT=3000"
+  },
+  {
+    "id": "cfg-009",
+    "description": "env value: DEBUG == false",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "config",
+        "key": "DEBUG",
+        "expected": "false"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "config",
+      "env_value"
+    ],
+    "rationale": ".env has DEBUG=false"
+  },
+  {
+    "id": "cfg-010",
+    "description": "env value: PORT wrong value",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "config",
+        "key": "PORT",
+        "expected": "8080"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "config",
+      "env_value_fail"
+    ],
+    "rationale": "PORT is 3000, not 8080"
+  },
+  {
+    "id": "cfg-011",
+    "description": "env source: NODE_ENV exists with dotenv source",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "config",
+        "key": "NODE_ENV",
+        "source": "dotenv",
+        "expected": "exists"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "config",
+      "env_source"
+    ],
+    "rationale": "Scoping to dotenv still finds NODE_ENV in .env"
+  },
+  {
+    "id": "cfg-012",
+    "description": "json exists: app.name exists in config.json",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "config",
+        "key": "app.name",
+        "expected": "exists"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "config",
+      "json_exists"
+    ],
+    "rationale": "config.json has app.name = \"Demo App\""
+  },
+  {
+    "id": "cfg-013",
+    "description": "json exists: database.port exists in config.json",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "config",
+        "key": "database.port",
+        "expected": "exists"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "config",
+      "json_exists"
+    ],
+    "rationale": "config.json has database.port = 5432"
+  },
+  {
+    "id": "cfg-014",
+    "description": "json exists: features.darkMode exists in config.json",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "config",
+        "key": "features.darkMode",
+        "expected": "exists"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "config",
+      "json_exists"
+    ],
+    "rationale": "config.json has features.darkMode = true"
+  },
+  {
+    "id": "cfg-015",
+    "description": "json exists: nonexistent nested key fails",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "config",
+        "key": "app.nonexistent",
+        "expected": "exists"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "config",
+      "json_exists_fail"
+    ],
+    "rationale": "app.nonexistent is not in config.json"
+  },
+  {
+    "id": "cfg-016",
+    "description": "json value: app.name == Demo App",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "config",
+        "key": "app.name",
+        "expected": "Demo App"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "config",
+      "json_value"
+    ],
+    "rationale": "config.json has app.name = \"Demo App\""
+  },
+  {
+    "id": "cfg-017",
+    "description": "json value: database.host == localhost",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "config",
+        "key": "database.host",
+        "expected": "localhost"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "config",
+      "json_value"
+    ],
+    "rationale": "config.json has database.host = \"localhost\""
+  },
+  {
+    "id": "cfg-018",
+    "description": "json value: features.darkMode == true",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "config",
+        "key": "features.darkMode",
+        "expected": "true"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "config",
+      "json_value"
+    ],
+    "rationale": "config.json has features.darkMode = true (boolean, compared as string)"
+  },
+  {
+    "id": "cfg-019",
+    "description": "json value: app.name wrong value",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "config",
+        "key": "app.name",
+        "expected": "Wrong App"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "config",
+      "json_value_fail"
+    ],
+    "rationale": "app.name is \"Demo App\" not \"Wrong App\""
+  },
+  {
+    "id": "cfg-020",
+    "description": "json source: app.name with json source",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "config",
+        "key": "app.name",
+        "source": "json",
+        "expected": "Demo App"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "config",
+      "json_source"
+    ],
+    "rationale": "Scoping to json source finds app.name in config.json"
+  },
+  {
+    "id": "cfg-021",
+    "description": "multi: env + json predicates together pass",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "config",
+        "key": "NODE_ENV",
+        "expected": "production"
+      },
+      {
+        "type": "config",
+        "key": "app.name",
+        "expected": "Demo App"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "config",
+      "multi"
+    ],
+    "rationale": "Both env and json predicates pass"
+  },
+  {
+    "id": "cfg-022",
+    "description": "multi: one failing predicate fails gate",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "config",
+        "key": "NODE_ENV",
+        "expected": "production"
+      },
+      {
+        "type": "config",
+        "key": "app.name",
+        "expected": "Wrong"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "config",
+      "multi"
+    ],
+    "rationale": "Second predicate fails, entire gate fails"
+  }
+]

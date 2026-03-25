@@ -223,6 +223,14 @@ export interface VerifyConfig {
   /** Constraint IDs to explicitly override (bypass K5 for known risks) */
   overrideConstraints?: string[];
 
+  /** K5 constraint learning mode:
+   *  - 'session' (default): constraints seeded during this call are cleaned up afterward.
+   *    Each verify() call is isolated — failures don't poison subsequent calls.
+   *  - 'persistent': constraints persist across calls. Use this in convergence loops
+   *    (e.g., govern()) where you want the system to learn from prior failures.
+   */
+  learning?: 'session' | 'persistent';
+
   /** Migrations to apply during staging */
   migrations?: Migration[];
 

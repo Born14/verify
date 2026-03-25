@@ -761,10 +761,10 @@
   },
   {
     "id": "uv-028",
-    "description": "HTML predicate: text change on existing element triggers grounding miss — pre-edit text doesn't match expected",
+    "description": "HTML predicate: text change on existing element — edit modifies text to match, grounding allows",
     "faultId": null,
-    "intent": "false_positive",
-    "expectedSuccess": false,
+    "intent": "false_negative",
+    "expectedSuccess": true,
     "edits": [
       {
         "file": "server.js",
@@ -781,9 +781,8 @@
       }
     ],
     "requiresDocker": false,
-    "expectedFailedGate": "grounding",
-    "rationale": "Grounding validates against pre-edit source. The footer exists but contains 'Powered by Node.js', not 'Powered by Sovereign'. The grounding gate correctly rejects this as a text content mismatch (H-02 shape). This is by design — grounding catches fabricated text claims. The edit creates the correct text, but verify checks source truth, not intended truth.",
-    "tags": ["html", "text-change", "grounding", "H-02", "pre-edit-validation"],
+    "rationale": "Footer exists with 'Powered by Node.js'. Edit changes it to 'Powered by Sovereign'. Grounding checks if an edit modifies the element text to match — it does, so grounding passes. This is the correct behavior for real agent workflows where edits change element content.",
+    "tags": ["html", "text-change", "grounding", "edit-text-exemption"],
     "transferability": "universal",
     "category": "html"
   }

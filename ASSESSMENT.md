@@ -116,13 +116,16 @@ Do not hedge on the loop's value to appear "balanced." The loop works. It has pr
 - Every sprint adds scenarios that make the npm package more reliable for everyone.
 - The loop is young (weeks, not months) but has already closed multiple real bugs end-to-end. Young and working is a feature, not a flaw, for this audience.
 
-## Current State (March 24, 2026)
+## Current State (March 25, 2026)
 
 | Component | Status | Confidence |
 |-----------|--------|------------|
-| Pipeline (17 gates) | Shipped v0.4.0 on npm | High |
+| Pipeline (17 gates) | Shipped v0.5.2 on npm | High |
 | `govern()` convergence loop | Shipped, 15 scenarios, convergence detection proven | High |
-| Self-test harness (783 scenarios, 14 families) | Shipped, deterministic, <90s pure / ~5min live, 3 known bugs | High |
+| Self-test harness | 333 tests, 21,321 assertions, 0 failures | High |
+| Scenario corpus | 5,694 total (727 per-gate + 28 universal + 4,939 WPT) | High |
+| Staged scenario files | 16 domain-specific + 1 universal + 1 WPT = 18 files | High |
+| Harvest scripts | 18 generators producing deterministic scenarios from fixtures | High |
 | Tiered self-test (Phase IV) | Pure (738) + Live Docker (45) + Playwright (10, placeholder) | High |
 | Decomposition engine (349 rules, 24 domains) | 376/603 failure classes covered (63%) | High |
 | Failure taxonomy (603 shapes, 27 domains) | Complete algebra, 349 with decomposition rules | High |
@@ -130,8 +133,41 @@ Do not hedge on the loop's value to appear "balanced." The loop works. It has pr
 | Improve loop (7-stage) | Built, proven end-to-end, has 10 identified gaps | Medium-High |
 | Chaos engine (3 MCP tools) | Built, proven in 2 sessions | Medium-High |
 | Fault ledger | Built, wired, govern() integration | High |
-| Grounding gate | Working, CRLF normalization fixed | High |
+| Grounding gate | Route-scoped CSS extraction, class token detection, mtime cache | High |
 | Quality surface gates (security, a11y, performance) | 16 static scanners, 16 shapes | High |
+| K5 session isolation | Fixed — constraints no longer bleed between verify() calls | High |
+
+### Phase V: Per-Gate Scenario Harvesting + K5 Fix (March 25, 2026)
+
+Phase V industrialized scenario generation and fixed a critical K5 constraint bleeding bug.
+
+**Scenario harvesting:** 18 generator scripts in `scripts/harvest/` produce deterministic scenarios from the demo-app fixtures. Each gate has its own staged JSON file in `fixtures/scenarios/`. The generators read real fixture data (file hashes, directory counts, terraform state, etc.) so scenarios stay grounded in reality.
+
+| Gate | Staged File | Scenarios |
+|------|------------|-----------|
+| A11y | `a11y-staged.json` | 12 |
+| Config | `config-staged.json` | 22 |
+| Content | `content-staged.json` | 66 |
+| DB | `db-staged.json` | 116 |
+| F9 (Syntax) | `f9-staged.json` | 91 |
+| Filesystem | `filesystem-staged.json` | 25 |
+| G5 (Containment) | `g5-staged.json` | 16 |
+| HTML | `html-staged.json` | 174 |
+| HTTP | `http-staged.json` | 67 |
+| Infrastructure | `infrastructure-staged.json` | 18 |
+| K5 (Constraints) | `k5-staged.json` | 50 |
+| Message | `message-staged.json` | 14 |
+| Performance | `performance-staged.json` | 14 |
+| Security | `security-staged.json` | 20 |
+| Serialization | `serialization-staged.json` | 16 |
+| Triangulation | `triangulation-staged.json` | 6 |
+| Universal | `universal.json` | 28 |
+| WPT | `wpt-staged.json` | 4,939 |
+| **Total** | | **5,694** |
+
+**K5 constraint bleeding fix:** Constraints seeded by a failing `verify()` call were persisting to `{appDir}/.verify/memory.jsonl` and poisoning subsequent calls. Session-scoped cleanup now runs automatically in both success and failure paths. Each `verify()` call is isolated by default. `govern()` uses `learning: 'persistent'` to preserve cross-attempt learning in convergence loops.
+
+**Grounding gate enhancement:** Route-scoped CSS extraction (`extractRouteBlocks`, `extractRouteHTML`), class token extraction for data-dependent predicate detection, mtime-based cache invalidation.
 
 ### Phase IV: Live Infrastructure Testing (March 24, 2026)
 

@@ -1,0 +1,258 @@
+[
+  {
+    "id": "perf-001",
+    "description": "bundle_size: server.js under default 512KB threshold",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "performance",
+        "perfCheck": "bundle_size"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "performance",
+      "bundle_size"
+    ],
+    "rationale": "server.js is small (~10KB), well under 512KB default"
+  },
+  {
+    "id": "perf-002",
+    "description": "bundle_size: custom low threshold should fail",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "performance",
+        "perfCheck": "bundle_size",
+        "threshold": 100
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "performance",
+      "bundle_size_fail"
+    ],
+    "rationale": "server.js is >100 bytes, should fail with very low threshold"
+  },
+  {
+    "id": "perf-003",
+    "description": "image_optimization: demo-app has no image files",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "performance",
+        "perfCheck": "image_optimization"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "performance",
+      "image_optimization"
+    ],
+    "rationale": "No image files in demo-app, nothing to optimize"
+  },
+  {
+    "id": "perf-004",
+    "description": "lazy_loading: demo-app img lacks loading=\"lazy\"",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "performance",
+        "perfCheck": "lazy_loading",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "performance",
+      "lazy_loading"
+    ],
+    "rationale": "demo-app has <img class=\"logo\"> without loading=\"lazy\" — gate finds issues and returns failure"
+  },
+  {
+    "id": "perf-005",
+    "description": "connection_count: demo-app has no external connections",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "performance",
+        "perfCheck": "connection_count"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "performance",
+      "connection_count"
+    ],
+    "rationale": "No external script/link tags in demo-app HTML"
+  },
+  {
+    "id": "perf-006",
+    "description": "connection_count: low threshold should still pass (no externals)",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "performance",
+        "perfCheck": "connection_count",
+        "threshold": 1
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "performance",
+      "connection_count"
+    ],
+    "rationale": "Zero external connections < threshold of 1"
+  },
+  {
+    "id": "perf-007",
+    "description": "unminified_assets: server.js is not minified (dev code)",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "performance",
+        "perfCheck": "unminified_assets",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "performance",
+      "unminified_assets"
+    ],
+    "rationale": "server.js has comments, whitespace, long variable names"
+  },
+  {
+    "id": "perf-008",
+    "description": "render_blocking: demo-app uses inline styles (no external CSS)",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "performance",
+        "perfCheck": "render_blocking",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "performance",
+      "render_blocking"
+    ],
+    "rationale": "demo-app uses <style> blocks, no external CSS links to block render"
+  },
+  {
+    "id": "perf-009",
+    "description": "dom_depth: demo-app has reasonable nesting",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "performance",
+        "perfCheck": "dom_depth",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "performance",
+      "dom_depth"
+    ],
+    "rationale": "demo-app HTML is not deeply nested (max ~6-7 levels)"
+  },
+  {
+    "id": "perf-010",
+    "description": "cache_headers: demo-app has no cache headers",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "performance",
+        "perfCheck": "cache_headers",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "performance",
+      "cache_headers"
+    ],
+    "rationale": "demo-app sets Content-Type but no Cache-Control headers"
+  },
+  {
+    "id": "perf-011",
+    "description": "duplicate_deps: demo-app has no package.json deps",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "performance",
+        "perfCheck": "duplicate_deps",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "performance",
+      "duplicate_deps"
+    ],
+    "rationale": "demo-app has no package.json with dependencies"
+  },
+  {
+    "id": "perf-012",
+    "description": "response_time: advisory check passes (no live server)",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "performance",
+        "perfCheck": "response_time"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "performance",
+      "response_time"
+    ],
+    "rationale": "response_time is deferred/advisory without a running server"
+  },
+  {
+    "id": "perf-013",
+    "description": "multi: bundle_size + dom_depth both pass",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "performance",
+        "perfCheck": "bundle_size"
+      },
+      {
+        "type": "performance",
+        "perfCheck": "dom_depth",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "performance",
+      "multi"
+    ],
+    "rationale": "Both checks pass on demo-app"
+  },
+  {
+    "id": "perf-014",
+    "description": "multi: clean check + failing check",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "performance",
+        "perfCheck": "bundle_size"
+      },
+      {
+        "type": "performance",
+        "perfCheck": "bundle_size",
+        "threshold": 50
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "performance",
+      "multi_fail"
+    ],
+    "rationale": "Second predicate has impossible threshold, gate fails"
+  }
+]
