@@ -8,15 +8,18 @@
 > is represented by at least one grounded, reproducible failure shape backed
 > by a generator that simulates real-world failure mechanics.
 
-A shape without a generator that reproduces the actual failure mechanism (timing, cross-surface chain, environment divergence) does not count toward parity.
+A shape without a generator that reproduces the actual failure mechanism (timing, cross-surface chain, environment divergence, denial, exhaustion, collision) does not count toward parity.
 
-## The Two Halves of Agent Failure
+## The Three Questions of Agent Failure
 
 Verify was built around: **"Did the agent do the right thing?"**
 That naturally covers Selection, Mutation, and Convergence.
 
 True parity requires: **"Did the world react the way you expected?"**
 That requires Temporal, Propagation, and State Assumption coverage.
+
+Complete parity requires: **"Was the world even available to act on?"**
+That requires Access, Capacity, and Contention coverage.
 
 ---
 
@@ -33,7 +36,7 @@ That requires Temporal, Propagation, and State Assumption coverage.
 | 7 | **Verification/Observation** | Checking own work, evidence gathering | Attribution, Vision/Triangulation, Observer Effects |
 | 8 | **Configuration/State** | Env vars, feature flags, security, a11y, perf | Config, Security, A11y, Performance |
 
-## Failure Class Axis (7 — invariant across all capabilities)
+## Failure Class Axis (10 — invariant across all capabilities)
 
 | # | Failure Class | What It Means | Generator Requirement |
 |---|-------------|---------------|----------------------|
@@ -44,6 +47,9 @@ That requires Temporal, Propagation, and State Assumption coverage.
 | E | **Propagation** | Change didn't cascade across layers | Must simulate multi-surface chain |
 | F | **Observation** | Verification itself is wrong | Must simulate observer effects |
 | G | **Convergence** | Repeating failed patterns | Must simulate learning loop |
+| H | **Access** | Agent lacks permission to act on correct target | Must simulate permission denial, auth failure, or privilege boundary |
+| I | **Capacity** | Environment runs out of a resource the agent needs | Must simulate resource exhaustion (memory, disk, rate limits, quotas) |
+| J | **Contention** | Multiple actors collide on the same resource | Must simulate concurrent access, race conditions, or lock conflicts |
 
 ---
 
@@ -51,16 +57,16 @@ That requires Temporal, Propagation, and State Assumption coverage.
 
 **Legend:** ✓ = strong coverage, ◐ = partial, ✗ = blind spot
 
-| Capability ↓ / Failure → | A: Selection | B: Mutation | C: State | D: Temporal | E: Propagation | F: Observation | G: Convergence |
-|--------------------------|:-----------:|:-----------:|:--------:|:-----------:|:--------------:|:--------------:|:--------------:|
-| **1. Filesystem** | ✓ | ✓ | ◐ | ◐ | ◐ | ✓ | ✓ |
-| **2. HTTP** | ✓ | ✓ | ◐ | ◐ | ◐ | ✓ | ✓ |
-| **3. Browser** | ✓ | ✓ | ◐ | ◐ | ◐ | ◐ | ✓ |
-| **4. Database** | ✓ | ✓ | ◐ | ◐ | ✗ | ✗ | ✓ |
-| **5. CLI/Process** | ✓ | ✓ | ◐ | ◐ | ✗ | ✗ | ✓ |
-| **6. Multi-Step** | ✓ | ✓ | ◐ | ✗ | ✗ | ✓ | ✓ |
-| **7. Verify/Observe** | ✓ | N/A | ✓ | ✗ | ✗ | ✓ | ✓ |
-| **8. Config/State** | ✓ | ✓ | ◐ | ✗ | ✗ | ✗ | ✓ |
+| Capability ↓ / Failure → | A: Selection | B: Mutation | C: State | D: Temporal | E: Propagation | F: Observation | G: Convergence | H: Access | I: Capacity | J: Contention |
+|--------------------------|:-----------:|:-----------:|:--------:|:-----------:|:--------------:|:--------------:|:--------------:|:---------:|:-----------:|:-------------:|
+| **1. Filesystem** | ✓ | ✓ | ◐ | ◐ | ◐ | ✓ | ✓ | ✗ | ✗ | ✗ |
+| **2. HTTP** | ✓ | ✓ | ◐ | ◐ | ◐ | ✓ | ✓ | ✗ | ✗ | ✗ |
+| **3. Browser** | ✓ | ✓ | ◐ | ◐ | ◐ | ◐ | ✓ | ✗ | ✗ | ✗ |
+| **4. Database** | ✓ | ✓ | ◐ | ◐ | ✗ | ✗ | ✓ | ✗ | ✗ | ✗ |
+| **5. CLI/Process** | ✓ | ✓ | ◐ | ◐ | ✗ | ✗ | ✓ | ✗ | ✗ | ✗ |
+| **6. Multi-Step** | ✓ | ✓ | ◐ | ✗ | ✗ | ✓ | ✓ | ✗ | ✗ | ✗ |
+| **7. Verify/Observe** | ✓ | N/A | ✓ | ✗ | ✗ | ✓ | ✓ | ✗ | ✗ | ✗ |
+| **8. Config/State** | ✓ | ✓ | ◐ | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ | ✗ |
 
 ### Summary
 
@@ -73,16 +79,15 @@ That requires Temporal, Propagation, and State Assumption coverage.
 | C: State Assumption | 2/8 strong, 6/8 partial | **PARTIAL** — Phase 3 complete (C×4, C×5, C×8, 43 scenarios) |
 | D: Temporal | 5/8 partial | **PARTIAL** — Phase 1 complete (D×1–D×5, 66 scenarios) |
 | E: Propagation | 3/8 partial | **PARTIAL** — Phase 2 complete (E×1–E×3, 44 scenarios) |
+| H: Access | 0/8 | **BLIND** — no coverage |
+| I: Capacity | 0/8 | **BLIND** — no coverage |
+| J: Contention | 0/8 | **BLIND** — no coverage |
 
-**Current parity: ~70% (39/56 cells strong or partial, 17/56 blind)**
-
----
-
-## Active Gaps: Top 10 Cells
-
-Priority-ordered by real-world frequency and impact. Each shape includes the generator pattern required to actually simulate the failure.
+**Current parity: ~49% (39/80 cells strong or partial, 41/80 blind)**
 
 ---
+
+## Completed Cells (Phases 1–3)
 
 ### Cell 1: Temporal × Database (D×4)
 
@@ -241,9 +246,9 @@ Priority-ordered by real-world frequency and impact. Each shape includes the gen
 
 ---
 
-## Remaining Blind Cells (after top 10)
+## Remaining Blind Cells (41 total)
 
-These 15 cells remain for future work:
+### Original gaps (17 — from 7-class grid)
 
 | Cell | Priority | Notes |
 |------|----------|-------|
@@ -263,6 +268,45 @@ These 15 cells remain for future work:
 | Observation × CLI (F×5) | Medium | Probe changes system state |
 | Observation × Config (F×8) | Low | Config check alters config |
 
+### Access gaps (8 — new class H)
+
+| Cell | Priority | Notes |
+|------|----------|-------|
+| Access × Filesystem (H×1) | High | File permission denied, read-only mount, ownership mismatch |
+| Access × HTTP (H×2) | High | 401/403 from API, expired token, CORS rejection |
+| Access × Browser (H×3) | Medium | CSP blocks script, CORS blocks fetch, iframe sandbox |
+| Access × Database (H×4) | High | GRANT missing, role lacks ALTER/INSERT, connection denied |
+| Access × CLI/Process (H×5) | High | sudo required, Docker socket denied, SSH key rejected |
+| Access × Multi-Step (H×6) | Medium | Step N succeeds but step N+1 needs elevated privilege |
+| Access × Verify/Observe (H×7) | Low | Probe blocked by firewall, metrics endpoint auth-gated |
+| Access × Config (H×8) | Medium | .env file 600 permissions, secrets manager ACL, KMS denied |
+
+### Capacity gaps (8 — new class I)
+
+| Cell | Priority | Notes |
+|------|----------|-------|
+| Capacity × Filesystem (I×1) | High | Disk full during write, inode exhaustion, tmpfs overflow |
+| Capacity × HTTP (I×2) | High | Rate limit (429), connection pool exhausted, payload too large (413) |
+| Capacity × Browser (I×3) | Medium | Memory limit in headless browser, DOM node limit, localStorage quota |
+| Capacity × Database (I×4) | High | Connection pool exhausted, max_connections hit, table bloat/vacuum |
+| Capacity × CLI/Process (I×5) | High | OOM killed, PID limit, ulimit (open files, processes) |
+| Capacity × Multi-Step (I×6) | Medium | Cumulative resource leak across steps, timeout budget exceeded |
+| Capacity × Verify/Observe (I×7) | Low | Log volume overwhelms parser, metrics cardinality explosion |
+| Capacity × Config (I×8) | Medium | .env too large for shell, config file exceeds parser limit |
+
+### Contention gaps (8 — new class J)
+
+| Cell | Priority | Notes |
+|------|----------|-------|
+| Contention × Filesystem (J×1) | High | Two agents edit same file, lock file conflict, git merge conflict |
+| Contention × HTTP (J×2) | Medium | Concurrent deploys to same endpoint, session collision |
+| Contention × Browser (J×3) | Low | Two tests driving same browser instance, shared cookie jar |
+| Contention × Database (J×4) | High | Deadlock, concurrent migrations, row-level lock wait timeout |
+| Contention × CLI/Process (J×5) | High | Port already in use, PID file stale, Docker container name conflict |
+| Contention × Multi-Step (J×6) | Medium | Step 2 of workflow A conflicts with step 1 of workflow B |
+| Contention × Verify/Observe (J×7) | Low | Two verifiers read conflicting snapshots of same resource |
+| Contention × Config (J×8) | Medium | Two processes write .env simultaneously, config merge conflict |
+
 ---
 
 ## Definition of Done (per shape)
@@ -271,9 +315,9 @@ A shape counts toward parity when ALL of the following are true:
 
 1. **Shape defined** — Named, described, mapped to grid cell
 2. **Generator exists** — Produces scenario(s) that simulate real failure mechanics
-3. **Generator simulates reality** — Temporal shapes use timing/delay. Propagation shapes use multi-surface chains. State shapes use environment divergence. Static mocks do NOT count for D/E/C cells.
+3. **Generator simulates reality** — Temporal shapes use timing/delay. Propagation shapes use multi-surface chains. State shapes use environment divergence. Access shapes use permission denial. Capacity shapes use resource exhaustion. Contention shapes use concurrent actors. Static mocks do NOT count for D/E/C/H/I/J cells.
 4. **Scenario validated** — Self-test runner executes scenario, asserts correct verdict
-5. **Gate wired** — Existing gate(s) can detect the failure (no new gates required for top 10)
+5. **Gate wired** — Existing gate(s) can detect the failure (or new gate identified if needed)
 
 ---
 
@@ -289,14 +333,14 @@ A shape counts toward parity when ALL of the following are true:
 
 ## Metrics
 
-| Metric | Current | After Top 10 | Parity Target |
-|--------|---------|-------------|---------------|
-| Strong cells | 23/56 | 33/56 | 48/56 |
-| Partial cells | 11/56 | 11/56 | 8/56 |
-| Blind cells | 22/56 | 12/56 | 0/56 |
-| Parity % | 61% | ~80% | 100% |
-| Shapes (total) | 617 | ~637 | ~670 |
-| New generators needed | — | 14 | ~55 |
+| Metric | Current | After 80-cell grid | Parity Target |
+|--------|---------|-------------------|---------------|
+| Strong cells | 23/80 | — | 64/80 |
+| Partial cells | 16/80 | — | 16/80 |
+| Blind cells | 41/80 | 0/80 | 0/80 |
+| Parity % | 49% | ~100% cell coverage | 100% depth |
+| Shapes (total) | ~620 | ~700 | ~750+ |
+| Scenarios (total) | ~1,794 | ~2,200 | ~2,500 |
 
 ---
 
