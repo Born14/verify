@@ -1,0 +1,394 @@
+[
+  {
+    "id": "pf-artifact-001",
+    "description": "PF-01: Change port in config.json to 4000, .env still has PORT=3000",
+    "edits": [
+      {
+        "file": "config.json",
+        "search": "\"port\": 3000",
+        "replace": "\"port\": 4000"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": ".env",
+        "pattern": "PORT=4000"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "propagation",
+      "filesystem",
+      "source_artifact",
+      "PF-01"
+    ],
+    "rationale": "Port changed in config.json but .env not updated — cross-file propagation gap"
+  },
+  {
+    "id": "pf-artifact-002",
+    "description": "PF-01: Change port in config.json to 4000, Dockerfile still EXPOSE 3000",
+    "edits": [
+      {
+        "file": "config.json",
+        "search": "\"port\": 3000",
+        "replace": "\"port\": 4000"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "Dockerfile",
+        "pattern": "EXPOSE 4000"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "propagation",
+      "filesystem",
+      "source_artifact",
+      "PF-01"
+    ],
+    "rationale": "Port changed in config but Dockerfile not updated — build artifact stale"
+  },
+  {
+    "id": "pf-artifact-003",
+    "description": "PF-01: Change PORT in .env to 8080, docker-compose still has PORT=3000",
+    "edits": [
+      {
+        "file": ".env",
+        "search": "PORT=3000",
+        "replace": "PORT=8080"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "docker-compose.yml",
+        "pattern": "PORT=8080"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "propagation",
+      "filesystem",
+      "source_artifact",
+      "PF-01"
+    ],
+    "rationale": ".env port changed but docker-compose environment not updated"
+  },
+  {
+    "id": "pf-artifact-004",
+    "description": "PF-01: Rename database to \"app_db\" in config.json, .env still has \"demo\"",
+    "edits": [
+      {
+        "file": "config.json",
+        "search": "\"name\": \"demo\"",
+        "replace": "\"name\": \"app_db\""
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": ".env",
+        "pattern": "app_db"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "propagation",
+      "filesystem",
+      "source_artifact",
+      "PF-01"
+    ],
+    "rationale": "DB name changed in config but DATABASE_URL in .env still points to old name"
+  },
+  {
+    "id": "pf-artifact-005",
+    "description": "PF-01: Change db host to \"db\" in config.json, .env still has localhost",
+    "edits": [
+      {
+        "file": "config.json",
+        "search": "\"host\": \"localhost\"",
+        "replace": "\"host\": \"db\""
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": ".env",
+        "pattern": "postgres://db:"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "propagation",
+      "filesystem",
+      "source_artifact",
+      "PF-01"
+    ],
+    "rationale": "DB host changed in config.json but .env DATABASE_URL still points to localhost"
+  },
+  {
+    "id": "pf-artifact-006",
+    "description": "PF-01: Dockerfile healthcheck changed to /ready, docker-compose still checks /health",
+    "edits": [
+      {
+        "file": "Dockerfile",
+        "search": "http://localhost:3000/health",
+        "replace": "http://localhost:3000/ready"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "docker-compose.yml",
+        "pattern": "/ready"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "propagation",
+      "filesystem",
+      "source_artifact",
+      "PF-01"
+    ],
+    "rationale": "Dockerfile healthcheck path changed but docker-compose not updated"
+  },
+  {
+    "id": "pf-artifact-007",
+    "description": "PF-01: Change app name to \"My App\" in config.json, server.js still has \"Demo App\"",
+    "edits": [
+      {
+        "file": "config.json",
+        "search": "\"name\": \"Demo App\"",
+        "replace": "\"name\": \"My App\""
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "My App"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "propagation",
+      "filesystem",
+      "source_artifact",
+      "PF-01"
+    ],
+    "rationale": "App name changed in config but server.js HTML titles not updated — config→source propagation gap"
+  },
+  {
+    "id": "pf-artifact-008",
+    "description": "PF-01 control: Change port in config.json, check config.json for new value",
+    "edits": [
+      {
+        "file": "config.json",
+        "search": "\"port\": 3000",
+        "replace": "\"port\": 5000"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "config.json",
+        "pattern": "\"port\": 5000"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "propagation",
+      "filesystem",
+      "source_artifact",
+      "PF-01",
+      "control"
+    ],
+    "rationale": "Same-file check — no propagation needed, should pass"
+  },
+  {
+    "id": "pf-rebuild-009",
+    "description": "PF-02: Rename /api/items to /api/products in server.js, homepage nav still links to /api/items",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "req.url === '/api/items'",
+        "replace": "req.url === '/api/products'"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "href=\"/api/products\""
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "propagation",
+      "filesystem",
+      "rebuild_gap",
+      "PF-02"
+    ],
+    "rationale": "Route handler renamed but nav link in same file still references old route — intra-file propagation gap"
+  },
+  {
+    "id": "pf-rebuild-010",
+    "description": "PF-02: Change CMD to app.js in Dockerfile, server.js is still the only source file",
+    "edits": [
+      {
+        "file": "Dockerfile",
+        "search": "CMD [\"node\", \"server.js\"]",
+        "replace": "CMD [\"node\", \"app.js\"]"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "Dockerfile",
+        "pattern": "COPY app.js"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "propagation",
+      "filesystem",
+      "rebuild_gap",
+      "PF-02"
+    ],
+    "rationale": "CMD changed to app.js but COPY still copies server.js — Dockerfile internal propagation gap"
+  },
+  {
+    "id": "pf-rebuild-011",
+    "description": "PF-02: Change NODE_ENV to development in .env, server.js has no development-specific logic",
+    "edits": [
+      {
+        "file": ".env",
+        "search": "NODE_ENV=production",
+        "replace": "NODE_ENV=development"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "development"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "propagation",
+      "filesystem",
+      "rebuild_gap",
+      "PF-02"
+    ],
+    "rationale": "Env changed to development but server.js has no conditional logic for it — config→code propagation gap"
+  },
+  {
+    "id": "pf-rebuild-012",
+    "description": "PF-02: Add avatar_url column to users in init.sql, server.js API has no reference",
+    "edits": [
+      {
+        "file": "init.sql",
+        "search": "email VARCHAR(255) NOT NULL,",
+        "replace": "email VARCHAR(255) NOT NULL,\n    avatar_url TEXT,"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "avatar_url"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "propagation",
+      "filesystem",
+      "rebuild_gap",
+      "PF-02"
+    ],
+    "rationale": "Schema column added but API layer not updated — DB→API propagation gap"
+  },
+  {
+    "id": "pf-rebuild-013",
+    "description": "PF-02: Rename \"posts\" to \"articles\" in init.sql, no \"articles\" reference in server.js",
+    "edits": [
+      {
+        "file": "init.sql",
+        "search": "CREATE TABLE posts",
+        "replace": "CREATE TABLE articles"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "articles"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "propagation",
+      "filesystem",
+      "rebuild_gap",
+      "PF-02"
+    ],
+    "rationale": "Table renamed in schema but server.js code not updated — schema→code propagation gap"
+  },
+  {
+    "id": "pf-rebuild-014",
+    "description": "PF-02: Enable analytics in config.json, server.js has no analytics tracking code",
+    "edits": [
+      {
+        "file": "config.json",
+        "search": "\"analytics\": false",
+        "replace": "\"analytics\": true"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "analytics"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "propagation",
+      "filesystem",
+      "rebuild_gap",
+      "PF-02"
+    ],
+    "rationale": "Feature flag enabled but server has no analytics implementation — config→behavior propagation gap"
+  },
+  {
+    "id": "pf-rebuild-015",
+    "description": "PF-02 control: Add column to init.sql, check init.sql for new column",
+    "edits": [
+      {
+        "file": "init.sql",
+        "search": "email VARCHAR(255) NOT NULL,",
+        "replace": "email VARCHAR(255) NOT NULL,\n    phone VARCHAR(20),"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "init.sql",
+        "pattern": "phone VARCHAR(20)"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "propagation",
+      "filesystem",
+      "rebuild_gap",
+      "PF-02",
+      "control"
+    ],
+    "rationale": "Same-file check — no propagation needed, should pass"
+  }
+]

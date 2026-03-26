@@ -190,7 +190,9 @@ describe('ConstraintStore', () => {
 
     expect(store.getConstraintCount()).toBe(1);
     store.cleanupSession('test-session');
-    expect(store.getConstraintCount()).toBe(0);
+    expect(store.getActiveConstraintCount()).toBe(0);
+    // High-water mark stays at 1 (monotonic for K5 learning)
+    expect(store.getConstraintCount()).toBe(1);
     rmSync(stateDir, { recursive: true, force: true });
   });
 

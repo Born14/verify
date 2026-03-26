@@ -169,6 +169,8 @@ export async function verify(
       if (failed.length > 0) {
         const detail = `Edit application failed: ${failed.map(f => `${f.file}: ${f.reason}`).join('; ')}`;
         log(`[F9] ${detail}`);
+        // Push a failing gate so gate_success_consistency holds (success=false ↔ some gate failed)
+        gates.push({ gate: 'F9_apply' as any, passed: false, detail, durationMs: Date.now() - totalStart });
         return buildResult({
           gates, config, store, sessionId, totalStart, logs,
           failedGate: 'F9', error: detail, edits, predicates: groundedPredicates,

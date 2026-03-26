@@ -29,7 +29,7 @@ import { checkInvariants } from './oracle.js';
 import { Ledger, collectRunIdentity } from './ledger.js';
 import { printProgress, printSummary, saveSummary } from './report.js';
 import { generateAllScenarios, generateFamily } from './scenario-generator.js';
-import { loadExternalScenarios, loadUniversalScenarios } from './external-scenario-loader.js';
+import { loadExternalScenarios, loadUniversalScenarios, loadStagedScenarios, loadWPTScenarios } from './external-scenario-loader.js';
 import { startMockServer, stopMockServer, type MockServer } from '../../fixtures/http-server.js';
 
 const MAX_SCENARIO_TIMEOUT = 10 * 60 * 1000; // 10 min
@@ -258,6 +258,22 @@ export async function runSelfTest(config: RunConfig): Promise<{ exitCode: number
     console.log(`  + ${universals.length} universal scenarios from fixtures/scenarios/universal.json`);
   }
 
+  // Per-gate staged scenarios from fixtures/scenarios/*-staged.json
+  const staged = loadStagedScenarios(fixtureDir);
+  if (staged.length > 0) {
+    scenarios = [...scenarios, ...staged];
+    console.log(`  + ${staged.length} per-gate staged scenarios`);
+  }
+
+  // WPT harvested scenarios from fixtures/scenarios/wpt-staged.json (opt-in via --wpt)
+  if (config.includeWPT) {
+    const wpt = loadWPTScenarios(fixtureDir);
+    if (wpt.length > 0) {
+      scenarios = [...scenarios, ...wpt];
+      console.log(`  + ${wpt.length} WPT scenarios`);
+    }
+  }
+
   // External (fault-derived) scenarios run against the TARGET app
   const stateDir = join(config.appDir, '.verify');
   const external = loadExternalScenarios(join(stateDir, 'custom-scenarios.json'), config.appDir);
@@ -464,6 +480,7 @@ async function runScenario(scenario: VerifyScenario, config: RunConfig, mockServ
   let result: VerifyResult | Error;
   let constraintsBefore = 0;
   let constraintsAfter = 0;
+  let activeConstraintsAfter = 0;
 
   try {
     mkdirSync(stateDir, { recursive: true });
@@ -584,6 +601,7 @@ async function runScenario(scenario: VerifyScenario, config: RunConfig, mockServ
 
     const storeAfter = new ConstraintStore(stateDir);
     constraintsAfter = storeAfter.getConstraintCount();
+    activeConstraintsAfter = storeAfter.getActiveConstraintCount();
   } catch (err: any) {
     result = err instanceof Error ? err : new Error(String(err));
   } finally {
@@ -596,6 +614,7 @@ async function runScenario(scenario: VerifyScenario, config: RunConfig, mockServ
     constraintsAfter,
     priorResults: [],
     durationMs,
+    activeConstraintsAfter,
   };
 
   const invariantResults = checkInvariants(scenario, result, context);
@@ -618,8 +637,8 @@ async function runScenario(scenario: VerifyScenario, config: RunConfig, mockServ
       family: scenario.family,
       generator: scenario.generator,
       description: scenario.description,
-      predicateCount: scenario.predicates.length,
-      editCount: scenario.edits.length,
+      predicateCount: scenario.predicates?.length ?? 0,
+      editCount: scenario.edits?.length ?? 0,
       requiresDocker: scenario.requiresDocker,
       failureClass: scenario.failureClass,
     },
@@ -711,6 +730,7 @@ async function runMultiStepScenario(scenario: VerifyScenario, config: RunConfig)
           constraintsAfter,
           priorResults: [...priorResults],
           durationMs: Date.now() - scenarioStart,
+          activeConstraintsAfter: storeAfter.getActiveConstraintCount(),
         };
 
         // For skipVerify steps, only check scenario-specific invariants (not universal ones)

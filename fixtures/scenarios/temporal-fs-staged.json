@@ -1,0 +1,383 @@
+[
+  {
+    "id": "tf-flush-001",
+    "description": "TF-01: Edit changes server.js but predicate checks pre-edit hash (stale)",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "const PORT = process.env.PORT || 3000;",
+        "replace": "const PORT = process.env.PORT || 4000;"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "filesystem_unchanged",
+        "file": "server.js",
+        "hash": "161cdb8a247f69a0620545d4df14243f6027a78a4a5663588940dffc6ff50218"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "temporal",
+      "filesystem",
+      "stale_flush",
+      "TF-01"
+    ],
+    "rationale": "Edit modifies server.js so pre-edit hash should NOT match post-edit content"
+  },
+  {
+    "id": "tf-flush-002",
+    "description": "TF-01: Edit changes .env PORT but predicate checks pre-edit hash",
+    "edits": [
+      {
+        "file": ".env",
+        "search": "PORT=3000",
+        "replace": "PORT=4000"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "filesystem_unchanged",
+        "file": ".env",
+        "hash": "81e7a8eeeef74a6abc309a644c0b575091b0c45bccdb6ee5a2891e4a6bb68d5b"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "temporal",
+      "filesystem",
+      "stale_flush",
+      "TF-01"
+    ],
+    "rationale": "Edit modifies .env so pre-edit hash should NOT match"
+  },
+  {
+    "id": "tf-flush-003",
+    "description": "TF-01: Edit config.json port but predicate checks pre-edit hash",
+    "edits": [
+      {
+        "file": "config.json",
+        "search": "\"port\": 3000",
+        "replace": "\"port\": 4000"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "filesystem_unchanged",
+        "file": "config.json",
+        "hash": "2937cf6d9bd7155b92003b846dbfb4f68bc530603f3df347ada174d7f09d6a95"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "temporal",
+      "filesystem",
+      "stale_flush",
+      "TF-01"
+    ],
+    "rationale": "Edit modifies config.json so pre-edit hash should NOT match"
+  },
+  {
+    "id": "tf-flush-004",
+    "description": "TF-01 control: No edit, server.js hash matches current state",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "filesystem_unchanged",
+        "file": "server.js",
+        "hash": "161cdb8a247f69a0620545d4df14243f6027a78a4a5663588940dffc6ff50218"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "temporal",
+      "filesystem",
+      "stale_flush",
+      "TF-01",
+      "control"
+    ],
+    "rationale": "No edit applied — hash should still match (proves the gate works both ways)"
+  },
+  {
+    "id": "tf-flush-005",
+    "description": "TF-01 control: No edit, .env hash matches current state",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "filesystem_unchanged",
+        "file": ".env",
+        "hash": "81e7a8eeeef74a6abc309a644c0b575091b0c45bccdb6ee5a2891e4a6bb68d5b"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "temporal",
+      "filesystem",
+      "stale_flush",
+      "TF-01",
+      "control"
+    ],
+    "rationale": "No edit — hash should match"
+  },
+  {
+    "id": "tf-stale-006",
+    "description": "TF-02: Edit server.js but content predicate checks config.json for new value",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "const PORT = process.env.PORT || 3000;",
+        "replace": "const PORT = process.env.PORT || 9999;"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "config.json",
+        "pattern": "9999"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "temporal",
+      "filesystem",
+      "stale_artifact",
+      "TF-02"
+    ],
+    "rationale": "Edit changes server.js but config.json still has 3000 — cross-file staleness"
+  },
+  {
+    "id": "tf-stale-007",
+    "description": "TF-02: Edit .env PORT=5000 but content predicate checks server.js for 5000",
+    "edits": [
+      {
+        "file": ".env",
+        "search": "PORT=3000",
+        "replace": "PORT=5000"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "5000"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "temporal",
+      "filesystem",
+      "stale_artifact",
+      "TF-02"
+    ],
+    "rationale": "Edit changes .env but server.js hardcodes 3000 — build artifact stale pattern"
+  },
+  {
+    "id": "tf-stale-008",
+    "description": "TF-02: Edit config.json app name but content predicate checks server.js",
+    "edits": [
+      {
+        "file": "config.json",
+        "search": "\"name\": \"Demo App\"",
+        "replace": "\"name\": \"Updated App\""
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "Updated App"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "temporal",
+      "filesystem",
+      "stale_artifact",
+      "TF-02"
+    ],
+    "rationale": "Config name changed but server.js still has \"Demo App\" in HTML — stale build"
+  },
+  {
+    "id": "tf-stale-009",
+    "description": "TF-02: Edit server.js <title> but content predicate checks Dockerfile",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "<title>Demo App</title>",
+        "replace": "<title>New App</title>"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "Dockerfile",
+        "pattern": "New App"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "temporal",
+      "filesystem",
+      "stale_artifact",
+      "TF-02"
+    ],
+    "rationale": "Title edit in server.js never propagates to Dockerfile"
+  },
+  {
+    "id": "tf-stale-010",
+    "description": "TF-02 control: Edit server.js and check server.js for new content",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "const PORT = process.env.PORT || 3000;",
+        "replace": "const PORT = process.env.PORT || 7777;"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "7777"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "temporal",
+      "filesystem",
+      "stale_artifact",
+      "TF-02",
+      "control"
+    ],
+    "rationale": "Same file edited and checked — content should be found (non-stale)"
+  },
+  {
+    "id": "tf-mount-011",
+    "description": "TF-03: Edit removes /api/items route, predicate expects it in server.js",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "if (req.url === '/api/items') {",
+        "replace": "if (req.url === '/api/data') {"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "/api/items"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "temporal",
+      "filesystem",
+      "mount_sync",
+      "TF-03"
+    ],
+    "rationale": "Route renamed from /api/items to /api/data — old pattern should not be found"
+  },
+  {
+    "id": "tf-mount-012",
+    "description": "TF-03: Edit renames /health to /status, predicate checks for /health in Dockerfile",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "req.url === '/health'",
+        "replace": "req.url === '/status'"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "Dockerfile",
+        "pattern": "/health"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "temporal",
+      "filesystem",
+      "mount_sync",
+      "TF-03"
+    ],
+    "rationale": "Dockerfile healthcheck still references /health — mount desync between source and infra"
+  },
+  {
+    "id": "tf-mount-013",
+    "description": "TF-03: Edit adds analytics flag to server.js, predicate checks .env",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "const PORT = process.env.PORT || 3000;",
+        "replace": "const PORT = process.env.PORT || 3000;\nconst ANALYTICS = true;"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": ".env",
+        "pattern": "ANALYTICS"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "temporal",
+      "filesystem",
+      "mount_sync",
+      "TF-03"
+    ],
+    "rationale": "ANALYTICS added to server.js but .env has no such key — cross-file desync"
+  },
+  {
+    "id": "tf-mount-014",
+    "description": "TF-03: Edit Dockerfile EXPOSE port, predicate checks docker-compose.yml",
+    "edits": [
+      {
+        "file": "Dockerfile",
+        "search": "EXPOSE 3000",
+        "replace": "EXPOSE 8080"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "docker-compose.yml",
+        "pattern": "8080"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "temporal",
+      "filesystem",
+      "mount_sync",
+      "TF-03"
+    ],
+    "rationale": "Dockerfile port changed but docker-compose.yml still maps 3000"
+  },
+  {
+    "id": "tf-mount-015",
+    "description": "TF-03: Edit docker-compose.yml port env, predicate checks Dockerfile for new port",
+    "edits": [
+      {
+        "file": "docker-compose.yml",
+        "search": "- PORT=3000",
+        "replace": "- PORT=9090"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "Dockerfile",
+        "pattern": "9090"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "temporal",
+      "filesystem",
+      "mount_sync",
+      "TF-03"
+    ],
+    "rationale": "docker-compose port env changed but Dockerfile EXPOSE still says 3000"
+  }
+]

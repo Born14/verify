@@ -180,6 +180,11 @@ async function validateHttpSequence(baseUrl: string, pred: Predicate): Promise<H
     const step = pred.steps[i];
     const url = `${baseUrl}${step.path}`;
 
+    // Temporal support: optional delay before this step (simulates timing races)
+    if (step.delayBeforeMs && step.delayBeforeMs > 0) {
+      await new Promise(r => setTimeout(r, step.delayBeforeMs));
+    }
+
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);

@@ -106,6 +106,7 @@ export interface OracleContext {
   constraintsAfter: number;
   priorResults: VerifyResult[];
   durationMs: number;
+  activeConstraintsAfter?: number;  // Live count (vs high-water mark in constraintsAfter)
 }
 
 // =============================================================================
@@ -187,6 +188,8 @@ export interface RunConfig {
   failOnBug?: boolean;
   /** Tier 0: pure only (default). Tier 1: pure + Docker. Tier 2: pure + Docker + Playwright. */
   liveTier?: LiveTier;
+  /** Include WPT harvested scenarios (7K+, adds ~15-20min). Opt-in via --wpt flag. */
+  includeWPT?: boolean;
 }
 
 // =============================================================================

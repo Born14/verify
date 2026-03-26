@@ -135,6 +135,7 @@ export class ConstraintStore {
   private stateDir: string;
   private dataPath: string;
   private data: ConstraintStoreData;
+  private totalEverSeeded: number = 0;
 
   constructor(stateDir: string) {
     this.stateDir = stateDir;
@@ -171,6 +172,7 @@ export class ConstraintStore {
   private replayLog(raw: string): ConstraintStoreData {
     const data: ConstraintStoreData = { constraints: [], outcomes: [], patterns: [] };
     const lines = raw.split('\n').filter(l => l.trim());
+    let totalSeeded = 0;
 
     for (const line of lines) {
       try {
@@ -178,6 +180,7 @@ export class ConstraintStore {
         switch (entry._op) {
           case 'constraint':
             data.constraints.push(entry.data);
+            totalSeeded++;
             break;
           case 'outcome':
             data.outcomes.push(entry.data);
@@ -201,6 +204,7 @@ export class ConstraintStore {
           case 'compact':
             // A compaction snapshot — reset state to this point
             data.constraints = entry.data.constraints ?? [];
+            totalSeeded += data.constraints.length;
             data.outcomes = entry.data.outcomes ?? [];
             data.patterns = entry.data.patterns ?? [];
             break;
@@ -210,6 +214,7 @@ export class ConstraintStore {
       }
     }
 
+    this.totalEverSeeded = totalSeeded;
     return data;
   }
 
@@ -432,6 +437,7 @@ export class ConstraintStore {
     if (isDupe) return null;
 
     this.data.constraints.push(constraint);
+    this.totalEverSeeded++;
     this.appendEntry('constraint', constraint);
     return constraint;
   }
@@ -518,7 +524,8 @@ export class ConstraintStore {
   getConstraints(): Constraint[] { return this.data.constraints; }
   getOutcomes(): Outcome[] { return this.data.outcomes; }
   getPatterns(): Pattern[] { return this.data.patterns; }
-  getConstraintCount(): number { return this.data.constraints.length; }
+  getConstraintCount(): number { return this.totalEverSeeded; }
+  getActiveConstraintCount(): number { return this.data.constraints.length; }
 
   // ---------------------------------------------------------------------------
   // INTERNAL BUILDERS

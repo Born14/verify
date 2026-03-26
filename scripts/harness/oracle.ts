@@ -345,10 +345,12 @@ export function constraintCountEquals(expected: number): InvariantCheck {
     category: 'k5',
     layer: 'product',
     check: (_scenario, _result, context) => {
-      if (context.constraintsAfter !== expected) {
+      // Use active (live) count when available, falls back to high-water mark
+      const actual = context.activeConstraintsAfter ?? context.constraintsAfter;
+      if (actual !== expected) {
         return {
           passed: false,
-          violation: `Expected ${expected} constraints, got ${context.constraintsAfter}`,
+          violation: `Expected ${expected} active constraints, got ${actual}`,
           severity: 'bug',
         };
       }
@@ -1742,6 +1744,158 @@ export function governEmptyPlanStall(): InvariantCheck {
       if (!govResult) return { passed: false, violation: 'No _governResult', severity: 'bug' };
       if (govResult.convergence.emptyPlanCount < 3) {
         return { passed: false, violation: `Expected emptyPlanCount >= 3, got ${govResult.convergence.emptyPlanCount}`, severity: 'bug' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+// =============================================================================
+// PIPELINE INTEGRATION INVARIANTS (Layer 5)
+// =============================================================================
+
+/**
+ * Assert govern() history[N] failed at a specific gate.
+ */
+export function governHistoryGateFailed(attemptIndex: number, gate: string): InvariantCheck {
+  return {
+    name: `govern_history_${attemptIndex}_failed_${gate}`,
+    category: 'pipeline',
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const govResult = (result as any)._governResult;
+      if (!govResult) return { passed: false, violation: 'No _governResult', severity: 'bug' };
+      const attempt = govResult.history[attemptIndex];
+      if (!attempt) return { passed: false, violation: `No history[${attemptIndex}]`, severity: 'bug' };
+      const failed = attempt.gates?.filter((g: any) => !g.passed).map((g: any) => g.gate) ?? [];
+      if (!failed.includes(gate)) {
+        return { passed: false, violation: `History[${attemptIndex}] expected ${gate} to fail, failed gates: [${failed.join(', ')}]`, severity: 'bug' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert govern() history[N] had a specific gate pass.
+ */
+export function governHistoryGatePassed(attemptIndex: number, gate: string): InvariantCheck {
+  return {
+    name: `govern_history_${attemptIndex}_passed_${gate}`,
+    category: 'pipeline',
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const govResult = (result as any)._governResult;
+      if (!govResult) return { passed: false, violation: 'No _governResult', severity: 'bug' };
+      const attempt = govResult.history[attemptIndex];
+      if (!attempt) return { passed: false, violation: `No history[${attemptIndex}]`, severity: 'bug' };
+      const passed = attempt.gates?.filter((g: any) => g.passed).map((g: any) => g.gate) ?? [];
+      if (!passed.includes(gate)) {
+        return { passed: false, violation: `History[${attemptIndex}] expected ${gate} to pass, passed gates: [${passed.join(', ')}]`, severity: 'bug' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert govern() narrowing has banned fingerprints after a failure.
+ */
+export function governHasBannedFingerprints(): InvariantCheck {
+  return {
+    name: 'govern_has_banned_fingerprints',
+    category: 'pipeline',
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const govResult = (result as any)._governResult;
+      if (!govResult) return { passed: false, violation: 'No _governResult', severity: 'bug' };
+      // Check if any attempt in history has narrowing with banned fingerprints
+      const hasNarrow = govResult.history.some((h: any) =>
+        h.narrowing?.bannedFingerprints?.length > 0 || h.narrowing?.constraints?.length > 0
+      );
+      if (!hasNarrow) {
+        return { passed: false, violation: 'No narrowing with banned fingerprints found in history', severity: 'unexpected' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert govern() constraint delta shows constraints were seeded (more after than before).
+ */
+export function governConstraintsGrew(): InvariantCheck {
+  return {
+    name: 'govern_constraints_grew',
+    category: 'pipeline',
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const govResult = (result as any)._governResult;
+      if (!govResult) return { passed: false, violation: 'No _governResult', severity: 'bug' };
+      const lastAttempt = govResult.history[govResult.history.length - 1];
+      if (!lastAttempt?.constraintDelta) return { passed: true, severity: 'info' };
+      // Either constraintsActive grew, or seeded array is non-empty in some attempt
+      const anySeeded = govResult.history.some((h: any) =>
+        h.constraintDelta?.seeded?.length > 0 || (h.constraintDelta?.after > h.constraintDelta?.before)
+      );
+      if (!anySeeded) {
+        return { passed: false, violation: 'No constraints were seeded across attempts', severity: 'unexpected' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert two different gates failed across the attempt history (not same gate stuck).
+ */
+export function governMultiGateProgression(): InvariantCheck {
+  return {
+    name: 'govern_multi_gate_progression',
+    category: 'pipeline',
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const govResult = (result as any)._governResult;
+      if (!govResult) return { passed: false, violation: 'No _governResult', severity: 'bug' };
+      const failedGates = new Set<string>();
+      for (const h of govResult.history) {
+        if (!h.success && h.gates) {
+          for (const g of h.gates) {
+            if (!g.passed) failedGates.add(g.gate);
+          }
+        }
+      }
+      if (failedGates.size < 2) {
+        return { passed: false, violation: `Only ${failedGates.size} distinct gate(s) failed: [${[...failedGates].join(', ')}]`, severity: 'unexpected' };
+      }
+      return { passed: true, severity: 'info' };
+    },
+  };
+}
+
+/**
+ * Assert effective predicates contain expected grounding miss markers.
+ */
+export function governGroundingMissDetected(): InvariantCheck {
+  return {
+    name: 'govern_grounding_miss_detected',
+    category: 'pipeline',
+    layer: 'product',
+    check: (_scenario, result) => {
+      if (result instanceof Error) return { passed: true, severity: 'info' };
+      const govResult = (result as any)._governResult;
+      if (!govResult) return { passed: false, violation: 'No _governResult', severity: 'bug' };
+      // Check first attempt for grounding miss
+      const first = govResult.history[0];
+      if (!first) return { passed: false, violation: 'No history[0]', severity: 'bug' };
+      const hasMiss = first.effectivePredicates?.some((p: any) => p.groundingMiss === true);
+      if (!hasMiss) {
+        return { passed: false, violation: 'First attempt should have groundingMiss=true on fabricated predicate', severity: 'bug' };
       }
       return { passed: true, severity: 'info' };
     },

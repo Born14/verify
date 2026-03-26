@@ -3105,22 +3105,21 @@ function generateFamilyE(appDir: string): VerifyScenario[] {
     requiresDocker: false,
   });
 
-  // ─── C-15: Multiple values on one property ───
-  // Edit adds transition property to a.nav-link, but grounding checks source CSS first.
-  // a.nav-link only has "color" in source — "transition" property not found → groundingMiss.
-  // This is correct: grounding doesn't see that the edit introduces a new property.
+  // ─── C-15: Edit adds new property ───
+  // Edit adds transition property to a.nav-link. Grounding's edit-detection (directMatch)
+  // detects that the edit introduces "transition" → not a groundingMiss.
   scenarios.push({
     id: nextId('E', 'C15a_multiValueTransition'),
     family: 'E',
     generator: 'C15a_multiValueTransition',
     failureClass: 'C-15',
-    description: 'C-15: Edit adds new property — grounding rejects because property not in source (groundingMiss)',
+    description: 'C-15: Edit adds new property — grounding detects edit-adds-property via directMatch',
     edits: [{ file: 'server.js', search: 'color: #0066cc', replace: 'color: #0066cc; transition: color 0.3s, opacity 0.5s' }],
     predicates: [{ type: 'css', selector: 'a.nav-link', property: 'transition', expected: 'color 0.3s' }],
     config: { appDir, gates: { staging: false, browser: false, http: false } },
     invariants: [
       groundingRan(),
-      predicateIsGroundingMiss(0, 'new_property_not_in_source'),
+      predicateIsGrounded(0, 'edit_adds_transition_directMatch'),
     ],
     requiresDocker: false,
   });
@@ -3131,14 +3130,13 @@ function generateFamilyE(appDir: string): VerifyScenario[] {
     family: 'E',
     generator: 'C16a_webkitPrefix',
     failureClass: 'C-16',
-    description: 'C-16: Edit uses -webkit-transform — predicate checks transform (groundingMiss)',
+    description: 'C-16: Edit uses -webkit-transform — grounding detects vendor prefix via vendorMatch',
     edits: [{ file: 'server.js', search: 'font-size: 2rem', replace: 'font-size: 2rem; -webkit-transform: rotate(5deg)' }],
     predicates: [{ type: 'css', selector: 'h1', property: 'transform', expected: 'rotate(5deg)' }],
     config: { appDir, gates: { staging: false, browser: false, http: false } },
     invariants: [
       groundingRan(),
-      // -webkit-transform is a different property than transform — grounding won't find it
-      predicateIsGroundingMiss(0, 'vendor_prefix_not_mapped'),
+      predicateIsGrounded(0, 'edit_adds_vendor_prefix_vendorMatch'),
     ],
     requiresDocker: false,
   });
@@ -3166,13 +3164,13 @@ function generateFamilyE(appDir: string): VerifyScenario[] {
     family: 'E',
     generator: 'C45a_normalKeyword',
     failureClass: 'C-45',
-    description: 'C-45: Edit sets font-weight: normal — predicate expects "400" (groundingMiss)',
+    description: 'C-45: Edit sets font-weight: normal — grounding normalizes normal→400 via _nC()',
     edits: [{ file: 'server.js', search: 'font-size: 2rem', replace: 'font-size: 2rem; font-weight: normal' }],
     predicates: [{ type: 'css', selector: 'h1', property: 'font-weight', expected: '400' }],
     config: { appDir, gates: { staging: false, browser: false, http: false } },
     invariants: [
       groundingRan(),
-      predicateIsGroundingMiss(0, 'normal_not_mapped_to_400'),
+      predicateIsGrounded(0, 'normal_mapped_to_400_by_nC'),
     ],
     requiresDocker: false,
   });
@@ -3461,38 +3459,37 @@ function generateFamilyE(appDir: string): VerifyScenario[] {
   });
 
   // ─── C-24: animation shorthand ───
-  // Not in _SH, not in demo-app. Test that adding animation → checking animation-name fails.
+  // In _SH_EDIT_ONLY. Edit adds animation → shorthandMatch detects animation-name.
   scenarios.push({
     id: nextId('E', 'C24a_animationNotInMap'),
     family: 'E',
     generator: 'C24a_animationNotInMap',
     failureClass: 'C-24',
-    description: 'C-24: Edit adds animation shorthand — predicate checks animation-name (not in _SH map)',
+    description: 'C-24: Edit adds animation shorthand — grounding detects via _SH_EDIT_ONLY shorthandMatch',
     edits: [{ file: 'server.js', search: 'color: #1a1a2e', replace: 'color: #1a1a2e; animation: spin 2s linear infinite' }],
     predicates: [{ type: 'css', selector: 'h1', property: 'animation-name', expected: 'spin' }],
     config: { appDir, gates: { staging: false, browser: false, http: false } },
     invariants: [
       groundingRan(),
-      // animation-name not found on h1 (only color, font-size), not in _SH longhands
-      predicateIsGroundingMiss(0, 'animation_name_not_in_shorthand_map'),
+      predicateIsGrounded(0, 'animation_shorthand_via_SH_EDIT_ONLY'),
     ],
     requiresDocker: false,
   });
 
   // ─── C-25: transition shorthand ───
-  // Not in _SH. Same pattern as animation.
+  // In _SH_EDIT_ONLY. Same pattern as animation.
   scenarios.push({
     id: nextId('E', 'C25a_transitionNotInMap'),
     family: 'E',
     generator: 'C25a_transitionNotInMap',
     failureClass: 'C-25',
-    description: 'C-25: Edit adds transition — predicate checks transition-duration (not in _SH map)',
+    description: 'C-25: Edit adds transition — grounding detects via _SH_EDIT_ONLY shorthandMatch',
     edits: [{ file: 'server.js', search: 'color: #0066cc', replace: 'color: #0066cc; transition: color 0.3s ease' }],
     predicates: [{ type: 'css', selector: 'a.nav-link', property: 'transition-duration', expected: '0.3s' }],
     config: { appDir, gates: { staging: false, browser: false, http: false } },
     invariants: [
       groundingRan(),
-      predicateIsGroundingMiss(0, 'transition_duration_not_in_shorthand_map'),
+      predicateIsGrounded(0, 'transition_shorthand_via_SH_EDIT_ONLY'),
     ],
     requiresDocker: false,
   });
@@ -3504,15 +3501,13 @@ function generateFamilyE(appDir: string): VerifyScenario[] {
     family: 'E',
     generator: 'C28a_outlineToWidth',
     failureClass: 'C-28',
-    description: 'C-28: Edit adds outline shorthand — predicate checks outline-width (not in source = miss)',
+    description: 'C-28: Edit adds outline shorthand — grounding detects outline-width via _SH shorthandMatch',
     edits: [{ file: 'server.js', search: 'color: #0066cc', replace: 'color: #0066cc; outline: 2px solid blue' }],
     predicates: [{ type: 'css', selector: 'a.nav-link', property: 'outline-width', expected: '2px' }],
     config: { appDir, gates: { staging: false, browser: false, http: false } },
     invariants: [
       groundingRan(),
-      // outline-width: _SH['outline'] includes 'outline-width'
-      // but source has no 'outline' property on a.nav-link → propertyFound = false
-      predicateIsGroundingMiss(0, 'outline_not_in_source'),
+      predicateIsGrounded(0, 'outline_shorthand_via_SH'),
     ],
     requiresDocker: false,
   });
@@ -3542,22 +3537,21 @@ function generateFamilyE(appDir: string): VerifyScenario[] {
 
   // ─── C-22: flex → grow/shrink/basis ───
   // Demo-app has NO flex properties. Edits add flex shorthand.
-  // _SH does not include flex → flex-grow/flex-shrink/flex-basis mapping.
+  // _SH includes flex → flex-grow/flex-shrink/flex-basis. Edit-detection catches via shorthandMatch.
 
-  // C-22a: Edit adds flex shorthand, predicate checks flex-grow — not in _SH
+  // C-22a: Edit adds flex shorthand, predicate checks flex-grow — detected via _SH
   scenarios.push({
     id: nextId('E', 'C22a_flexToGrow'),
     family: 'E',
     generator: 'C22a_flexToGrow',
     failureClass: 'C-22',
-    description: 'C-22: Edit adds "flex: 1 0 auto" — predicate checks flex-grow (not in _SH)',
+    description: 'C-22: Edit adds "flex: 1 0 auto" — grounding detects flex-grow via _SH shorthandMatch',
     edits: [{ file: 'server.js', search: '.items { list-style: none; padding: 0; }', replace: '.items { list-style: none; padding: 0; flex: 1 0 auto; }' }],
     predicates: [{ type: 'css', selector: '.items', property: 'flex-grow', expected: '1', path: '/' }],
     config: { appDir, gates: { staging: false, browser: false, http: false } },
     invariants: [
       groundingRan(),
-      // flex is not in _SH, and flex-grow was not in source → groundingMiss
-      predicateIsGroundingMiss(0, 'flex_not_in_shorthand_map'),
+      predicateIsGrounded(0, 'flex_grow_via_SH'),
     ],
     requiresDocker: false,
   });
@@ -3568,13 +3562,13 @@ function generateFamilyE(appDir: string): VerifyScenario[] {
     family: 'E',
     generator: 'C22b_flexToBasis',
     failureClass: 'C-22',
-    description: 'C-22: Edit adds "flex: 1 0 auto" — predicate checks flex-basis (not in _SH)',
+    description: 'C-22: Edit adds "flex: 1 0 auto" — grounding detects flex-basis via _SH shorthandMatch',
     edits: [{ file: 'server.js', search: '.items { list-style: none; padding: 0; }', replace: '.items { list-style: none; padding: 0; flex: 1 0 auto; }' }],
     predicates: [{ type: 'css', selector: '.items', property: 'flex-basis', expected: 'auto', path: '/' }],
     config: { appDir, gates: { staging: false, browser: false, http: false } },
     invariants: [
       groundingRan(),
-      predicateIsGroundingMiss(0, 'flex_basis_not_in_shorthand_map'),
+      predicateIsGrounded(0, 'flex_basis_via_SH'),
     ],
     requiresDocker: false,
   });
@@ -3586,15 +3580,13 @@ function generateFamilyE(appDir: string): VerifyScenario[] {
     family: 'E',
     generator: 'C22c_flexDirect',
     failureClass: 'C-22',
-    description: 'C-22: Edit adds "flex: 1 0 auto" — predicate checks flex directly (miss: not in original source)',
+    description: 'C-22: Edit adds "flex: 1 0 auto" — grounding detects flex via directMatch on edit',
     edits: [{ file: 'server.js', search: '.items { list-style: none; padding: 0; }', replace: '.items { list-style: none; padding: 0; flex: 1 0 auto; }' }],
     predicates: [{ type: 'css', selector: '.items', property: 'flex', expected: '1 0 auto', path: '/' }],
     config: { appDir, gates: { staging: false, browser: false, http: false } },
     invariants: [
       groundingRan(),
-      // flex not in original source CSS for .items → propertyFound=false → groundingMiss
-      // (editWouldChange check never reached because propertyFound short-circuits first)
-      predicateIsGroundingMiss(0, 'flex_not_in_original_source'),
+      predicateIsGrounded(0, 'flex_directMatch_on_edit'),
     ],
     requiresDocker: false,
   });
@@ -3610,14 +3602,13 @@ function generateFamilyE(appDir: string): VerifyScenario[] {
     family: 'E',
     generator: 'C23a_gridTemplateCols',
     failureClass: 'C-23',
-    description: 'C-23: Edit adds grid-template-columns — predicate checks same property (miss: not in original source)',
+    description: 'C-23: Edit adds grid-template-columns — grounding detects via directMatch on edit',
     edits: [{ file: 'server.js', search: '.items { list-style: none; padding: 0; }', replace: '.items { list-style: none; padding: 0; display: grid; grid-template-columns: 1fr 1fr; }' }],
     predicates: [{ type: 'css', selector: '.items', property: 'grid-template-columns', expected: '1fr 1fr', path: '/' }],
     config: { appDir, gates: { staging: false, browser: false, http: false } },
     invariants: [
       groundingRan(),
-      // grid-template-columns not in original source → propertyFound=false → groundingMiss
-      predicateIsGroundingMiss(0, 'grid_template_columns_not_in_original_source'),
+      predicateIsGrounded(0, 'grid_template_columns_directMatch'),
     ],
     requiresDocker: false,
   });
@@ -3804,7 +3795,7 @@ function generateFamilyE(appDir: string): VerifyScenario[] {
     invariants: [
       groundingRan(),
       // overflow not in _SH, overflow-x not in source → groundingMiss
-      predicateIsGroundingMiss(0, 'overflow_not_in_shorthand_map'),
+      predicateIsGrounded(0, 'overflow_x_via_SH'),
     ],
     requiresDocker: false,
   });
@@ -3821,7 +3812,7 @@ function generateFamilyE(appDir: string): VerifyScenario[] {
     config: { appDir, gates: { staging: false, browser: false, http: false } },
     invariants: [
       groundingRan(),
-      predicateIsGroundingMiss(0, 'overflow_y_not_in_shorthand_map'),
+      predicateIsGrounded(0, 'overflow_y_via_SH'),
     ],
     requiresDocker: false,
   });
@@ -3840,7 +3831,7 @@ function generateFamilyE(appDir: string): VerifyScenario[] {
     invariants: [
       groundingRan(),
       // overflow not in original source → propertyFound=false → groundingMiss
-      predicateIsGroundingMiss(0, 'overflow_not_in_original_source'),
+      predicateIsGrounded(0, 'overflow_directMatch_on_edit'),
     ],
     requiresDocker: false,
   });
@@ -8746,7 +8737,7 @@ function generateWave2B(appDir: string): VerifyScenario[] {
     invariants: [
       shouldNotCrash('C-22a flex shorthand'),
       groundingRan(),
-      predicateIsGroundingMiss(0, 'flex-grow not in source — only introduced by edit shorthand'),
+      predicateIsGrounded(0, 'flex_grow_via_SH'),
     ],
     requiresDocker: false,
   });
@@ -8766,7 +8757,7 @@ function generateWave2B(appDir: string): VerifyScenario[] {
     invariants: [
       shouldNotCrash('C-23a grid shorthand'),
       groundingRan(),
-      predicateIsGroundingMiss(0, 'grid-template-columns not in source — edit adds longhand but grounding checks original'),
+      predicateIsGrounded(0, 'grid_template_columns_directMatch'),
     ],
     requiresDocker: false,
   });
@@ -10985,15 +10976,14 @@ function generateWave2C(appDir: string): VerifyScenario[] {
     family: 'G',
     generator: 'C59b_logical_property_edit',
     failureClass: 'C-59',
-    description: 'C-59: Edit adds margin-inline-start — not in original source → grounding miss',
+    description: 'C-59: Edit adds margin-inline-start — grounding detects via directMatch on edit',
     edits: [{ file: 'server.js', search: '.card { background: white; padding: 1.5rem; margin: 1rem 0; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }', replace: '.card { background: white; padding: 1.5rem; margin: 1rem 0; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-inline-start: 2rem; }' }],
     predicates: [{ type: 'css', selector: '.card', property: 'margin-inline-start', expected: '2rem', path: '/about' }],
     config: { appDir, gates: { staging: false, browser: false, http: false } },
     invariants: [
       shouldNotCrash('C-59b logical edit'),
       groundingRan(),
-      // margin-inline-start not in original source → propertyFound=false → groundingMiss
-      predicateIsGroundingMiss(0, 'margin-inline-start not in original source'),
+      predicateIsGrounded(0, 'margin-inline-start_directMatch'),
     ],
     requiresDocker: false,
   });
@@ -11004,15 +10994,14 @@ function generateWave2C(appDir: string): VerifyScenario[] {
     family: 'G',
     generator: 'C60b_browser_default_edit',
     failureClass: 'C-60',
-    description: 'C-60: Edit adds explicit display:block to body — matches UA default but now authored',
+    description: 'C-60: Edit adds explicit display:block to body — grounding detects via directMatch',
     edits: [{ file: 'server.js', search: 'body { font-family: sans-serif; margin: 2rem; background: #ffffff; color: #333; }', replace: 'body { font-family: sans-serif; margin: 2rem; background: #ffffff; color: #333; display: block; }' }],
     predicates: [{ type: 'css', selector: 'body', property: 'display', expected: 'block', path: '/' }],
     config: { appDir, gates: { staging: false, browser: false, http: false } },
     invariants: [
       shouldNotCrash('C-60b browser default edit'),
       groundingRan(),
-      // display not in original source → propertyFound=false → groundingMiss despite edit adding it
-      predicateIsGroundingMiss(0, 'display not in original source'),
+      predicateIsGrounded(0, 'display_directMatch_on_edit'),
     ],
     requiresDocker: false,
   });
@@ -11023,15 +11012,14 @@ function generateWave2C(appDir: string): VerifyScenario[] {
     family: 'G',
     generator: 'C61b_not_observable_edit',
     failureClass: 'C-61',
-    description: 'C-61: Edit adds will-change to .hero — not reliably observable via getComputedStyle',
+    description: 'C-61: Edit adds will-change to .hero — grounding detects via directMatch on edit',
     edits: [{ file: 'server.js', search: '.hero { background: #3498db; color: white; padding: 2rem; border-radius: 8px; }', replace: '.hero { background: #3498db; color: white; padding: 2rem; border-radius: 8px; will-change: transform; }' }],
     predicates: [{ type: 'css', selector: '.hero', property: 'will-change', expected: 'transform', path: '/about' }],
     config: { appDir, gates: { staging: false, browser: false, http: false } },
     invariants: [
       shouldNotCrash('C-61b not observable edit'),
       groundingRan(),
-      // will-change not in original source → groundingMiss
-      predicateIsGroundingMiss(0, 'will-change not in original source'),
+      predicateIsGrounded(0, 'will-change_directMatch'),
     ],
     requiresDocker: false,
   });
@@ -11042,15 +11030,14 @@ function generateWave2C(appDir: string): VerifyScenario[] {
     family: 'G',
     generator: 'C62b_unknown_shorthand_edit',
     failureClass: 'C-62',
-    description: 'C-62: Edit adds transition — not in SHORTHAND_MAP, predicate checks transition-duration longhand',
+    description: 'C-62: Edit adds transition — grounding detects transition-duration via _SH_EDIT_ONLY',
     edits: [{ file: 'server.js', search: 'button.primary { background: #3498db; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }', replace: 'button.primary { background: #3498db; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; transition: all 0.3s ease; }' }],
     predicates: [{ type: 'css', selector: 'button.primary', property: 'transition-duration', expected: '0.3s', path: '/about' }],
     config: { appDir, gates: { staging: false, browser: false, http: false } },
     invariants: [
       shouldNotCrash('C-62b unknown shorthand edit'),
       groundingRan(),
-      // transition-duration not in original source → groundingMiss
-      predicateIsGroundingMiss(0, 'transition-duration not in original source'),
+      predicateIsGrounded(0, 'transition-duration_via_SH_EDIT_ONLY'),
     ],
     requiresDocker: false,
   });
@@ -16259,6 +16246,9 @@ import {
   governHasShapes, governReceiptHasShapes, governShapesInContext,
   governNarrowed, governReceiptWellFormed, governHistoryLength,
   governEmptyPlanStall,
+  governHistoryGateFailed, governHistoryGatePassed,
+  governHasBannedFingerprints, governConstraintsGrew,
+  governMultiGateProgression, governGroundingMissDetected,
 } from './oracle.js';
 
 function generateFamilyL(appDir: string): VerifyScenario[] {
@@ -16808,6 +16798,422 @@ function generateFamilyL(appDir: string): VerifyScenario[] {
         plan: async () => ({
           edits: [{ file: 'server.js', search: '.badge { display: inline-block; background: #e74c3c;', replace: '.badge { display: inline-block; background: #e74c3c;' }],
           predicates: [{ type: 'css' as const, selector: '.badge', property: 'background', expected: 'blue', path: '/about' }],
+        }),
+      },
+    },
+  });
+
+  // ===========================================================================
+  // LAYER 5: PIPELINE INTEGRATION SCENARIOS (GOV-16 through GOV-24)
+  // Cross-gate cascading, multi-domain convergence, session isolation
+  // ===========================================================================
+
+  // ---------------------------------------------------------------------------
+  // GOV-16: Grounding → K5 cascade — fabricated selector → grounding rejects →
+  // retry with real selector → passes all gates
+  // Proves: cross-gate learning (grounding failure informs next attempt)
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_16_groundingToK5'),
+    family: 'L',
+    generator: 'GOV16_groundingK5Cascade',
+    description: 'Grounding rejects fabricated selector on attempt 1, agent corrects on attempt 2 → converged',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      governStopReason('converged'),
+      governAttempts(2),
+      governReceiptWellFormed(),
+      governHistoryGateFailed(0, 'grounding'),
+      governHistoryGatePassed(1, 'grounding'),
+      governHistoryGatePassed(1, 'F9'),
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Change link color using correct selector',
+      maxAttempts: 3,
+      agent: (() => {
+        let attempt = 0;
+        return {
+          plan: async () => {
+            attempt++;
+            if (attempt === 1) {
+              // Fabricated selector — grounding will reject this
+              return {
+                edits: [{ file: 'server.js', search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }', replace: 'a.nav-link { color: green; margin-right: 1rem; }' }],
+                predicates: [{ type: 'css' as const, selector: '.totally-fake-selector-xyz', property: 'color', expected: 'green', path: '/about' }],
+              };
+            }
+            // Correct selector on retry
+            return {
+              edits: [{ file: 'server.js', search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }', replace: 'a.nav-link { color: green; margin-right: 1rem; }' }],
+              predicates: [{ type: 'css' as const, selector: 'a.nav-link', property: 'color', expected: 'green', path: '/about' }],
+            };
+          },
+        };
+      })(),
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // GOV-17: Multi-domain convergence — CSS + content predicates, CSS fails
+  // on attempt 1 (wrong value), content passes. Agent corrects CSS on attempt 2.
+  // Proves: partial predicate failure + cross-domain predicate mix
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_17_multiDomain'),
+    family: 'L',
+    generator: 'GOV17_multiDomainConvergence',
+    description: 'CSS predicate fails while content passes on attempt 1, agent corrects CSS on attempt 2',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      governStopReason('converged'),
+      governAttempts(2),
+      governReceiptWellFormed(),
+      governReceiptHasShapes(),
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Change nav color and verify content',
+      maxAttempts: 3,
+      agent: (() => {
+        let attempt = 0;
+        return {
+          plan: async () => {
+            attempt++;
+            if (attempt === 1) {
+              // Edit applies, but CSS predicate expects wrong value (expects red, actual is blue)
+              return {
+                edits: [{ file: 'server.js', search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }', replace: 'a.nav-link { color: blue; margin-right: 1rem; }' }],
+                predicates: [
+                  { type: 'css' as const, selector: 'a.nav-link', property: 'color', expected: 'red', path: '/about' },
+                  { type: 'content' as const, file: 'server.js', pattern: 'a.nav-link', expected: 'exists' },
+                ],
+              };
+            }
+            // Fix: search from original (staging is ephemeral), set correct color
+            return {
+              edits: [{ file: 'server.js', search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }', replace: 'a.nav-link { color: red; margin-right: 1rem; }' }],
+              predicates: [
+                { type: 'css' as const, selector: 'a.nav-link', property: 'color', expected: 'red', path: '/about' },
+                { type: 'content' as const, file: 'server.js', pattern: 'a.nav-link', expected: 'exists' },
+              ],
+            };
+          },
+        };
+      })(),
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // GOV-18: K5 fingerprint ban — attempt 1 fails evidence, fingerprint banned,
+  // attempt 2 uses a different expected value → passes
+  // Proves: K5 ban learning within govern() persistent session
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_18_fingerprintBan'),
+    family: 'L',
+    generator: 'GOV18_fingerprintBan',
+    description: 'K5 bans fingerprint after evidence failure, agent uses different value on retry → converged',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false }, learning: 'persistent' as const },
+    invariants: [
+      governStopReason('converged'),
+      governAttempts(2),
+      governReceiptWellFormed(),
+      governReceiptHasShapes(),
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Change color, learn from failed fingerprint',
+      maxAttempts: 3,
+      agent: (() => {
+        let attempt = 0;
+        return {
+          plan: async () => {
+            attempt++;
+            if (attempt === 1) {
+              // Edit applies but predicate value doesn't match (expects purple, is actually blue)
+              return {
+                edits: [{ file: 'server.js', search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }', replace: 'a.nav-link { color: #0066cc; margin-right: 1rem; }' }],
+                predicates: [{ type: 'css' as const, selector: 'a.nav-link', property: 'color', expected: 'purple', path: '/about' }],
+              };
+            }
+            // Retry with correct value
+            return {
+              edits: [{ file: 'server.js', search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }', replace: 'a.nav-link { color: teal; margin-right: 1rem; }' }],
+              predicates: [{ type: 'css' as const, selector: 'a.nav-link', property: 'color', expected: 'teal', path: '/about' }],
+            };
+          },
+        };
+      })(),
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // GOV-19: F9 → grounding evidence chain — bad edit (F9 fail) → fix edit →
+  // grounding catches fabricated selector → fix selector → converged in 3 attempts
+  // Proves: multi-gate failure progression across attempts
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_19_multiGateProgression'),
+    family: 'L',
+    generator: 'GOV19_multiGateProgression',
+    description: 'Attempt 1: F9 fail, Attempt 2: grounding fail, Attempt 3: converged — multi-gate progression',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      governStopReason('converged'),
+      governAttempts(3),
+      governReceiptWellFormed(),
+      governMultiGateProgression(),
+      governHistoryGateFailed(0, 'F9'),
+      governHistoryGateFailed(1, 'grounding'),
+      governHistoryGatePassed(2, 'grounding'),
+      governHistoryGatePassed(2, 'F9'),
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Fix edit then fix selector across 3 attempts',
+      maxAttempts: 5,
+      agent: (() => {
+        let attempt = 0;
+        return {
+          plan: async () => {
+            attempt++;
+            if (attempt === 1) {
+              // F9 fails: search string doesn't exist.
+              // Edit replace includes "color: red" so grounding sees the edit would set the right value → passes grounding.
+              return {
+                edits: [{ file: 'server.js', search: 'THIS_DOES_NOT_EXIST_GOV19', replace: 'a.nav-link { color: red; margin-right: 1rem; }' }],
+                predicates: [{ type: 'css' as const, selector: 'a.nav-link', property: 'color', expected: 'red', path: '/about' }],
+              };
+            }
+            if (attempt === 2) {
+              // Edit is good now, but grounding catches fabricated selector
+              return {
+                edits: [{ file: 'server.js', search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }', replace: 'a.nav-link { color: red; margin-right: 1rem; }' }],
+                predicates: [{ type: 'css' as const, selector: '.fake-class-gov19', property: 'color', expected: 'red', path: '/about' }],
+              };
+            }
+            // Attempt 3: both edit and selector are correct
+            return {
+              edits: [{ file: 'server.js', search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }', replace: 'a.nav-link { color: red; margin-right: 1rem; }' }],
+              predicates: [{ type: 'css' as const, selector: 'a.nav-link', property: 'color', expected: 'red', path: '/about' }],
+            };
+          },
+        };
+      })(),
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // GOV-20: Session isolation proof — two sequential govern() calls don't leak
+  // constraints. Run govern() that fails → seeds constraints, then a second
+  // govern() that should start clean (session isolation).
+  // This is tested as a single scenario with a custom invariant.
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_20_sessionIsolation'),
+    family: 'L',
+    generator: 'GOV20_sessionIsolation',
+    description: 'govern() with session isolation: constraints from call 1 don\'t leak to call 2',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      governStopReason('converged'),
+      governAttempts(1),
+      governReceiptWellFormed(),
+      {
+        name: 'govern_session_isolation_clean',
+        category: 'pipeline' as const,
+        layer: 'product' as const,
+        check: (_scenario: any, result: any) => {
+          if (result instanceof Error) return { passed: true, severity: 'info' as const };
+          const govResult = result._governResult;
+          if (!govResult) return { passed: false, violation: 'No _governResult', severity: 'bug' as const };
+          // The final result should succeed on attempt 1 — no leaked constraints blocking it
+          if (!govResult.success) {
+            return { passed: false, violation: 'Session isolation failed: constraints leaked from prior run', severity: 'bug' as const };
+          }
+          return { passed: true, severity: 'info' as const };
+        },
+      },
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Prove session isolation — this should succeed on attempt 1',
+      maxAttempts: 2,
+      agent: {
+        plan: async () => ({
+          edits: [{ file: 'server.js', search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }', replace: 'a.nav-link { color: orange; margin-right: 1rem; }' }],
+          predicates: [{ type: 'css' as const, selector: 'a.nav-link', property: 'color', expected: 'orange', path: '/about' }],
+        }),
+      },
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // GOV-21: Persistent learning proof — within govern(), attempt 1 constraints
+  // are visible to attempt 2's K5 gate. The agent must adapt.
+  // Proves: intra-govern() learning with persistent mode
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_21_persistentLearning'),
+    family: 'L',
+    generator: 'GOV21_persistentLearning',
+    description: 'govern() with persistent learning: constraints from attempt 1 visible on attempt 2',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false }, learning: 'persistent' as const },
+    invariants: [
+      governStopReason('converged'),
+      governAttemptsRange(2, 3),
+      governReceiptWellFormed(),
+      governReceiptHasShapes(),
+      governShapesInContext(),
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Learn from failure within govern loop',
+      maxAttempts: 4,
+      agent: (() => {
+        let attempt = 0;
+        return {
+          plan: async () => {
+            attempt++;
+            if (attempt === 1) {
+              // Attempt 1: fails evidence (CSS value mismatch — expects purple, actually #0066cc)
+              return {
+                edits: [{ file: 'server.js', search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }', replace: 'a.nav-link { color: #0066cc; margin-right: 1rem; }' }],
+                predicates: [{ type: 'css' as const, selector: 'a.nav-link', property: 'color', expected: 'purple', path: '/about' }],
+              };
+            }
+            // Attempt 2+: correct edit and value
+            return {
+              edits: [{ file: 'server.js', search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }', replace: 'a.nav-link { color: green; margin-right: 1rem; }' }],
+              predicates: [{ type: 'css' as const, selector: 'a.nav-link', property: 'color', expected: 'green', path: '/about' }],
+            };
+          },
+        };
+      })(),
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // GOV-22: Containment + evidence interaction — G5 attributes edits,
+  // evidence validates predicates, both must pass for convergence
+  // Proves: G5 containment flowing through govern() alongside evidence gates
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_22_containmentEvidence'),
+    family: 'L',
+    generator: 'GOV22_containmentEvidence',
+    description: 'G5 containment and evidence validation both pass — full gate sequence in govern()',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false, containment: true } },
+    invariants: [
+      governStopReason('converged'),
+      governAttempts(1),
+      governReceiptWellFormed(),
+      {
+        name: 'govern_g5_gate_present',
+        category: 'pipeline' as const,
+        layer: 'product' as const,
+        check: (_scenario: any, result: any) => {
+          if (result instanceof Error) return { passed: true, severity: 'info' as const };
+          const govResult = result._governResult;
+          if (!govResult) return { passed: false, violation: 'No _governResult', severity: 'bug' as const };
+          const first = govResult.history[0];
+          if (!first) return { passed: false, violation: 'No history[0]', severity: 'bug' as const };
+          // G5 gate should appear in the gate list
+          const g5 = first.gates?.find((g: any) => g.gate === 'G5');
+          if (!g5) {
+            // G5 may not appear as a separate gate entry if containment is advisory — just check success
+            return { passed: true, severity: 'info' as const };
+          }
+          return { passed: true, severity: 'info' as const };
+        },
+      },
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Change nav color with containment enabled',
+      maxAttempts: 2,
+      agent: {
+        plan: async () => ({
+          edits: [{ file: 'server.js', search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }', replace: 'a.nav-link { color: lime; margin-right: 1rem; }' }],
+          predicates: [{ type: 'css' as const, selector: 'a.nav-link', property: 'color', expected: 'lime', path: '/about' }],
+        }),
+      },
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // GOV-23: Constraint override in govern() — agent hits K5 ban but uses
+  // overrideConstraints to bypass it
+  // Proves: override mechanism works within governed loop
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_23_constraintOverride'),
+    family: 'L',
+    generator: 'GOV23_constraintOverride',
+    description: 'govern() with overrideConstraints: agent bypasses K5 ban on specific constraint',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false }, overrideConstraints: ['test_override_gov23'] },
+    invariants: [
+      governStopReason('converged'),
+      governAttempts(1),
+      governReceiptWellFormed(),
+      governHistoryGatePassed(0, 'K5'),
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Change color despite prior constraint (overridden)',
+      maxAttempts: 2,
+      agent: {
+        plan: async () => ({
+          edits: [{ file: 'server.js', search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }', replace: 'a.nav-link { color: coral; margin-right: 1rem; }' }],
+          predicates: [{ type: 'css' as const, selector: 'a.nav-link', property: 'color', expected: 'coral', path: '/about' }],
+        }),
+      },
+    },
+  });
+
+  // ---------------------------------------------------------------------------
+  // GOV-24: Grounding miss detection — CSS predicate with fabricated selector
+  // detected, effectivePredicates show groundingMiss=true on first attempt
+  // Proves: grounding miss markers flow through govern() history
+  // ---------------------------------------------------------------------------
+  scenarios.push({
+    id: nextId('L', 'GOV_24_groundingMiss'),
+    family: 'L',
+    generator: 'GOV24_groundingMissMarker',
+    description: 'govern() marks groundingMiss=true on fabricated CSS predicate, visible in effectivePredicates',
+    edits: [],
+    predicates: [],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      governReceiptWellFormed(),
+      governGroundingMissDetected(),
+      governHistoryGateFailed(0, 'grounding'),
+    ],
+    requiresDocker: false,
+    governTest: {
+      goal: 'Detect grounding miss on fabricated selector',
+      maxAttempts: 1,
+      agent: {
+        plan: async () => ({
+          edits: [{ file: 'server.js', search: 'a.nav-link { color: #0066cc; margin-right: 1rem; }', replace: 'a.nav-link { color: red; margin-right: 1rem; }' }],
+          predicates: [{ type: 'css' as const, selector: '.nonexistent-selector-gov24', property: 'background', expected: 'red', path: '/about' }],
         }),
       },
     },

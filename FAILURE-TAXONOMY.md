@@ -2,6 +2,8 @@
 
 A finite, composable algebra of failure shapes — every known way that a predicate can produce wrong results. Either passing when it should fail (false confidence), or failing when it should pass (false rejection). Every shape is a generator target.
 
+**See also:** [PARITY-GRID.md](PARITY-GRID.md) — the strategic map. This file is the dictionary. The grid drives priorities; this file provides depth. Every shape should reference its grid cell (Capability × Failure Class).
+
 **Why this matters:** Verify gets better by closing failure classes, not by bigger models. Each generator produces 2-50 scenarios from one failure shape. This taxonomy is the map of what's been closed and what's still open.
 
 **Coverage formula:** `(shapes with generators / total known shapes) = coverage %`
@@ -808,6 +810,67 @@ Failures where the same predicate produces different results depending on WHEN i
 | TO-15 | TTL-based expiry between check and use | no coverage | Session valid at check time, expired by time deploy completes |
 
 **Temporal total: 15 shapes. Generator coverage: 3 (TO-01, TO-05, TO-10). No coverage: 12.**
+
+### Parity Grid — Temporal Column (Phase 1, 66 scenarios)
+
+Shapes added by Phase 1 parity work. These fill cells D×1 through D×5 on the grid.
+See [PARITY-GRID.md](PARITY-GRID.md) for strategic context.
+
+| # | Shape | Grid Cell | Scenarios | Generator |
+|---|---|---|---|---|
+| TF-01 | File written but not flushed when checked | D×1 (Temporal × Filesystem) | 5 | `stage-temporal-fs.ts` |
+| TF-02 | Source edited but build artifact stale | D×1 (Temporal × Filesystem) | 5 | `stage-temporal-fs.ts` |
+| TF-03 | Container volume mount not synced | D×1 (Temporal × Filesystem) | 5 | `stage-temporal-fs.ts` |
+| TH-01 | Server started but not accepting connections | D×2 (Temporal × HTTP) | 7 | `stage-temporal-http.ts` |
+| TH-02 | Response cached by proxy after deploy | D×2 (Temporal × HTTP) | 7 | `stage-temporal-http.ts` |
+| TB-01 | DOM not settled when CSS evaluated | D×3 (Temporal × Browser) | 5 | `stage-temporal-browser.ts` |
+| TB-02 | Async content not rendered at check time | D×3 (Temporal × Browser) | 4 | `stage-temporal-browser.ts` |
+| TB-03 | CSS transition midpoint captured | D×3 (Temporal × Browser) | 3 | `stage-temporal-browser.ts` |
+| TD-01 | Connection pool serves stale schema after migration | D×4 (Temporal × Database) | 7 | `stage-temporal-db.ts` |
+| TD-02 | Read-after-write returns old data (replication lag) | D×4 (Temporal × Database) | 4 | `stage-temporal-db.ts` |
+| TD-03 | Auto-increment/table not visible after migration | D×4 (Temporal × Database) | 3 | `stage-temporal-db.ts` |
+| TC-01 | Process restart not complete when checked | D×5 (Temporal × CLI) | 4 | `stage-temporal-cli.ts` |
+| TC-02 | Config change not picked up by running process | D×5 (Temporal × CLI) | 7 | `stage-temporal-cli.ts` |
+
+### Parity Grid — Propagation Column (Phase 2, 44 scenarios)
+
+Shapes added by Phase 2 parity work. These fill cells E×1 through E×3 on the grid.
+See [PARITY-GRID.md](PARITY-GRID.md) for strategic context.
+
+**Core pattern:** Edit upstream, check downstream. The upstream change succeeds but the downstream consumer still has old values — the propagation gap IS the failure.
+
+| # | Shape | Grid Cell | Scenarios | Generator |
+|---|---|---|---|---|
+| PF-01 | Source correct but downstream artifact differs | E×1 (Propagation × Filesystem) | 8 | `stage-propagation-fs.ts` |
+| PF-02 | File edit doesn't propagate to related files | E×1 (Propagation × Filesystem) | 7 | `stage-propagation-fs.ts` |
+| PH-01 | DB schema changed but API returns old shape | E×2 (Propagation × HTTP) | 4 | `stage-propagation-http.ts` |
+| PH-02 | API contract changed but frontend not updated | E×2 (Propagation × HTTP) | 5 | `stage-propagation-http.ts` |
+| PH-03 | Env var changed but process serves old config | E×2 (Propagation × HTTP) | 5 | `stage-propagation-http.ts` |
+| PB-01 | CSS class renamed but HTML still uses old name | E×3 (Propagation × Browser) | 5 | `stage-propagation-browser.ts` |
+| PB-02 | HTML structure changed but selectors target old structure | E×3 (Propagation × Browser) | 5 | `stage-propagation-browser.ts` |
+| PB-03 | API response changed but frontend renders stale state | E×3 (Propagation × Browser) | 5 | `stage-propagation-browser.ts` |
+
+**Tier distribution:** 31 pure-tier (no Docker), 7 live-tier (Docker + live HTTP), 6 full-tier (Docker + Playwright).
+
+---
+
+### Parity Grid — State Assumption Column (Phase 3, 39 scenarios)
+
+Shapes added by Phase 3 parity work. These fill cells C×4, C×5, and C×8 on the grid.
+See [PARITY-GRID.md](PARITY-GRID.md) for strategic context.
+
+**Core pattern:** Config sources already disagree BEFORE any edit — the agent's mental model of the environment doesn't match reality. Unlike Propagation (edit A, B didn't update), State Assumption means A and B were never consistent.
+
+| # | Shape | Grid Cell | Scenarios | Generator |
+|---|---|---|---|---|
+| SA-01 | Feature flag divergence — flag in one surface, behavior governed by another | C×5/C×8 (State × Config) | 6 | `stage-state-config.ts` |
+| SA-02 | Default masks missing config — fallback silently degrades | C×5/C×8 (State × Config) | 6 | `stage-state-config.ts` |
+| SA-03 | Config precedence unpredictable — same value in multiple sources | C×5/C×8 (State × Config) | 9 | `stage-state-config.ts` |
+| SD-01 | Schema→app assumption gap — DDL without app code | C×4 (State × Database) | 6 | `stage-state-db.ts` |
+| SD-02 | Data assumed present — table exists but is empty | C×4 (State × Database) | 6 | `stage-state-db.ts` |
+| SD-03 | Migration targets wrong DB — config surfaces disagree on connection | C×4 (State × Database) | 6 | `stage-state-db.ts` |
+
+**Tier distribution:** All 39 pure-tier (no Docker needed) — tests structural cross-source inconsistency detection.
 
 ---
 

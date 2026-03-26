@@ -80,6 +80,12 @@ function checkAltText(files: Array<{ relativePath: string; content: string }>): 
     imgRegex.lastIndex = 0;
     while ((match = imgRegex.exec(file.content)) !== null) {
       const tag = match[0];
+
+      // Skip images with role="presentation" or role="none" (decorative)
+      if (/role\s*=\s*["'](presentation|none)["']/i.test(tag)) continue;
+      // Skip images with aria-label or aria-labelledby (accessible name provided)
+      if (/aria-label\s*=/i.test(tag)) continue;
+
       if (!tag.includes('alt=') && !tag.includes('alt =')) {
         findings.push({
           check: 'alt_text',
@@ -87,6 +93,17 @@ function checkAltText(files: Array<{ relativePath: string; content: string }>): 
           detail: 'Image missing alt attribute',
           severity: 'error',
         });
+      } else {
+        // Check for empty or whitespace-only alt
+        const altMatch = tag.match(/alt\s*=\s*["']([^"']*)["']/i);
+        if (altMatch && altMatch[1].trim() === '') {
+          findings.push({
+            check: 'alt_text',
+            file: file.relativePath,
+            detail: 'Image has empty alt attribute',
+            severity: 'warning',
+          });
+        }
       }
     }
   }
@@ -94,13 +111,53 @@ function checkAltText(files: Array<{ relativePath: string; content: string }>): 
 }
 
 /**
- * Check heading hierarchy (h1→h2→h3, no skipping).
+ * Check heading hierarchy (h1→h2→h3, no skipping) and empty headings.
  */
 function checkHeadingHierarchy(files: Array<{ relativePath: string; content: string }>): A11yFinding[] {
   const findings: A11yFinding[] = [];
   const headingRegex = /<h([1-6])\b/gi;
+  // Empty heading: <hN></hN> or <hN>  </hN> or <hN><span style="display:none">...</span></hN>
+  const emptyHeadingRegex = /<h([1-6])\b[^>]*>(\s*(<[^>]*style\s*=\s*["'][^"']*display\s*:\s*none[^"']*["'][^>]*>[^<]*<\/[^>]+>\s*)*)<\/h\1>/gi;
 
   for (const file of files) {
+    // Check empty headings
+    let emptyMatch;
+    emptyHeadingRegex.lastIndex = 0;
+    while ((emptyMatch = emptyHeadingRegex.exec(file.content)) !== null) {
+      const innerContent = emptyMatch[2];
+      // Strip HTML tags and check if remaining text is empty
+      const textOnly = innerContent.replace(/<[^>]*>/g, '').trim();
+      if (textOnly === '') {
+        findings.push({
+          check: 'heading_hierarchy',
+          file: file.relativePath,
+          detail: `Empty heading: h${emptyMatch[1]}`,
+          severity: 'error',
+        });
+      }
+    }
+
+    // Check headings that contain only visually hidden text (display:none)
+    const headingWithHiddenRegex = /<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1>/gi;
+    let hiddenMatch;
+    headingWithHiddenRegex.lastIndex = 0;
+    while ((hiddenMatch = headingWithHiddenRegex.exec(file.content)) !== null) {
+      const inner = hiddenMatch[2];
+      // Skip if already caught by empty heading regex (pure whitespace)
+      if (inner.replace(/<[^>]*>/g, '').trim() === '' && !/<[^>]*style/i.test(inner)) continue;
+      // Strip elements with display:none, then check if visible text remains
+      const withoutHidden = inner.replace(/<[^>]*style\s*=\s*["'][^"']*display\s*:\s*none[^"']*["'][^>]*>[\s\S]*?<\/[^>]+>/gi, '');
+      const visibleText = withoutHidden.replace(/<[^>]*>/g, '').trim();
+      if (visibleText === '' && /<[^>]*style\s*=\s*["'][^"']*display\s*:\s*none/i.test(inner)) {
+        findings.push({
+          check: 'heading_hierarchy',
+          file: file.relativePath,
+          detail: `Empty heading: h${hiddenMatch[1]} (contains only hidden text)`,
+          severity: 'error',
+        });
+      }
+    }
+
     const headings: number[] = [];
     let match;
     headingRegex.lastIndex = 0;
@@ -252,13 +309,20 @@ function checkFormLabels(files: Array<{ relativePath: string; content: string }>
 function checkLinkText(files: Array<{ relativePath: string; content: string }>): A11yFinding[] {
   const findings: A11yFinding[] = [];
   const BAD_TEXTS = ['click here', 'here', 'read more', 'more', 'link', 'this'];
-  const linkRegex = /<a\b[^>]*>(.*?)<\/a>/gi;
+  const linkRegex = /<a\b([^>]*)>(.*?)<\/a>/gi;
   for (const file of files) {
     let match;
     linkRegex.lastIndex = 0;
     while ((match = linkRegex.exec(file.content)) !== null) {
-      const text = match[1].replace(/<[^>]*>/g, '').trim().toLowerCase();
-      if (BAD_TEXTS.includes(text)) {
+      const attrs = match[1];
+      const text = match[2].replace(/<[^>]*>/g, '').trim().toLowerCase();
+      if (text === '') {
+        // Links with aria-label or aria-labelledby have accessible names despite empty visible text
+        const hasAriaLabel = /aria-label\s*=/i.test(attrs);
+        if (!hasAriaLabel) {
+          findings.push({ check: 'link_text', file: file.relativePath, detail: `Empty link text`, severity: 'error' });
+        }
+      } else if (BAD_TEXTS.includes(text)) {
         findings.push({ check: 'link_text', file: file.relativePath, detail: `Non-descriptive link text: "${text}"`, severity: 'warning' });
       }
     }
@@ -339,7 +403,9 @@ export function runA11yGate(ctx: GateContext): GateResult & { predicateResults: 
     };
   }
 
-  const htmlFiles = readHTMLContent(ctx.config.appDir);
+  // Use staged dir if available (edits applied there), else original appDir
+  const scanDir = ctx.stageDir ?? ctx.config.appDir;
+  const htmlFiles = readHTMLContent(scanDir);
   const results: PredicateResult[] = [];
   let allPassed = true;
   const details: string[] = [];
