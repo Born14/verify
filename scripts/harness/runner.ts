@@ -35,6 +35,8 @@ import { startMockServer, stopMockServer, type MockServer } from '../../fixtures
 const MAX_SCENARIO_TIMEOUT = 10 * 60 * 1000; // 10 min
 const MAX_LIVE_SCENARIO_TIMEOUT = 60 * 1000; // 60s for live scenarios
 const MAX_TOTAL_TIMEOUT = 4 * 60 * 60 * 1000; // 4 hours
+const BATCH_WATCHDOG_MS = 5 * 60 * 1000; // 5 min max per batch of 10 — hard kill if exceeded
+const MEMORY_LOG_INTERVAL = 500; // Log memory every 500 scenarios
 
 // ---------------------------------------------------------------------------
 // AVAILABILITY DETECTION
@@ -328,8 +330,14 @@ export async function runSelfTest(config: RunConfig): Promise<{ exitCode: number
 
   console.log(`  Running ${scenarios.length} scenarios...\n`);
 
+  // Log initial memory state for CI diagnostics
+  const initMem = process.memoryUsage();
+  console.log(`  [MEM] Initial — heap: ${(initMem.heapUsed / 1024 / 1024).toFixed(0)}MB, rss: ${(initMem.rss / 1024 / 1024).toFixed(0)}MB`);
+
   const totalStart = Date.now();
-  const batchSize = config.parallelBatch ?? 10;
+  // Reduce batch size for large scenario counts to limit peak memory on CI runners
+  const defaultBatch = scenarios.length > 2000 ? 5 : 10;
+  const batchSize = config.parallelBatch ?? defaultBatch;
 
   // Progress tracker for live CI visibility
   let completed = 0;
@@ -362,13 +370,43 @@ export async function runSelfTest(config: RunConfig): Promise<{ exitCode: number
     for (let i = 0; i < pure.length; i += batchSize) {
       if (Date.now() - totalStart > MAX_TOTAL_TIMEOUT) break;
       const batch = pure.slice(i, i + batchSize);
+
+      // Memory diagnostics every N scenarios
+      if (completed > 0 && completed % MEMORY_LOG_INTERVAL === 0) {
+        const mem = process.memoryUsage();
+        console.log(`  [MEM] ${completed}/${total} — heap: ${(mem.heapUsed / 1024 / 1024).toFixed(0)}MB / ${(mem.heapTotal / 1024 / 1024).toFixed(0)}MB, rss: ${(mem.rss / 1024 / 1024).toFixed(0)}MB`);
+      }
+
+      // Batch watchdog: if a batch takes longer than BATCH_WATCHDOG_MS, log and abort
+      const batchStart = Date.now();
+      let watchdogFired = false;
+      const watchdog = setTimeout(() => {
+        watchdogFired = true;
+        const mem = process.memoryUsage();
+        const batchIds = batch.map(s => s.id).join(', ');
+        console.error(`\n  *** BATCH WATCHDOG TRIGGERED ***`);
+        console.error(`  Batch ${i / batchSize} hung after ${(BATCH_WATCHDOG_MS / 1000).toFixed(0)}s`);
+        console.error(`  Scenarios: ${batchIds}`);
+        console.error(`  Memory: heap=${(mem.heapUsed / 1024 / 1024).toFixed(0)}MB rss=${(mem.rss / 1024 / 1024).toFixed(0)}MB`);
+        console.error(`  Completed: ${completed}/${total}`);
+        console.error(`  Forcing process exit to prevent CI timeout waste\n`);
+        process.exit(99);
+      }, BATCH_WATCHDOG_MS);
+
       const results = await Promise.all(batch.map(s => runScenario(s, config)));
+      clearTimeout(watchdog);
+
       for (const entry of results) {
         ledger.append(entry);
         trackEntry(entry);
         printProgress(entry);
       }
       logBatchProgress('Phase 1: pure');
+
+      // Hint GC between batches to reduce peak memory on CI runners
+      if (typeof globalThis.Bun !== 'undefined' && typeof (globalThis.Bun as any).gc === 'function') {
+        (globalThis.Bun as any).gc(true);
+      }
     }
   }
 
@@ -506,6 +544,15 @@ async function runScenario(scenario: VerifyScenario, config: RunConfig, mockServ
   const stateDir = join(tmpdir(), `verify-selftest-${scenario.id}`);
   const scenarioStart = Date.now();
 
+  // CI hang diagnosis: log scenario start so we can identify which scenario freezes
+  if (process.env.CI) {
+    const editSizes = (scenario.edits || []).map(e => (e.search?.length ?? 0) + (e.replace?.length ?? 0));
+    const maxEdit = Math.max(0, ...editSizes);
+    if (maxEdit > 100_000) {
+      console.log(`    [DIAG] Starting ${scenario.id} (max edit: ${(maxEdit / 1024).toFixed(0)}KB)`);
+    }
+  }
+
   let result: VerifyResult | Error;
   let constraintsBefore = 0;
   let constraintsAfter = 0;
@@ -620,10 +667,14 @@ async function runScenario(scenario: VerifyScenario, config: RunConfig, mockServ
       const storePostGovern = new ConstraintStore(stateDir);
       constraintsAfter = storePostGovern.getConstraintCount();
     } else {
+      // Log scenario start for CI hang diagnosis (helps identify which scenario freezes)
+      const isPure = !scenario.requiresDocker && !scenario.requiresHttpMock && !scenario.requiresPlaywright && !scenario.requiresLiveHttp && !scenario.steps;
+      const pureTimeout = 60_000; // Pure scenarios should complete in <60s
+
       result = await Promise.race([
         verify(scenario.edits, scenario.predicates, mergedConfig),
         new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Scenario timeout (10 min)')), MAX_SCENARIO_TIMEOUT)
+          setTimeout(() => reject(new Error(`Scenario timeout (${isPure ? '60s pure' : '10 min'})`)), isPure ? pureTimeout : MAX_SCENARIO_TIMEOUT)
         ),
       ]);
     }
