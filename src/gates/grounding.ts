@@ -185,6 +185,8 @@ export function validateAgainstGrounding<T extends {
   pattern?: string;
   method?: string;
   expect?: { bodyContains?: string | string[] };
+  hash?: string;
+  count?: number;
 }>(
   predicates: T[],
   grounding: GroundingContext,

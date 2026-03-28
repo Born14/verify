@@ -1022,7 +1022,14 @@ function buildResult(
 
   // Build review bundle for verdicts that need human attention
   if (verdict === 'clarify' || verdict === 'narrowed') {
-    const evidenceArtifacts: MessageGateResult['reviewBundle'] extends { evidenceArtifacts: infer T } ? T : never = [];
+    const evidenceArtifacts: Array<{
+      claim: string;
+      evidenceKey: string;
+      verified: boolean;
+      fresh: boolean;
+      providerDetail: string;
+      raw?: Record<string, unknown>;
+    }> = [];
     if (result.claims) {
       for (const claim of result.claims) {
         const artifact: (typeof evidenceArtifacts)[0] = {
@@ -1041,7 +1048,7 @@ function buildResult(
     }
 
     // Extract staleness info from narrowing if present
-    let stalenessInfo: MessageGateResult['reviewBundle'] extends { stalenessInfo?: infer S } ? S : never;
+    let stalenessInfo: { assertion: string; epoch?: number; currentEpoch?: number; ageMs?: number; maxAgeMs?: number } | undefined;
     if (narrowing && (narrowing.type === 'evidence_staleness' || narrowing.type === 'topic_override+evidence_staleness')) {
       stalenessInfo = {
         assertion: (narrowing.original as Record<string, unknown>)?.evidenceEpoch !== undefined

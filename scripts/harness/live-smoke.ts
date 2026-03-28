@@ -95,12 +95,14 @@ function buildUserPrompt(goal: string, ctx: GovernContext): string {
 
   // Show grounding (what the app actually looks like)
   if (ctx.grounding) {
-    if (ctx.grounding.cssRules && Object.keys(ctx.grounding.cssRules).length > 0) {
+    if (ctx.grounding.routeCSSMap && ctx.grounding.routeCSSMap.size > 0) {
       parts.push('\nCSS RULES (from source):');
-      for (const [route, rules] of Object.entries(ctx.grounding.cssRules)) {
+      for (const [route, selectorMap] of ctx.grounding.routeCSSMap) {
         parts.push(`  Route ${route}:`);
-        for (const rule of (rules as any[]).slice(0, 15)) {
-          parts.push(`    ${rule.selector} { ${Object.entries(rule.properties || {}).map(([k,v]) => `${k}: ${v}`).join('; ')} }`);
+        let count = 0;
+        for (const [selector, properties] of selectorMap) {
+          if (count++ >= 15) break;
+          parts.push(`    ${selector} { ${Object.entries(properties).map(([k,v]) => `${k}: ${v}`).join('; ')} }`);
         }
       }
     }

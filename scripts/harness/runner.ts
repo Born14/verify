@@ -409,7 +409,7 @@ export async function runSelfTest(config: RunConfig): Promise<{ exitCode: number
 
   if (needsLiveContainers) {
     if (!infra.docker) {
-      if (liveDocker.length > 0 && tier !== 'pure') {
+      if (liveDocker.length > 0 && (tier as string) !== 'pure') {
         console.log(`\n  Phase 4: ${liveDocker.length} live Docker scenarios — SKIPPED (Docker not available)\n`);
       }
       if (playwright.length > 0 && tier === 'full') {
@@ -424,7 +424,7 @@ export async function runSelfTest(config: RunConfig): Promise<{ exitCode: number
         console.log(`    App running at ${dbHarness.getAppUrl()}\n`);
 
         // Phase 4: Live Docker scenarios (--live tier) — real Postgres + app container
-        if (liveDocker.length > 0 && tier !== 'pure') {
+        if (liveDocker.length > 0 && (tier as string) !== 'pure') {
           console.log(`  Phase 4: ${liveDocker.length} live Docker scenarios (sequential, real containers)\n`);
           for (const scenario of liveDocker) {
             if (Date.now() - totalStart > MAX_TOTAL_TIMEOUT) break;
@@ -643,13 +643,13 @@ async function runScenario(scenario: VerifyScenario, config: RunConfig, mockServ
       failureClass: scenario.failureClass,
     },
     result: {
-      success: isError ? null : result.success,
-      gatesPassed: isError ? [] : result.gates.filter(g => g.passed).map(g => g.gate),
-      gatesFailed: isError ? [] : result.gates.filter(g => !g.passed).map(g => g.gate),
+      success: result instanceof Error ? null : result.success,
+      gatesPassed: result instanceof Error ? [] : result.gates.filter((g: { passed: boolean; gate: string }) => g.passed).map((g: { gate: string }) => g.gate),
+      gatesFailed: result instanceof Error ? [] : result.gates.filter((g: { passed: boolean }) => !g.passed).map((g: { gate: string }) => g.gate),
       totalMs: durationMs,
       constraintsBefore,
       constraintsAfter,
-      error: isError ? result.message : undefined,
+      error: result instanceof Error ? result.message : undefined,
     },
     invariants: invariantResults.map(r => ({
       name: r.name,
@@ -741,7 +741,7 @@ async function runMultiStepScenario(scenario: VerifyScenario, config: RunConfig)
               success: true,
               gates: [],
               attestation: 'skipVerify step',
-              timing: { totalMs: 0 },
+              timing: { totalMs: 0, perGate: {} },
             };
             const verdict = inv.check(step, syntheticResult, context);
             allInvariantResults.push({

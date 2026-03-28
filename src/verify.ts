@@ -5,8 +5,9 @@
  * Submit edits + predicates. Get back a verdict.
  * Every edit gets a fair trial before it touches your users.
  *
- * Gate sequence:
+ * Gate sequence (24 gates):
  *   Grounding → F9 (syntax) → K5 (constraints) → G5 (containment) →
+ *   Access → Temporal → Propagation → State → Capacity → Contention →
  *   Filesystem → Infrastructure → Serialization → Config → Security → A11y → Performance →
  *   [Staging (Docker) → Browser (Playwright) → HTTP (fetch) →
  *   Invariants (health)] → Vision (screenshot) → Triangulation → Narrowing (learning)
@@ -41,6 +42,13 @@ import { runConfigGate } from './gates/config.js';
 import { runSecurityGate } from './gates/security.js';
 import { runA11yGate } from './gates/a11y.js';
 import { runPerformanceGate } from './gates/performance.js';
+import { runAccessGate } from './gates/access.js';
+import { runTemporalGate } from './gates/temporal.js';
+import { runPropagationGate } from './gates/propagation.js';
+import { runStateGate } from './gates/state.js';
+import { runCapacityGate } from './gates/capacity.js';
+import { runContentionGate } from './gates/contention.js';
+import { runObservationGate, isObservationRelevant } from './gates/observation.js';
 import { LocalDockerRunner, isDockerAvailable, hasDockerCompose } from './runners/docker-runner.js';
 
 /**
@@ -204,6 +212,121 @@ export async function verify(
       const containmentResult = runContainmentGate(ctx);
       gates.push(containmentResult);
       // Advisory — always passes, but result is included
+    }
+
+    // =========================================================================
+    // ACCESS: Privilege Boundary Analysis
+    // =========================================================================
+    {
+      log('[access] Checking privilege boundaries...');
+      const accessResult = runAccessGate(ctx);
+      gates.push(accessResult);
+
+      if (!accessResult.passed) {
+        log(`[access] FAILED: ${accessResult.detail}`);
+        return buildResult({
+          gates, config, store, sessionId, totalStart, logs,
+          failedGate: 'access' as any, error: accessResult.detail, edits, predicates: groundedPredicates,
+        });
+      }
+    }
+
+    // =========================================================================
+    // TEMPORAL: Cross-Surface Staleness Detection
+    // =========================================================================
+    {
+      log('[temporal] Checking for temporal drift...');
+      const temporalResult = runTemporalGate(ctx);
+      gates.push(temporalResult);
+
+      if (!temporalResult.passed) {
+        log(`[temporal] FAILED: ${temporalResult.detail}`);
+        return buildResult({
+          gates, config, store, sessionId, totalStart, logs,
+          failedGate: 'temporal' as any, error: temporalResult.detail, edits, predicates: groundedPredicates,
+        });
+      }
+    }
+
+    // =========================================================================
+    // PROPAGATION: Cross-Surface Cascade Analysis
+    // =========================================================================
+    {
+      log('[propagation] Checking for propagation breaks...');
+      const propagationResult = runPropagationGate(ctx);
+      gates.push(propagationResult);
+
+      if (!propagationResult.passed) {
+        log(`[propagation] FAILED: ${propagationResult.detail}`);
+        return buildResult({
+          gates, config, store, sessionId, totalStart, logs,
+          failedGate: 'propagation' as any, error: propagationResult.detail, edits, predicates: groundedPredicates,
+        });
+      }
+    }
+
+    // =========================================================================
+    // STATE: State Assumption Verification
+    // =========================================================================
+    {
+      log('[state] Checking state assumptions...');
+      const stateResult = runStateGate(ctx);
+      gates.push(stateResult);
+
+      if (!stateResult.passed) {
+        log(`[state] FAILED: ${stateResult.detail}`);
+        return buildResult({
+          gates, config, store, sessionId, totalStart, logs,
+          failedGate: 'state' as any, error: stateResult.detail, edits, predicates: groundedPredicates,
+        });
+      }
+    }
+
+    // =========================================================================
+    // CAPACITY: Resource Exhaustion Detection
+    // =========================================================================
+    {
+      log('[capacity] Checking for capacity issues...');
+      const capacityResult = runCapacityGate(ctx);
+      gates.push(capacityResult);
+
+      if (!capacityResult.passed) {
+        log(`[capacity] FAILED: ${capacityResult.detail}`);
+        return buildResult({
+          gates, config, store, sessionId, totalStart, logs,
+          failedGate: 'capacity' as any, error: capacityResult.detail, edits, predicates: groundedPredicates,
+        });
+      }
+    }
+
+    // =========================================================================
+    // CONTENTION: Race Condition & Resource Conflict Detection
+    // =========================================================================
+    {
+      log('[contention] Checking for contention issues...');
+      const contentionResult = runContentionGate(ctx);
+      gates.push(contentionResult);
+
+      if (!contentionResult.passed) {
+        log(`[contention] FAILED: ${contentionResult.detail}`);
+        return buildResult({
+          gates, config, store, sessionId, totalStart, logs,
+          failedGate: 'contention' as any, error: contentionResult.detail, edits, predicates: groundedPredicates,
+        });
+      }
+    }
+
+    // =========================================================================
+    // OBSERVATION: Observer Effect Detection
+    // =========================================================================
+    if (isObservationRelevant(edits)) {
+      log('[observation] Checking for observer effects...');
+      const observationResult = runObservationGate(ctx);
+      gates.push(observationResult);
+      // Advisory gate — always passes, reports effects for transparency
+      if (observationResult.effects?.length > 0) {
+        log(`[observation] ${observationResult.effects.length} observer effect(s) detected (advisory)`);
+      }
     }
 
     // =========================================================================
@@ -711,7 +834,7 @@ function buildResult(opts: BuildResultOpts): VerifyResult {
       ? [{ id: seededConstraint.id, signature: seededConstraint.signature, type: seededConstraint.type, reason: seededConstraint.reason }]
       : [],
     resolutionHint: buildResolutionHint(failedGate, error, opts.violation),
-    patternRecall: store.getPatternRecall(error),
+    patternRecall: (() => { const r = store.getPatternRecall(error); return r ? [r] : undefined; })(),
   };
 
   // Add banned fingerprints

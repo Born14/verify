@@ -17,7 +17,7 @@ import { governMessage } from '../../src/gates/message.js';
 import { verify } from '../../src/verify.js';
 import { govern } from '../../src/govern.js';
 import type { MessageEnvelope, MessagePolicy, EvidenceProvider } from '../../src/gates/message.js';
-import type { VerifyConfig, GoalPredicate } from '../../src/types.js';
+import type { VerifyConfig, Predicate } from '../../src/types.js';
 import { join } from 'path';
 import { mkdtempSync } from 'fs';
 import { tmpdir } from 'os';
@@ -175,7 +175,7 @@ const scenarios: EmergentScenario[] = [
       // Step 1: Run a code verification
       const verifyResult = await verify(
         [{ file: 'server.js', search: 'Sovereign Football', replace: 'Sovereign Football Club' }],
-        [{ id: 'p1', type: 'content', file: 'server.js', pattern: 'Sovereign Football Club' } as GoalPredicate],
+        [{ id: 'p1', type: 'content', file: 'server.js', pattern: 'Sovereign Football Club' } as Predicate],
         { appDir: DEMO_APP, stateDir: join(STATE_DIR, 'cross-domain'), gates: { staging: false, browser: false, http: false } },
       );
 
@@ -209,7 +209,7 @@ const scenarios: EmergentScenario[] = [
             exists: verifyResult.success,
             fresh: true,
             detail: verifyResult.success
-              ? `Verified: ${verifyResult.gates.filter(g => g.passed).length}/${verifyResult.gates.length} gates passed in ${verifyResult.durationMs}ms`
+              ? `Verified: ${verifyResult.gates.filter(g => g.passed).length}/${verifyResult.gates.length} gates passed in ${verifyResult.timing.totalMs}ms`
               : `Verification failed: ${verifyResult.gates.find(g => !g.passed)?.detail || 'unknown'}`,
           }),
         },
@@ -218,7 +218,7 @@ const scenarios: EmergentScenario[] = [
       return {
         verdict: messageResult.verdict,
         detail: messageResult.detail,
-        interesting: `Code verify ran (${verifyResult.success ? 'PASS' : 'FAIL'}, ${verifyResult.durationMs}ms, ${verifyResult.gates.length} gates). Message gate used verify result as evidence for "deployed successfully" claim → ${messageResult.verdict}. Two independent verify products composed: code gates prove the edit, message gates prove the announcement. Neither was designed to feed the other.`,
+        interesting: `Code verify ran (${verifyResult.success ? 'PASS' : 'FAIL'}, ${verifyResult.timing.totalMs}ms, ${verifyResult.gates.length} gates). Message gate used verify result as evidence for "deployed successfully" claim → ${messageResult.verdict}. Two independent verify products composed: code gates prove the edit, message gates prove the announcement. Neither was designed to feed the other.`,
       };
     },
   },
@@ -353,8 +353,8 @@ const scenarios: EmergentScenario[] = [
       const result = await verify(
         [{ file: 'server.js', search: 'Sovereign Football', replace: 'Sovereign FC' }],
         [
-          { id: 'p1', type: 'content', file: 'server.js', pattern: 'Sovereign FC' } as GoalPredicate,
-          { id: 'p2', type: 'content', file: 'server.js', pattern: 'Sovereign Football' } as GoalPredicate,
+          { id: 'p1', type: 'content', file: 'server.js', pattern: 'Sovereign FC' } as Predicate,
+          { id: 'p2', type: 'content', file: 'server.js', pattern: 'Sovereign Football' } as Predicate,
         ],
         { appDir: DEMO_APP, stateDir: join(STATE_DIR, 'contradict'), gates: { staging: false, browser: false, http: false } },
       );
@@ -378,7 +378,7 @@ const scenarios: EmergentScenario[] = [
     run: async () => {
       const result = await verify(
         [{ file: 'server.js', search: '</style>', replace: '.new-banner { color: red; }\n</style>' }],
-        [{ id: 'p1', type: 'css', selector: '.new-banner', property: 'color', expected: 'red', path: '/' } as GoalPredicate],
+        [{ id: 'p1', type: 'css', selector: '.new-banner', property: 'color', expected: 'red', path: '/' } as Predicate],
         { appDir: DEMO_APP, stateDir: join(STATE_DIR, 'grounding-tension'), gates: { staging: false, browser: false, http: false } },
       );
 

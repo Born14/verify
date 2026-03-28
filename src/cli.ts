@@ -280,7 +280,7 @@ async function runDoctor() {
 
   // Docker Compose
   let compose = false;
-  try { compose = docker ? await hasDockerCompose() : false; } catch {}
+  try { compose = docker ? hasDockerCompose(process.cwd()) : false; } catch {}
   console.log(`  Docker Compose:   ${compose ? '✓ available' : '✗ not found'}`);
 
   // Playwright image
@@ -361,11 +361,12 @@ async function runSelfTestCommand() {
   }
 
   const failOnBug = args.includes('--fail-on-bug');
+  const includeWPT = args.includes('--wpt');
 
   const tierLabel = liveTier === 'pure' ? 'pure' : liveTier === 'live' ? 'live (Docker)' : 'full (Docker + Playwright)';
   console.log(`\nRunning self-test from ${appDir}`);
   if (families.length > 0) console.log(`  Families: ${families.join(', ')}`);
-  console.log(`  Tier: ${tierLabel}`);
+  console.log(`  Tier: ${tierLabel}${includeWPT ? ' + WPT corpus' : ''}`);
   console.log(`  Fail on bug: ${failOnBug}\n`);
 
   const result = await runSelfTest({
@@ -374,6 +375,7 @@ async function runSelfTestCommand() {
     dockerEnabled: liveTier !== 'pure',
     failOnBug,
     liveTier,
+    includeWPT,
   });
 
   process.exit(result.exitCode);
@@ -877,6 +879,7 @@ Examples:
   npx @sovereign-labs/verify self-test
   npx @sovereign-labs/verify self-test --live              # Include Docker scenarios
   npx @sovereign-labs/verify self-test --full              # Include Docker + Playwright
+  npx @sovereign-labs/verify self-test --wpt               # Include WPT corpus (7K+ scenarios)
   npx @sovereign-labs/verify self-test --families=A,B --fail-on-bug
   npx @sovereign-labs/verify faults inbox
   npx @sovereign-labs/verify faults log --app=myapp --goal="change color" --class=false_positive --reason="health 500"

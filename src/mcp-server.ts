@@ -893,7 +893,7 @@ async function handleSubmit(args: any) {
 // CAMPAIGN TOOL HANDLERS
 // =============================================================================
 
-function handleCampaignGround(args: any) {
+async function handleCampaignGround(args: any) {
   const appDir = resolve(args.appDir ?? process.cwd());
   const stateDir = resolve(args.stateDir ?? join(appDir, '.verify'));
 

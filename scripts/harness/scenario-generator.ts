@@ -9368,7 +9368,7 @@ function generateWave2B(appDir: string): VerifyScenario[] {
     failureClass: 'FS-17',
     description: 'FS-17: filesystem_count includes unexpected files in directory',
     edits: [{ file: 'server.js', search: 'Demo App</h1>', replace: 'Demo App</h1>' }],
-    predicates: [{ type: 'filesystem_count' as any, directory: '.', expected: 1 }], // intentionally wrong count
+    predicates: [{ type: 'filesystem_count' as const, path: '.', count: 1 }], // intentionally wrong count
     config: { appDir, gates: { staging: false, browser: false, http: false } },
     invariants: [
       shouldNotCrash('FS-17a extra files'),
@@ -13031,7 +13031,7 @@ function generateWave3(appDir: string): VerifyScenario[] {
     failureClass: 'FS-17',
     description: 'FS-17: Extra files — filesystem_count detects extra file',
     edits: [],
-    predicates: [{ type: 'fs', assertion: 'filesystem_count', expected: '1', path: '.' }],
+    predicates: [{ type: 'filesystem_count', count: 1, path: '.' }],
     config: { appDir, gates: { staging: false, browser: false, http: false } },
     invariants: [
       shouldNotCrash('FS-17a extra files'),
@@ -13098,7 +13098,7 @@ function generateWave3(appDir: string): VerifyScenario[] {
     failureClass: 'FS-22',
     description: 'FS-22: Glob expansion — fs predicate with glob pattern (if supported)',
     edits: [],
-    predicates: [{ type: 'fs', assertion: 'file_exists', path: '*.js' }],
+    predicates: [{ type: 'filesystem_exists', path: '*.js' }],
     config: { appDir, gates: { staging: false, browser: false, http: false } },
     invariants: [
       shouldNotCrash('FS-22a glob'),
@@ -13132,7 +13132,7 @@ function generateWave3(appDir: string): VerifyScenario[] {
     failureClass: 'FS-32',
     description: 'FS-32: Hash method — filesystem_unchanged uses consistent hashing',
     edits: [],
-    predicates: [{ type: 'fs', assertion: 'filesystem_unchanged' }],
+    predicates: [{ type: 'filesystem_unchanged' }],
     config: { appDir, gates: { staging: false, browser: false, http: false } },
     invariants: [
       shouldNotCrash('FS-32a hash method'),
@@ -16186,7 +16186,7 @@ function generateMove7Scenarios(appDir: string): VerifyScenario[] {
           if (result instanceof Error) return { passed: true, severity: 'info' as const };
           // Attestation should exist
           const att = result.attestation || '';
-          if (att.length === 0) return { passed: false, violation: 'No attestation string', severity: 'warn' as const };
+          if (att.length === 0) return { passed: false, violation: 'No attestation string', severity: 'unexpected' as const };
           return { passed: true, severity: 'info' as const };
         },
       },
@@ -18166,6 +18166,422 @@ function generateLiveHTTPScenarios(appDir: string): VerifyScenario[] {
 }
 
 // =============================================================================
+// FAMILY X: CROSS-CUTTING GATE COMPOSITION (ex live-emergent.ts)
+// Tests where independently-designed gates interact in structurally surprising
+// ways. Each scenario was discovered empirically, not designed top-down.
+// =============================================================================
+
+function generateFamilyX(appDir: string): VerifyScenario[] {
+  const scenarios: VerifyScenario[] = [];
+
+  // Shared evidence providers
+  const validEvidence: Record<string, EvidenceProvider> = {
+    checkpoint: async () => ({ exists: true, fresh: true, detail: 'CP-150 verified' }),
+    test_run: async () => ({ exists: true, fresh: true, detail: 'Test run #42 passed' }),
+  };
+
+  // ── X-01: Triple gate interaction (topic + claims + negation) ────────────
+  // Three independently-designed gates compose on one message:
+  // Topic override (agent mislabeled), claim trigger suppressed by negation,
+  // required pattern found. → contention failure class
+  scenarios.push({
+    id: nextId('X', 'X01_triple_gate'),
+    family: 'X',
+    generator: 'X01_triple_gate',
+    description: 'X-01: Topic override + negation suppresses claim + required pattern — triple gate composition',
+    edits: [],
+    predicates: [],
+    config: {},
+    messageTest: {
+      envelope: {
+        destination: { target: '#deployments', platform: 'slack' },
+        content: {
+          body: 'Update: the deploy has not completed successfully. CP-150 rollback initiated. Waiting for next window.',
+        },
+        sender: { identity: 'deploy-bot' },
+        topic: { value: 'status-update', source: 'agent' },
+      },
+      policy: {
+        destinations: { allow: ['#deployments'] },
+        topics: {
+          deploy: { trust_agent_label: false, detect: ['deploy', 'rollback'] },
+        },
+        claims: {
+          deploy: {
+            unknown_assertions: 'clarify',
+            assertions: {
+              deploy_success: {
+                triggers: ['completed successfully'],
+                evidence: 'checkpoint',
+              },
+            },
+          },
+        },
+        required: [{ topic: 'deploy', patterns: ['CP-\\d+'] }],
+      },
+      evidenceProviders: validEvidence,
+    },
+    invariants: [
+      messageDidNotCrash(),
+      // Topic override produces 'narrowed' (agent mislabeled → policy corrected)
+      messageVerdict('narrowed', 'triple gate composition narrowed'),
+      messageGatePassed('destination'),
+      messageTopicResolution('policy_detected', true),
+      messageNarrowing('topic_override'),
+    ],
+    requiresDocker: false,
+    failureClass: 'X-01',
+  });
+
+  // ── X-02: Forbidden content in negated context ───────────────────────────
+  // "we did not expose any password" — negation context but forbidden is lexical.
+  // Forbidden content gate fires regardless of semantic context.
+  scenarios.push({
+    id: nextId('X', 'X02_forbidden_negated'),
+    family: 'X',
+    generator: 'X02_forbidden_negated',
+    description: 'X-02: Forbidden word in negated context is still blocked — forbidden is lexical not semantic',
+    edits: [],
+    predicates: [],
+    config: {},
+    messageTest: {
+      envelope: {
+        destination: { target: '#alerts', platform: 'slack' },
+        content: {
+          body: 'Security audit complete. We confirmed the system did not expose any password data. All clear.',
+        },
+        sender: { identity: 'security-bot' },
+      },
+      policy: {
+        destinations: { allow: ['#alerts'] },
+        forbidden: ['password'],
+      },
+    },
+    invariants: [
+      messageDidNotCrash(),
+      messageVerdict('blocked', 'forbidden catches negated context'),
+      messageReason('forbidden_content'),
+      messageGatePassed('destination'),
+      messageGateFailed('forbidden_content'),
+    ],
+    requiresDocker: false,
+    failureClass: 'X-02',
+  });
+
+  // ── X-03: K5 denied pattern survives topic override ──────────────────────
+  // Agent mislabels topic AND uses a denied pattern — two evasion strategies.
+  // Topic override fires at gate 0, K5 at gate 5. Both catch sequentially.
+  scenarios.push({
+    id: nextId('X', 'X03_k5_topic_double'),
+    family: 'X',
+    generator: 'X03_k5_topic_double',
+    description: 'X-03: Agent mislabels topic + uses denied K5 pattern — double evasion caught',
+    edits: [],
+    predicates: [],
+    config: {},
+    messageTest: {
+      envelope: {
+        destination: { target: '#deployments', platform: 'slack' },
+        content: {
+          body: 'Auto-deployed without review. No human approval needed for this one. CP-160.',
+        },
+        sender: { identity: 'deploy-bot' },
+        topic: { value: 'general', source: 'agent' },
+      },
+      policy: {
+        destinations: { allow: ['#deployments'] },
+        topics: {
+          deploy: { trust_agent_label: false, detect: ['deployed', 'deploy'] },
+        },
+        claims: {
+          deploy: {
+            unknown_assertions: 'allow',
+            assertions: {
+              deploy_success: {
+                triggers: ['completed successfully'],
+                evidence: 'checkpoint',
+              },
+            },
+          },
+        },
+        required: [{ topic: 'deploy', patterns: ['CP-\\d+'] }],
+      },
+      deniedPatterns: [
+        { pattern: 'no human approval', reason: 'All deploys require human acknowledgment', timestamp: Date.now() - 30000 },
+        { pattern: 'without review', reason: 'Review bypass is prohibited', timestamp: Date.now() - 60000 },
+      ],
+    },
+    invariants: [
+      messageDidNotCrash(),
+      messageVerdict('blocked', 'K5 catches double evasion'),
+      messageReason('previously_denied'),
+      messageTopicResolution('policy_detected', true),
+    ],
+    requiresDocker: false,
+    failureClass: 'X-03',
+  });
+
+  // ── X-04: Cross-domain verify→message (verify result as message evidence) ─
+  // verify() output feeds governMessage() — code gates prove the edit,
+  // message gates prove the announcement. → propagation failure class
+  // Here we test the verify() half. The composition pattern (using verify
+  // result as message evidence) is proven by Family M's claim+evidence tests.
+  scenarios.push({
+    id: nextId('X', 'X04_cross_domain_verify'),
+    family: 'X',
+    generator: 'X04_cross_domain_verify',
+    description: 'X-04: Code verify produces evidence that could feed message gate — propagation test',
+    edits: [{ file: 'server.js', search: '<h1>Demo App</h1>', replace: '<h1>Demo App v2</h1>' }],
+    predicates: [{ type: 'content', file: 'server.js', pattern: 'Demo App v2' }],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      shouldNotCrash('X-04 verify should not crash'),
+      verifySucceeded('X-04 content edit should pass'),
+      gatePresent('grounding'),
+      gatePassed('grounding'),
+    ],
+    requiresDocker: false,
+    failureClass: 'X-04',
+  });
+
+  // ── X-04b: Message gate consuming verification evidence ──────────────────
+  // The message half: a claim "deployed successfully" with verification evidence.
+  // Tests that governMessage accepts external verification as evidence source.
+  scenarios.push({
+    id: nextId('X', 'X04b_cross_domain_message'),
+    family: 'X',
+    generator: 'X04b_cross_domain_message',
+    description: 'X-04b: Message gate accepts verification result as claim evidence — propagation',
+    edits: [],
+    predicates: [],
+    config: {},
+    messageTest: {
+      envelope: {
+        destination: { target: '#deployments', platform: 'slack' },
+        content: {
+          body: 'Content update deployed successfully. CP-200. All gates passed.',
+        },
+        sender: { identity: 'deploy-bot' },
+        topic: { value: 'deploy', source: 'agent' },
+      },
+      policy: {
+        destinations: { allow: ['#deployments'] },
+        required: [{ topic: 'deploy', patterns: ['CP-\\d+'] }],
+        claims: {
+          deploy: {
+            unknown_assertions: 'clarify',
+            assertions: {
+              deploy_success: {
+                triggers: ['deployed successfully'],
+                evidence: 'verification',
+              },
+            },
+          },
+        },
+      },
+      evidenceProviders: {
+        verification: async () => ({
+          exists: true,
+          fresh: true,
+          detail: 'Verified: 5/5 gates passed in 42ms',
+        }),
+      },
+    },
+    invariants: [
+      messageDidNotCrash(),
+      messageVerdict('approved', 'verification evidence accepted'),
+      messageClaimVerified('deploy_success', true),
+    ],
+    requiresDocker: false,
+    failureClass: 'X-04',
+  });
+
+  // ── X-05: Governed message retry loop (K5 convergence for messages) ──────
+  // First attempt blocked by forbidden, second attempt learns and succeeds.
+  // Tests K5 narrowing concept transferring to non-code domains.
+  // Encoded as two sequential scenarios sharing the K5 state.
+  scenarios.push({
+    id: nextId('X', 'X05a_retry_blocked'),
+    family: 'X',
+    generator: 'X05a_retry_blocked',
+    description: 'X-05a: First message attempt blocked by forbidden api_key — retry step 1',
+    edits: [],
+    predicates: [],
+    config: {},
+    messageTest: {
+      envelope: {
+        destination: { target: '#deployments', platform: 'slack' },
+        content: {
+          body: 'Deploy done. Used api_key rotation during migration. CP-170.',
+        },
+        sender: { identity: 'deploy-bot' },
+        topic: { value: 'deploy', source: 'agent' },
+      },
+      policy: {
+        destinations: { allow: ['#deployments'] },
+        forbidden: [/api[_-]?key/i],
+        required: [{ topic: 'deploy', patterns: ['CP-\\d+'] }],
+        claims: {
+          deploy: { unknown_assertions: 'allow', assertions: {} },
+        },
+      },
+    },
+    invariants: [
+      messageDidNotCrash(),
+      messageVerdict('blocked', 'forbidden api_key blocks first attempt'),
+      messageReason('forbidden_content'),
+    ],
+    requiresDocker: false,
+    failureClass: 'X-05',
+  });
+
+  scenarios.push({
+    id: nextId('X', 'X05b_retry_succeeds'),
+    family: 'X',
+    generator: 'X05b_retry_succeeds',
+    description: 'X-05b: Rewritten message (no api_key) passes with K5 memory active — retry step 2',
+    edits: [],
+    predicates: [],
+    config: {},
+    messageTest: {
+      envelope: {
+        destination: { target: '#deployments', platform: 'slack' },
+        content: {
+          body: 'Deploy done. Credential rotation completed during migration. CP-170.',
+        },
+        sender: { identity: 'deploy-bot' },
+        topic: { value: 'deploy', source: 'agent' },
+      },
+      policy: {
+        destinations: { allow: ['#deployments'] },
+        forbidden: [/api[_-]?key/i],
+        required: [{ topic: 'deploy', patterns: ['CP-\\d+'] }],
+        claims: {
+          deploy: { unknown_assertions: 'allow', assertions: {} },
+        },
+      },
+      deniedPatterns: [
+        { pattern: 'api_key', reason: 'Forbidden content matched in prior attempt', timestamp: Date.now() - 5000 },
+      ],
+    },
+    invariants: [
+      messageDidNotCrash(),
+      messageVerdict('approved', 'rewritten message passes with K5 active'),
+      messageGatePassed('destination'),
+      messageGatePassed('forbidden_content'),
+    ],
+    requiresDocker: false,
+    failureClass: 'X-05',
+  });
+
+  // ── X-06: Compound narrowing (topic override + evidence staleness) ───────
+  // Agent mislabels topic AND has stale evidence. Two narrowing events compound.
+  scenarios.push({
+    id: nextId('X', 'X06_compound_narrowing'),
+    family: 'X',
+    generator: 'X06_compound_narrowing',
+    description: 'X-06: Topic override + epoch-stale evidence → compound narrowing',
+    edits: [],
+    predicates: [],
+    config: {},
+    messageTest: {
+      envelope: {
+        destination: { target: '#deployments', platform: 'slack' },
+        content: {
+          body: 'Quick update — deploy completed successfully yesterday. CP-180.',
+        },
+        sender: { identity: 'deploy-bot' },
+        topic: { value: 'general', source: 'agent' },
+      },
+      policy: {
+        destinations: { allow: ['#deployments'] },
+        topics: {
+          deploy: { trust_agent_label: false, detect: ['deploy', 'deployed'] },
+        },
+        required: [{ topic: 'deploy', patterns: ['CP-\\d+'] }],
+        claims: {
+          deploy: {
+            unknown_assertions: 'allow',
+            assertions: {
+              deploy_success: {
+                triggers: ['completed successfully'],
+                evidence: 'checkpoint',
+              },
+            },
+          },
+        },
+      },
+      evidenceProviders: {
+        checkpoint: async () => ({
+          exists: true,
+          fresh: true,
+          detail: 'CP-180 from epoch 2',
+          epoch: 2,
+          currentEpoch: 4,
+        }),
+      },
+    },
+    invariants: [
+      messageDidNotCrash(),
+      messageVerdict('narrowed', 'compound narrowing from two sources'),
+      messageTopicResolution('policy_detected', true),
+      messageNarrowing('topic_override+evidence_staleness'),
+    ],
+    requiresDocker: false,
+    failureClass: 'X-06',
+  });
+
+  // ── X-07: Conflicting predicates (verify self-contradiction) ─────────────
+  // Two CSS predicates contradict: p1 wants color red, p2 wants color blue on same selector.
+  // Edit satisfies p1 but p2 must fail. G1 honesty prevents false success. → state-leak class
+  scenarios.push({
+    id: nextId('X', 'X07_conflicting_predicates'),
+    family: 'X',
+    generator: 'X07_conflicting_predicates',
+    description: 'X-07: Contradictory predicates — edit satisfies p1 but breaks p2, G1 prevents false success',
+    edits: [{ file: 'server.js', search: '.hero .hero-title { color: white;', replace: '.hero .hero-title { color: red;' }],
+    predicates: [
+      { type: 'css', selector: '.hero .hero-title', property: 'color', expected: 'red', path: '/' },
+      { type: 'css', selector: '.hero .hero-title', property: 'color', expected: 'blue', path: '/' },
+    ],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      shouldNotCrash('X-07 conflicting predicates should not crash'),
+      // The edit sets color to red — p1 passes, p2 fails (expects blue).
+      // verify reports failure because not ALL predicates pass (G1 honesty).
+      verifyFailedAt('grounding', 'X-07 must fail — predicates contradict'),
+    ],
+    requiresDocker: false,
+    failureClass: 'X-07',
+  });
+
+  // ── X-08: Predicate-grounding tension ────────────────────────────────────
+  // Edit adds .new-banner CSS rule, predicate references it. Grounding gate
+  // may reject because .new-banner doesn't exist in source yet. Tests the
+  // tension between current-reality grounding and intended-reality predicates.
+  scenarios.push({
+    id: nextId('X', 'X08_grounding_tension'),
+    family: 'X',
+    generator: 'X08_grounding_tension',
+    description: 'X-08: Edit adds new CSS class, predicate references it — grounding vs intended reality tension',
+    edits: [{ file: 'server.js', search: 'table.data-table td { padding: 0.5rem; border-bottom: 1px solid #eee; }\n  </style>', replace: 'table.data-table td { padding: 0.5rem; border-bottom: 1px solid #eee; }\n    .new-banner { color: red; }\n  </style>' }],
+    predicates: [{ type: 'css', selector: '.new-banner', property: 'color', expected: 'red', path: '/' }],
+    config: { appDir, gates: { staging: false, browser: false, http: false } },
+    invariants: [
+      shouldNotCrash('X-08 grounding tension should not crash'),
+      groundingRan(),
+      // verify() applies edits before grounding, so .new-banner exists post-edit.
+      // The predicate is grounded (not a miss) and passes the goal gate.
+      verifySucceeded('X-08 new CSS rule added and predicate satisfied post-edit'),
+    ],
+    requiresDocker: false,
+    failureClass: 'X-08',
+  });
+
+  return scenarios;
+}
+
+// =============================================================================
 // GENERATOR DISPATCH
 // =============================================================================
 
@@ -18198,6 +18614,7 @@ export function generateAllScenarios(appDir: string): VerifyScenario[] {
     ...generateLiveDBScenarios(appDir),
     ...generateLiveBrowserScenarios(appDir),
     ...generateLiveHTTPScenarios(appDir),
+    ...generateFamilyX(appDir),
   ];
 }
 
@@ -18216,5 +18633,12 @@ export function generateFamily(family: ScenarioFamily, appDir: string): VerifySc
     case 'M': return generateFamilyM(appDir);
     case 'P': return [...generateFamilyP(appDir), ...generateLiveHTTPScenarios(appDir)];
     case 'V': return generateFamilyV(appDir);
+    case 'W':
+    case 'WH':
+    case 'WP':
+    case 'WC':
+      return generateMove7Scenarios(appDir).filter(s => s.family === family);
+    case 'X': return generateFamilyX(appDir);
+    default: return [];
   }
 }

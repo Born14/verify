@@ -60,7 +60,9 @@ export interface Predicate {
   // --- DB predicate fields ---
   table?: string;
   column?: string;
-  assertion?: 'table_exists' | 'column_exists' | 'column_type';
+  assertion?: 'table_exists' | 'column_exists' | 'column_type'
+    | 'column_order' | 'row_value' | 'row_count' | 'function_exists' | 'json_path'
+    | 'absent' | 'no_production_drift';
 
   // --- HTTP predicate fields ---
   method?: string;
@@ -82,6 +84,8 @@ export interface Predicate {
       bodyContains?: string | string[];
       bodyRegex?: string;
     };
+    /** Optional delay before this step in ms (simulates timing races) */
+    delayBeforeMs?: number;
   }>;
 
   // --- Filesystem predicate fields ---
@@ -120,7 +124,8 @@ export interface Predicate {
 
   // --- Performance predicate fields ---
   /** Performance check type */
-  perfCheck?: 'response_time' | 'bundle_size' | 'image_optimization' | 'lazy_loading' | 'connection_count';
+  perfCheck?: 'response_time' | 'bundle_size' | 'image_optimization' | 'lazy_loading' | 'connection_count'
+    | 'unminified_assets' | 'render_blocking' | 'dom_depth' | 'cache_headers' | 'duplicate_deps';
   /** Threshold value (ms for timing, bytes for size) */
   threshold?: number;
 }
@@ -161,6 +166,8 @@ export interface VerifyConfig {
 
   // --- Docker options ---
   docker?: {
+    /** Enable Docker compose mode (default: false) */
+    compose?: boolean;
     /** Docker compose file path (default: docker-compose.yml) */
     composefile?: string;
     /** Service name in compose file (default: "app") */
@@ -195,6 +202,8 @@ export interface VerifyConfig {
     invariants?: boolean;
     /** Vision: Screenshot + model verification (default: false — needs API key) */
     vision?: boolean;
+    /** Triangulation: Cross-authority verdict synthesis (default: auto when 2+ authorities) */
+    triangulation?: boolean;
   };
 
   // --- Vision options ---
@@ -223,6 +232,9 @@ export interface VerifyConfig {
   /** Constraint IDs to explicitly override (bypass K5 for known risks) */
   overrideConstraints?: string[];
 
+  /** Pre-seed constraints for testing (harness use) */
+  constraints?: Array<Record<string, unknown>>;
+
   /** K5 constraint learning mode:
    *  - 'session' (default): constraints seeded during this call are cleaned up afterward.
    *    Each verify() call is isolated — failures don't poison subsequent calls.
@@ -236,6 +248,9 @@ export interface VerifyConfig {
 
   /** System invariants to check after staging */
   invariants?: Invariant[];
+
+  /** Log function for progress output */
+  log?: (message: string) => void;
 
   /** App URL for HTTP/browser gates when staging is skipped.
    *  If provided and staging is disabled, this URL is used for HTTP predicates.
@@ -254,7 +269,9 @@ export interface VerifyConfig {
 export interface GateResult {
   /** Gate identifier */
   gate: 'grounding' | 'F9' | 'K5' | 'G5' | 'staging' | 'browser' | 'http' | 'invariants' | 'vision' | 'triangulation'
-    | 'infrastructure' | 'serialization' | 'config' | 'security' | 'a11y' | 'performance';
+    | 'infrastructure' | 'serialization' | 'config' | 'security' | 'a11y' | 'performance'
+    | 'filesystem' | 'access' | 'capacity' | 'contention' | 'state' | 'temporal' | 'propagation'
+    | 'observation' | 'goal' | 'content';
   /** Did this gate pass? */
   passed: boolean;
   /** Human-readable detail */
@@ -283,7 +300,7 @@ export interface Narrowing {
   resolutionHint?: string;
 
   /** Prior winning fixes for matching failure signatures */
-  patternRecall?: string;
+  patternRecall?: string[];
 
   /** Expected vs actual values from failed predicates */
   fileEvidence?: string;
@@ -314,6 +331,12 @@ export interface PredicateResult {
   actual?: string;
   fingerprint: string;
   groundingMiss?: boolean;
+  /** Human-readable detail about the result */
+  detail?: string;
+  /** CSS selector (for css/html types) */
+  selector?: string;
+  /** CSS property checked */
+  property?: string;
 }
 
 /**
@@ -331,6 +354,9 @@ export interface VerifyResult {
 
   /** Per-predicate pass/fail results */
   predicateResults?: PredicateResult[];
+
+  /** Input predicates (for reference) */
+  predicates?: Predicate[];
 
   /** Effective predicate set (post-bounding, post-dedup) */
   effectivePredicates?: Array<{

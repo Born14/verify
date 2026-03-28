@@ -29,7 +29,7 @@ export type ClaimType =
   | 'existence' | 'equality' | 'absence' | 'containment'
   | 'ordering' | 'transformation' | 'invariance' | 'threshold' | 'causal';
 
-export type TruthType = 'deterministic' | 'evaluative' | 'contextual' | 'contractual';
+export type TruthType = 'deterministic' | 'evaluative' | 'contextual' | 'contractual' | 'eventual';
 
 export type OutcomeType =
   | 'pass' | 'fail' | 'partial_success' | 'degraded_correctness'
@@ -196,14 +196,14 @@ const CSS_SHAPES: ShapeRule[] = [
     id: 'C-09', domain: 'css', name: 'calc() resolution mismatch',
     claimType: 'transformation', truthType: 'deterministic',
     predicateType: 'css',
-    predicateMatch: (p) => !p.passed && (p.expected?.includes('calc(') || p.actual?.includes('calc(')),
+    predicateMatch: (p) => !p.passed && !!(p.expected?.includes('calc(') || p.actual?.includes('calc(')),
     confidence: 0.85,
   },
   {
     id: 'C-10', domain: 'css', name: 'CSS custom property (var()) unresolved',
     claimType: 'transformation', truthType: 'deterministic',
     predicateType: 'css',
-    predicateMatch: (p) => !p.passed && (p.expected?.includes('var(') || p.actual?.includes('var(')),
+    predicateMatch: (p) => !p.passed && !!(p.expected?.includes('var(') || p.actual?.includes('var(')),
     confidence: 0.85,
   },
   {
@@ -220,7 +220,7 @@ const CSS_SHAPES: ShapeRule[] = [
     id: 'C-12', domain: 'css', name: '!important override',
     claimType: 'equality', truthType: 'deterministic',
     predicateType: 'css',
-    predicateMatch: (p) => !p.passed && p.expected?.includes('!important'),
+    predicateMatch: (p) => !p.passed && !!(p.expected?.includes('!important')),
     confidence: 0.8,
   },
   {
@@ -1987,9 +1987,9 @@ const GROUNDING_SHAPES: ShapeRule[] = [
   {
     id: 'X-66', domain: 'cross-cutting', name: 'Grounding parser handles @media/@keyframes blocks',
     claimType: 'existence', truthType: 'deterministic',
-    resultMatch: (r) => r.success && r.predicates?.some(
+    resultMatch: (r) => !!(r.success && r.predicates?.some(
       (p: any) => p.type === 'css' && /@media|@keyframes|animation/i.test(p.selector ?? ''),
-    ),
+    )),
     confidence: 0.8,
   },
   {
@@ -2063,7 +2063,7 @@ const K5_SHAPES: ShapeRule[] = [
     resultMatch: (r) => {
       if (!r.narrowing?.constraints?.length) return false;
       const failedGate = r.gates.find(g => !g.passed)?.gate;
-      return r.narrowing.constraints.some(c => c.gate !== undefined && c.gate !== failedGate);
+      return r.narrowing.constraints.some(c => (c as any).gate !== undefined && (c as any).gate !== failedGate);
     },
     confidence: 0.6,
   },

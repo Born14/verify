@@ -10,7 +10,7 @@ import type { Edit, Predicate, VerifyConfig, VerifyResult } from '../../src/type
 // SCENARIO
 // =============================================================================
 
-export type ScenarioFamily = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'L' | 'M' | 'P' | 'V';
+export type ScenarioFamily = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'L' | 'M' | 'P' | 'V' | 'W' | 'WH' | 'WP' | 'WC' | 'X';
 
 export interface VerifyScenario {
   id: string;
@@ -82,7 +82,8 @@ export interface VerifyScenario {
 export type InvariantCategory =
   | 'fingerprint' | 'k5' | 'gate_sequence' | 'containment'
   | 'grounding' | 'pipeline' | 'robustness'
-  | 'vision' | 'triangulation' | 'message';
+  | 'vision' | 'triangulation' | 'message'
+  | 'attribution';
 
 export type InvariantLayer = 'product' | 'harness';
 

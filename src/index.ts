@@ -52,7 +52,6 @@ export type {
 
   // Runners
   ContainerRunner,
-  ContainerRunnerOptions,
   CommandResult,
 
   // Grounding
@@ -90,6 +89,20 @@ export { runVisionGate } from './gates/vision.js';
 export { geminiVision, openaiVision, anthropicVision } from './vision-helpers.js';
 export { runHttpGate } from './gates/http.js';
 export { runInvariantsGate } from './gates/invariants.js';
+export { runAccessGate } from './gates/access.js';
+export type { AccessGateResult, AccessViolation } from './gates/access.js';
+export { runTemporalGate } from './gates/temporal.js';
+export type { TemporalGateResult, TemporalDrift } from './gates/temporal.js';
+export { runPropagationGate } from './gates/propagation.js';
+export type { PropagationGateResult, PropagationBreak } from './gates/propagation.js';
+export { runStateGate } from './gates/state.js';
+export type { StateGateResult, StateDivergence } from './gates/state.js';
+export { runCapacityGate } from './gates/capacity.js';
+export type { CapacityGateResult, CapacityViolation } from './gates/capacity.js';
+export { runContentionGate } from './gates/contention.js';
+export type { ContentionGateResult, ContentionIssue } from './gates/contention.js';
+export { runObservationGate, isObservationRelevant } from './gates/observation.js';
+export type { ObservationGateResult, ObserverEffect, ObservationDomain } from './gates/observation.js';
 
 // Fault ledger — track real-world gate faults for improvement
 export { FaultLedger } from './store/fault-ledger.js';

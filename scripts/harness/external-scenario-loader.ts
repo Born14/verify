@@ -13,7 +13,7 @@
  * - regression_guard: verify should match expectedSuccess
  */
 
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import type { VerifyScenario, InvariantCheck, InvariantVerdict } from './types.js';
 import type { VerifyResult } from '../../src/types.js';
@@ -46,6 +46,101 @@ export function loadUniversalScenarios(fixtureDir: string): VerifyScenario[] {
   } catch {
     return [];
   }
+}
+
+/**
+ * Load all per-gate staged scenario files from fixtures/scenarios/*-staged.json.
+ * These are SerializedScenario format (same as universal.json).
+ * Excludes wpt-staged.json (loaded separately via loadWPTScenarios).
+ */
+export function loadStagedScenarios(fixtureDir: string): VerifyScenario[] {
+  const scenariosDir = join(fixtureDir, '..', 'scenarios');
+  if (!existsSync(scenariosDir)) return [];
+
+  try {
+    const files = readdirSync(scenariosDir)
+      .filter(f => f.endsWith('-staged.json') && f !== 'wpt-staged.json');
+    const all: VerifyScenario[] = [];
+    for (const file of files) {
+      try {
+        const raw = JSON.parse(readFileSync(join(scenariosDir, file), 'utf-8')) as SerializedScenario[];
+        // Filter out non-conforming scenarios (e.g., message-staged uses envelope/policy format)
+        const conforming = raw.filter(s => Array.isArray(s.edits) && Array.isArray(s.predicates));
+        all.push(...conforming.map(s => deserialize(s, fixtureDir)));
+      } catch { /* skip malformed files */ }
+    }
+    return all;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Load WPT harvested scenarios from fixtures/scenarios/wpt-staged.json.
+ * Converts HarvestedLeaf format to VerifyScenario.
+ */
+export function loadWPTScenarios(fixtureDir: string): VerifyScenario[] {
+  const wptPath = join(fixtureDir, '..', 'scenarios', 'wpt-staged.json');
+  if (!existsSync(wptPath)) return [];
+
+  try {
+    const raw = JSON.parse(readFileSync(wptPath, 'utf-8')) as any[];
+    return raw.map(leaf => deserializeWPTLeaf(leaf, fixtureDir)).filter(Boolean) as VerifyScenario[];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Convert a WPT HarvestedLeaf into a VerifyScenario.
+ */
+function deserializeWPTLeaf(leaf: any, appDir: string): VerifyScenario | null {
+  if (!leaf.id || !leaf.edit || !leaf.predicate) return null;
+
+  const predicates: any[] = [{
+    type: leaf.predicate.type,
+    ...(leaf.predicate.selector && { selector: leaf.predicate.selector }),
+    ...(leaf.predicate.property && { property: leaf.predicate.property }),
+    ...(leaf.predicate.expected && { expected: leaf.predicate.expected }),
+    ...(leaf.predicate.pattern && { pattern: leaf.predicate.pattern }),
+    ...(leaf.predicate.file && { file: leaf.predicate.file }),
+    ...(leaf.predicate.path && { path: leaf.predicate.path }),
+    ...(leaf.predicate.method && { method: leaf.predicate.method }),
+    ...(leaf.predicate.expect && { expect: leaf.predicate.expect }),
+    ...(leaf.predicate.description && { description: leaf.predicate.description }),
+  }];
+
+  const family = leaf.predicate.type === 'css' ? 'W' :
+                 leaf.predicate.type === 'html' ? 'WH' :
+                 leaf.predicate.type === 'http' ? 'WP' :
+                 'WC'; // content/url
+
+  return {
+    id: leaf.id,
+    family,
+    generator: `wpt_${leaf.taxFamily || 'unknown'}`,
+    description: leaf.description || `WPT: ${leaf.id}`,
+    edits: [leaf.edit],
+    predicates,
+    config: {
+      appDir,
+      gates: { staging: false, browser: false, http: false, invariants: false, vision: false },
+    },
+    invariants: [{
+      name: 'wpt_should_detect_mismatch',
+      category: 'pipeline',
+      layer: 'product',
+      check: (_scenario: any, result: any) => {
+        if (result instanceof Error) return { passed: true, severity: 'info' as const };
+        if (result.success) {
+          return { passed: false, violation: 'WPT scenario: verify passed but edit should cause mismatch', severity: 'bug' as const };
+        }
+        return { passed: true, severity: 'info' as const };
+      },
+    }],
+    requiresDocker: false,
+    expectedSuccess: false,
+  };
 }
 
 /**
