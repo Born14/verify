@@ -397,20 +397,47 @@ const GATE_FILE_MAP: Record<string, string> = {
 /**
  * Refine triage for bundles with null targetFile by extracting
  * the failing gate name from violation text.
- * Pattern: "verify failed at {gate} but should pass"
+ * Tries multiple patterns: false_negative, false_positive, crash, generic.
  */
 function refineTriage(bundle: EvidenceBundle): void {
   if (bundle.triage.targetFile) return; // already resolved
   for (const v of bundle.violations) {
-    const match = v.violation.match(/failed at (\w+)/);
-    if (match) {
-      const gate = match[1].toLowerCase();
+    // Pattern 1: "verify failed at {gate} but should pass" (false_negative)
+    const failedAt = v.violation.match(/failed at (\w+)/);
+    if (failedAt) {
+      const gate = failedAt[1].toLowerCase();
       const file = GATE_FILE_MAP[gate];
       if (file) {
         bundle.triage.targetFile = file;
         bundle.triage.targetFunction = `run${gate.charAt(0).toUpperCase()}${gate.slice(1)}Gate()`;
         return;
       }
+    }
+    // Pattern 2: "Gate {gate} should have failed but passed" (false_positive with expectedFailedGate)
+    const shouldFail = v.violation.match(/Gate (\w+) should have failed/);
+    if (shouldFail) {
+      const gate = shouldFail[1].toLowerCase();
+      const file = GATE_FILE_MAP[gate];
+      if (file) {
+        bundle.triage.targetFile = file;
+        bundle.triage.targetFunction = `run${gate.charAt(0).toUpperCase()}${gate.slice(1)}Gate()`;
+        return;
+      }
+    }
+    // Pattern 3: "Crashed: ..." — extract file from stack trace or error
+    const crashed = v.violation.match(/Crashed:.*?(src\/[\w\/\-]+\.ts)/);
+    if (crashed) {
+      const file = crashed[1];
+      if (GATE_FILE_MAP[file] || BOUNDED_SURFACE.some(s => s.file === file)) {
+        bundle.triage.targetFile = file;
+        return;
+      }
+    }
+    // Pattern 4: "verify passed but should fail" — generic false_positive, target verify.ts pipeline
+    if (v.violation.includes('verify passed but should fail')) {
+      bundle.triage.targetFile = 'src/verify.ts';
+      bundle.triage.targetFunction = 'verify()';
+      return;
     }
   }
 }
@@ -464,6 +491,7 @@ export const BOUNDED_SURFACE: ReadonlyArray<{ file: string; description: string 
   { file: 'src/gates/capacity.ts', description: 'Capacity/size limit checks' },
   { file: 'src/gates/access.ts', description: 'Access control verification' },
   { file: 'src/gates/message.ts', description: 'Message/communication verification' },
+  { file: 'src/gates/infrastructure.ts', description: 'Infrastructure health checks (Docker, SSH, DNS)' },
 ];
 
 export const FROZEN_FILES = new Set([

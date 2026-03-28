@@ -279,19 +279,27 @@ async function processBundle(
     return makeEntry(bundleId, timestamp, bundle, diagnosis, [], null, 'skipped', 'rejected_no_fix', usage);
   }
 
-  // ─── Validate candidates against edit surface ─────────────────────────
-  for (const candidate of dedupCandidates) {
-    for (const edit of candidate.edits) {
+  // ─── Validate candidates against edit surface — REMOVE invalid edits ──
+  const surfaceCandidates = dedupCandidates.map(candidate => {
+    const validEdits = candidate.edits.filter(edit => {
       if (!isEditAllowed(edit.file)) {
-        console.log(`        ⚠ ${candidate.strategy}: edit to frozen file ${edit.file} — will fail\n`);
+        console.log(`        ⚠ ${candidate.strategy}: edit to frozen/unbounded file ${edit.file} — removed`);
+        return false;
       }
-    }
+      return true;
+    });
+    return { ...candidate, edits: validEdits };
+  }).filter(c => c.edits.length > 0);
+
+  if (surfaceCandidates.length === 0) {
+    console.log('        All candidates target frozen/unbounded files\n');
+    return makeEntry(bundleId, timestamp, bundle, diagnosis, [], null, 'skipped', 'rejected_no_fix', usage);
   }
 
   // ─── Subprocess validation (parallel) ────────────────────────────────
-  console.log(`  [6/7] Subprocess validation (${dedupCandidates.length} candidates in parallel)...`);
+  console.log(`  [6/7] Subprocess validation (${surfaceCandidates.length} candidates in parallel)...`);
 
-  const validationPromises = dedupCandidates.map(async (candidate) => {
+  const validationPromises = surfaceCandidates.map(async (candidate) => {
     const h = hashEdits(candidate.edits);
     attemptedHashes.add(h);
 

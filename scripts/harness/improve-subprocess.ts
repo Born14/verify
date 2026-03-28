@@ -317,6 +317,10 @@ async function runSubprocess(
     env: { ...process.env },
   });
 
+  // Consume stdout/stderr to prevent pipe buffer deadlock (especially on Windows)
+  const stdoutPromise = new Response(proc.stdout).text().catch(() => '');
+  const stderrPromise = new Response(proc.stderr).text().catch(() => '');
+
   // Wait for completion with timeout
   let timedOut = false;
   const exitCode = await Promise.race([
@@ -325,6 +329,10 @@ async function runSubprocess(
       setTimeout(() => { proc.kill(); timedOut = true; resolve(-1); }, timeoutMs)
     ),
   ]);
+
+  // Drain pipes
+  await stdoutPromise;
+  await stderrPromise;
 
   // Parse ledger
   if (!existsSync(ledgerPath)) return { entries: [], timedOut };

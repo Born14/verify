@@ -16,14 +16,37 @@ import { extractJSON, callLLMWithRetry } from './improve-utils.js';
 // DIAGNOSIS (only for needs_llm bundles)
 // =============================================================================
 
-const DIAGNOSIS_SYSTEM = `You are a debugging expert analyzing a verification library.
-You will receive failure evidence from an automated test harness.
-Your job is to identify the root cause and the specific function/file to fix.
+const DIAGNOSIS_SYSTEM = `You are a debugging expert analyzing @sovereign-labs/verify, a TypeScript verification library (runs on Bun).
+
+PACKAGE STRUCTURE:
+  src/verify.ts          — Main pipeline orchestrator (runs gates in sequence)
+  src/govern.ts          — Higher-level governance wrapper around verify
+  src/types.ts           — All TypeScript interfaces (GateResult, Predicate, Edit, etc.)
+  src/store/             — State management (constraint-store.ts, fault-ledger.ts, decompose.ts)
+  src/gates/             — Individual gate implementations:
+    grounding.ts         — CSS/HTML parsing, route extraction, selector validation
+    browser.ts           — Playwright CSS/HTML validation against running containers
+    http.ts              — HTTP predicate validation (status, body, sequences)
+    syntax.ts            — F9 edit application (search/replace validation)
+    constraints.ts       — K5 constraint enforcement
+    containment.ts       — G5 mutation-to-predicate attribution
+    vision.ts            — Vision model screenshot verification
+    triangulation.ts     — Cross-authority verdict synthesis
+    filesystem.ts        — File existence/content verification
+    security.ts          — Secret/eval/XSS scanning
+    a11y.ts              — Accessibility checks
+    performance.ts       — Bundle size, connection checks
+    staging.ts           — Docker build/start orchestration
+    invariants.ts        — System health definitions
+    + 11 more domain gates (config, serialization, propagation, etc.)
+  src/runners/           — Docker runner, local runner
 
 Rules:
-- Be specific: name the exact function and file
+- Name the EXACT function and file from the structure above
 - Be concise: 2-3 sentences max
-- Focus on WHY the invariant failed, not what the invariant checks`;
+- Focus on WHY the invariant failed, not what the invariant checks
+- Gate functions follow the pattern: run{GateName}Gate() (e.g., runGroundingGate(), runBrowserGate())
+- Store functions: predicateFingerprint(), checkConstraints(), seedFromFailure(), etc.`;
 
 export async function diagnoseBundleWithLLM(
   bundle: EvidenceBundle,
@@ -51,14 +74,15 @@ What function and file is the most likely root cause? Why?`;
 // MULTI-CANDIDATE FIX GENERATION
 // =============================================================================
 
-const FIX_SYSTEM = `You are fixing a bug in a verification library.
+const FIX_SYSTEM = `You are fixing a bug in @sovereign-labs/verify, a TypeScript verification library.
 You will receive failure evidence and the target source code.
 
 RULES:
 - Propose exactly {NUM_CANDIDATES} DISTINCT fix strategies
 - Each strategy: JSON array of {file, search, replace} edits
 - Max {MAX_LINES} changed lines per strategy
-- The "search" string must appear EXACTLY as-is in the source file
+- The "search" string must appear EXACTLY as-is in the source file (copy verbatim)
+- The "file" field must match the TARGET file path shown in the evidence
 - Must not break existing passing scenarios
 - Output ONLY valid JSON — no markdown, no explanation outside the JSON
 
@@ -68,7 +92,7 @@ OUTPUT FORMAT (JSON):
     "strategy": "short name for the approach",
     "rationale": "one sentence why this works",
     "edits": [
-      { "file": "src/store/constraint-store.ts", "search": "exact old code", "replace": "exact new code" }
+      { "file": "TARGET_FILE_PATH_HERE", "search": "exact old code from source", "replace": "exact new code" }
     ]
   }
 ]`;
@@ -98,8 +122,15 @@ export async function generateFixCandidates(
   let truncated: string;
   if (sourceLines.length > 300 && bundle.triage.targetFunction) {
     // Find the target function and include surrounding context
+    // Handles: function foo(), export function foo(), const foo =, export const foo =, foo(, class method foo()
     const funcName = bundle.triage.targetFunction.replace(/\(\)$/, '');
-    const funcIdx = sourceLines.findIndex(l => l.includes(`function ${funcName}`) || l.includes(`${funcName}(`));
+    const funcIdx = sourceLines.findIndex(l =>
+      l.includes(`function ${funcName}`) ||
+      l.includes(`const ${funcName}`) ||
+      l.includes(`${funcName}(`) ||
+      l.includes(`${funcName} =`) ||
+      new RegExp(`^\\s*(?:export\\s+)?(?:async\\s+)?${funcName}\\s*[(<]`).test(l)
+    );
     if (funcIdx >= 0) {
       const start = Math.max(0, funcIdx - 20);
       const end = Math.min(sourceLines.length, funcIdx + 150);
