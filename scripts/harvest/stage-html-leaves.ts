@@ -257,15 +257,15 @@ function generateScenarios(elements: ExtractedElement[]): Scenario[] {
 
       scenarios.push({
         id: makeId('wrong-route', routeIdx),
-        description: `HTML wrong route: <${tag}> "${el.text.substring(0, 30)}" is on ${el.route} but predicate claims ${wrongRoute}`,
+        description: `HTML wrong route: <${tag}> "${(el.text ?? '').substring(0, 30)}" is on ${el.route} but predicate claims ${wrongRoute}`,
         faultId: null,
         intent: 'false_positive',
         expectedSuccess: false,
         edits: [],
-        predicates: [{ type: 'html', selector: tag, expected: el.text, path: wrongRoute }],
+        predicates: [{ type: 'html', selector: tag, expected: el.text ?? '', path: wrongRoute }],
         gates: GATES_OFF,
         requiresDocker: false,
-        rationale: `<${tag}> with text "${el.text.substring(0, 40)}" exists on ${el.route} but predicate claims it's on ${wrongRoute}. Grounding should detect wrong-route.`,
+        rationale: `<${tag}> with text "${(el.text ?? '').substring(0, 40)}" exists on ${el.route} but predicate claims it's on ${wrongRoute}. Grounding should detect wrong-route.`,
         tags: ['html', 'wrong_route', 'false_positive', tag],
         transferability: 'universal',
         category: 'grounding',

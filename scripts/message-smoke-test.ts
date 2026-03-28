@@ -307,7 +307,7 @@ async function main() {
     assert(r.reviewBundle?.message.body === 'The migration was completed and verified', 'reviewBundle.message.body correct');
     assert(r.reviewBundle?.message.destination === '#deployments', 'reviewBundle.message.destination correct');
     assert(r.reviewBundle?.message.sender === 'deploy-bot', 'reviewBundle.message.sender correct');
-    assert(r.reviewBundle?.gateDetail.length > 0, 'reviewBundle.gateDetail present');
+    assert((r.reviewBundle?.gateDetail?.length ?? 0) > 0, 'reviewBundle.gateDetail present');
   }
 
   // ── 10. Denied pattern — K5 memory ────────────────────────────────

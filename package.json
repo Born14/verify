@@ -3,8 +3,8 @@
   "version": "0.5.2",
   "description": "Verification gate for AI agent actions. Deterministic predicates, browser-level visual checks, constraint learning from failures. Every edit gets a fair trial before it touches your users.",
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "bin": {
     "verify": "./src/cli.ts",
     "verify-mcp": "./src/mcp-server.ts"
@@ -12,14 +12,18 @@
   "exports": {
     ".": {
       "bun": "./src/index.ts",
-      "import": "./src/index.ts"
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
     },
     "./types": {
       "bun": "./src/types.ts",
-      "import": "./src/types.ts"
+      "import": "./dist/types.js",
+      "types": "./dist/types.d.ts"
     }
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "npm run build",
     "test": "bun test tests/",
     "test:unit": "bun test tests/unit/",
     "test:integration": "bun test tests/integration/ --timeout 120000",
@@ -35,6 +39,7 @@
   },
   "files": [
     "src/",
+    "dist/",
     "README.md",
     "fixtures/",
     "scripts/harness/types.ts",

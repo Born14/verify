@@ -536,8 +536,10 @@ const DOM_TAGNAME_RE = /assert_equals\s*\(\s*[\w.\[\]()]+\.(tagName|localName|no
 const DOM_ATTR_RE = /assert_equals\s*\(\s*[\w.\[\]()]+\.getAttribute\s*\(\s*"([^"]+)"\s*\)\s*,\s*"([^"]+)"/g;
 /** assert_true(el.hasAttribute("name")) */
 const DOM_HAS_ATTR_RE = /assert_true\s*\(\s*[\w.\[\]()]+\.hasAttribute\s*\(\s*"([^"]+)"\s*\)/g;
-/** assert_equals(el.textContent, "value") or el.innerHTML, nodeType, etc */
-const DOM_CONTENT_RE = /assert_equals\s*\(\s*[\w.\[\]()]+\.(textContent|innerHTML|innerText|value|className|id|nodeType|nodeValue|namespaceURI|prefix|localName)\s*,\s*"([^"]+)"/g;
+/** assert_equals(el.textContent, "value") or el.innerHTML, data, name, title, role, etc */
+const DOM_CONTENT_RE = /assert_equals\s*\(\s*[\w.\[\]()]+\.(textContent|innerHTML|innerText|value|className|id|nodeType|nodeValue|namespaceURI|prefix|localName|data|name|title|type|role|lang|dir|href|src|action|method|encoding|target|accessKey|contentEditable|tabIndex|hidden|draggable|spellcheck|autocapitalize|inputMode|enterKeyHint|nonce|slot|outerHTML|baseURI|wholeText|substringData)\s*,\s*"([^"]+)"/g;
+/** assert_equals(el.ariaX, "value") — ARIA reflected attributes */
+const DOM_ARIA_RE = /assert_equals\s*\(\s*[\w.\[\]()]+\.(aria\w+)\s*,\s*"([^"]+)"/g;
 /** assert_equals(el.nodeType, N) — numeric */
 const DOM_NODETYPE_RE = /assert_equals\s*\(\s*[\w.\[\]()]+\.(nodeType|childElementCount|children\.length|childNodes\.length)\s*,\s*(\d+)/g;
 /** assert_equals(el.children.length, N) or childNodes.length, childElementCount */
@@ -578,6 +580,13 @@ function extractDOMAssertions(content: string): DOMAssertion[] {
     assertions.push({ fn: 'assert_equals', subject: 'content', property: match[1], expectedValue: match[2] });
   }
 
+  // ARIA reflected attributes (ariaLabel, ariaAtomic, ariaActiveDescendantElement, etc.)
+  const ariaRe = new RegExp(DOM_ARIA_RE.source, 'g');
+  while ((match = ariaRe.exec(collapsed)) !== null) {
+    if (match[2].length > 200) continue;
+    assertions.push({ fn: 'assert_equals', subject: 'content', property: match[1], expectedValue: match[2] });
+  }
+
   // Numeric nodeType assertions (1=Element, 3=Text, 8=Comment, 9=Document, etc.)
   const nodeTypeRe = new RegExp(DOM_NODETYPE_RE.source, 'g');
   while ((match = nodeTypeRe.exec(collapsed)) !== null) {
@@ -600,6 +609,15 @@ function classifyDOMAssertion(a: DOMAssertion): { taxFamily: string; taxType: st
     if (a.property === 'className' || a.property === 'id') return { taxFamily: 'element_identity', taxType: a.property };
     if (a.property === 'nodeType' || a.property === 'nodeValue') return { taxFamily: 'dom_structure', taxType: a.property };
     if (a.property === 'namespaceURI' || a.property === 'prefix' || a.property === 'localName') return { taxFamily: 'element_identity', taxType: a.property };
+    if (a.property === 'data' || a.property === 'wholeText' || a.property === 'substringData') return { taxFamily: 'text_content', taxType: 'character_data' };
+    if (a.property === 'name' || a.property === 'title' || a.property === 'lang' || a.property === 'dir') return { taxFamily: 'element_attributes', taxType: a.property };
+    if (a.property === 'type' || a.property === 'action' || a.property === 'method' || a.property === 'encoding' || a.property === 'target') return { taxFamily: 'element_attributes', taxType: `form_${a.property}` };
+    if (a.property === 'href' || a.property === 'src' || a.property === 'baseURI') return { taxFamily: 'element_attributes', taxType: 'url_property' };
+    if (a.property === 'role' || a.property.startsWith('aria')) return { taxFamily: 'accessibility', taxType: a.property };
+    if (a.property === 'accessKey' || a.property === 'contentEditable' || a.property === 'tabIndex' || a.property === 'hidden' || a.property === 'draggable' || a.property === 'spellcheck') return { taxFamily: 'global_attributes', taxType: a.property };
+    if (a.property === 'inputMode' || a.property === 'enterKeyHint' || a.property === 'autocapitalize') return { taxFamily: 'input_hints', taxType: a.property };
+    if (a.property === 'nonce' || a.property === 'slot') return { taxFamily: 'element_attributes', taxType: a.property };
+    if (a.property === 'outerHTML') return { taxFamily: 'text_content', taxType: 'outer_html' };
     return { taxFamily: 'text_content', taxType: a.property };
   }
   if (a.subject === 'count') return { taxFamily: 'dom_structure', taxType: a.property === 'nodeType' ? 'node_type' : 'child_count' };
@@ -644,6 +662,26 @@ function domAssertionToLeaf(a: DOMAssertion, wptFile: string, index: number, wpt
       assertion: { fn: a.fn, property: a.property, inputValue: '', expectedValue: a.expectedValue },
       predicate: { type: 'html', selector: `[${a.property}="${a.expectedValue}"]`, expected: 'exists' },
       edit: { file: 'server.js', search: `${a.property}="${a.expectedValue}"`, replace: `${a.property}="WRONG"` },
+      expectedVerdict: 'should_fail',
+    };
+  }
+
+  // data, name, title, role, aria*, and other string-valued DOM properties → content predicates
+  if (a.subject === 'content') {
+    const prop = a.property;
+    // Skip very short or very long expected values
+    if (a.expectedValue.length < 2 || a.expectedValue.length > 100) return null;
+    // Skip values that look like URLs (too fragile as content patterns)
+    if (a.expectedValue.startsWith('http://') || a.expectedValue.startsWith('https://')) return null;
+    // Skip numeric-only values
+    if (/^\d+$/.test(a.expectedValue)) return null;
+    return {
+      id, source: 'wpt',
+      taxClass: 'html_structure', taxFamily, taxType,
+      wptFile: relPath,
+      assertion: { fn: a.fn, property: prop, inputValue: '', expectedValue: a.expectedValue },
+      predicate: { type: 'content', pattern: a.expectedValue, file: 'server.js', description: `DOM ${prop} == "${a.expectedValue}"` },
+      edit: { file: 'server.js', search: a.expectedValue, replace: 'WRONG_VALUE' },
       expectedVerdict: 'should_fail',
     };
   }

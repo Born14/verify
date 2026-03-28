@@ -217,10 +217,18 @@ export async function isDockerAvailable(): Promise<boolean> {
 /**
  * Check if a docker-compose file exists in the given directory.
  */
+const _dockerComposeCache = new Map<string, { result: boolean; cachedAt: number }>();
+
 export function hasDockerCompose(appDir: string, composefile?: string): boolean {
+  const cacheKey = `${appDir}:${composefile ?? ''}`;
+  const cached = _dockerComposeCache.get(cacheKey);
+  if (cached && Date.now() - cached.cachedAt < 5_000) return cached.result;
+
   const candidates = composefile
     ? [composefile]
     : ['docker-compose.yml', 'docker-compose.yaml', 'compose.yml', 'compose.yaml'];
 
-  return candidates.some(f => existsSync(join(appDir, f)));
+  const result = candidates.some(f => existsSync(join(appDir, f)));
+  _dockerComposeCache.set(cacheKey, { result, cachedAt: Date.now() });
+  return result;
 }

@@ -959,7 +959,12 @@ function copyAppDir(src: string, dest: string): void {
   });
 }
 
+const _invariantsCache = new Map<string, { result: Invariant[]; cachedAt: number }>();
+
 function loadInvariantsFile(appDir: string): Invariant[] {
+  const cached = _invariantsCache.get(appDir);
+  if (cached && Date.now() - cached.cachedAt < 5_000) return cached.result;
+
   const candidates = [
     join(appDir, 'invariants.json'),
     join(appDir, '.verify', 'invariants.json'),
@@ -968,11 +973,15 @@ function loadInvariantsFile(appDir: string): Invariant[] {
   for (const path of candidates) {
     if (existsSync(path)) {
       try {
-        return JSON.parse(readFileSync(path, 'utf-8'));
+        const result = JSON.parse(readFileSync(path, 'utf-8'));
+        _invariantsCache.set(appDir, { result, cachedAt: Date.now() });
+        return result;
       } catch { /* invalid JSON */ }
     }
   }
 
-  return [];
+  const empty: Invariant[] = [];
+  _invariantsCache.set(appDir, { result: empty, cachedAt: Date.now() });
+  return empty;
 }
 

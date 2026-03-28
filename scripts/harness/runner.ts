@@ -669,7 +669,7 @@ async function runScenario(scenario: VerifyScenario, config: RunConfig, mockServ
     } else {
       // Log scenario start for CI hang diagnosis (helps identify which scenario freezes)
       const isPure = !scenario.requiresDocker && !scenario.requiresHttpMock && !scenario.requiresPlaywright && !scenario.requiresLiveHttp && !scenario.steps;
-      const pureTimeout = 60_000; // Pure scenarios should complete in <60s
+      const pureTimeout = 120_000; // Pure scenarios: 120s on CI (tmpdir I/O is 60x slower than local SSD)
 
       result = await Promise.race([
         verify(scenario.edits, scenario.predicates, mergedConfig),

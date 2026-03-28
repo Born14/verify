@@ -23,9 +23,13 @@ import type { GroundingContext } from '../types.js';
 interface GroundingCacheEntry {
   context: GroundingContext;
   maxMtimeMs: number;  // max mtime across source files at scan time
+  cachedAt: number;    // wall-clock time of cache population
 }
 
 const _groundingCache = new Map<string, GroundingCacheEntry>();
+
+// TTL for cache validation bypass — avoid stat storms on CI (5 seconds)
+const CACHE_TTL_MS = 5_000;
 
 /** Get the max mtime across source files (fast — stat only, no reads). */
 function getMaxMtime(appDir: string): number {
@@ -48,14 +52,22 @@ export function clearGroundingCache(appDir?: string): void {
 
 /**
  * Scan the app directory and extract grounding context.
- * Results are cached per appDir with mtime-based invalidation.
+ * Results are cached per appDir with TTL + mtime-based invalidation.
+ * TTL prevents stat storms when the same appDir is verified thousands of times
+ * (e.g., CI self-test running 2600+ scenarios against the same demo app).
  */
 export function groundInReality(appDir: string): GroundingContext {
-  // Check cache
+  // Check cache — use TTL to avoid stat storms on CI
   const cached = _groundingCache.get(appDir);
   if (cached) {
+    // Within TTL: return cached without filesystem check
+    if (Date.now() - cached.cachedAt < CACHE_TTL_MS) return cached.context;
+    // Beyond TTL: verify via mtime
     const currentMtime = getMaxMtime(appDir);
-    if (currentMtime <= cached.maxMtimeMs) return cached.context;
+    if (currentMtime <= cached.maxMtimeMs) {
+      cached.cachedAt = Date.now(); // Refresh TTL
+      return cached.context;
+    }
   }
   const routeCSSMap = new Map<string, Map<string, Record<string, string>>>();
   const htmlElements = new Map<string, Array<{ tag: string; text?: string; attributes?: Record<string, string> }>>();
@@ -159,7 +171,7 @@ export function groundInReality(appDir: string): GroundingContext {
   };
 
   // Cache with current max mtime
-  _groundingCache.set(appDir, { context, maxMtimeMs: getMaxMtime(appDir) });
+  _groundingCache.set(appDir, { context, maxMtimeMs: getMaxMtime(appDir), cachedAt: Date.now() });
 
   return context;
 }

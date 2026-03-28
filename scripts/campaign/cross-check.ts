@@ -132,6 +132,7 @@ async function probeBrowser(
 
   // Check if Playwright is available
   try {
+    // @ts-ignore — playwright is optional, dynamically imported
     const { chromium } = await import('playwright');
     const browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
@@ -154,7 +155,7 @@ async function probeBrowser(
         for (const pred of preds) {
           if (pred.type === 'css' && pred.selector && pred.property) {
             const value = await page.evaluate(
-              ({ sel, prop }) => {
+              ({ sel, prop }: { sel: string; prop: string }) => {
                 const el = document.querySelector(sel);
                 if (!el) return null;
                 return window.getComputedStyle(el).getPropertyValue(prop);
@@ -169,7 +170,7 @@ async function probeBrowser(
             }
           } else if (pred.type === 'html' && pred.selector) {
             const exists = await page.evaluate(
-              (sel) => document.querySelector(sel) !== null,
+              (sel: string) => document.querySelector(sel) !== null,
               pred.selector,
             );
             if (!exists) {
