@@ -38,37 +38,98 @@ import {
  * the target function in isolation. Claude gets the context.
  */
 export const RELATED_FILES: Record<string, string[]> = {
-  'src/store/constraint-store.ts': [
-    'src/gates/constraints.ts',     // K5 enforcement uses constraint store
-    'src/types.ts',                 // Predicate/Constraint types
+  // ── Core orchestrator ──
+  'src/verify.ts': [
+    'src/types.ts',                     // All gate interfaces and types
+    'src/store/constraint-store.ts',    // K5 constraint state
   ],
+  'src/govern.ts': [
+    'src/verify.ts',                    // Govern wraps verify pipeline
+    'src/store/constraint-store.ts',    // Constraint seeding
+    'src/store/decompose.ts',           // Feature decomposition
+    'src/store/fault-ledger.ts',        // Fault tracking
+  ],
+
+  // ── Store layer ──
+  'src/store/constraint-store.ts': [
+    'src/gates/constraints.ts',         // K5 enforcement uses constraint store
+    'src/types.ts',                     // Predicate/Constraint types
+  ],
+  'src/store/decompose.ts': [
+    'src/store/constraint-store.ts',    // Decompose references constraints
+    'src/types.ts',                     // Scenario/Predicate types
+  ],
+  'src/store/fault-ledger.ts': [
+    'src/store/constraint-store.ts',    // Fault → constraint seeding
+    'src/types.ts',                     // FaultEntry types
+  ],
+  'src/store/external-scenarios.ts': [
+    'src/types.ts',                     // Scenario type
+  ],
+
+  // ── Governance gates ──
   'src/gates/constraints.ts': [
-    'src/store/constraint-store.ts', // K5 store that constraints.ts queries
+    'src/store/constraint-store.ts',    // K5 store that constraints.ts queries
+    'src/types.ts',                     // Constraint types
   ],
   'src/gates/containment.ts': [
-    'src/types.ts',                 // Mutation/Attribution types
+    'src/types.ts',                     // Mutation/Attribution types
   ],
   'src/gates/grounding.ts': [
-    'src/gates/browser.ts',         // Browser gate uses grounding output
-    'src/types.ts',                 // GroundingContext type
+    'src/gates/browser.ts',             // Browser gate uses grounding output
+    'src/types.ts',                     // GroundingContext type
   ],
   'src/gates/browser.ts': [
-    'src/gates/grounding.ts',       // Browser gate validates grounded selectors
+    'src/gates/grounding.ts',           // Browser gate validates grounded selectors
+    'src/types.ts',                     // BrowserGateResult types
   ],
   'src/gates/http.ts': [
-    'src/types.ts',                 // Predicate types for HTTP
+    'src/types.ts',                     // Predicate types for HTTP
   ],
   'src/gates/syntax.ts': [
-    'src/types.ts',                 // Edit type
+    'src/types.ts',                     // Edit type
   ],
   'src/gates/vision.ts': [
-    'src/gates/triangulation.ts',   // Triangulation consumes vision verdict
-    'src/types.ts',                 // GateResult, VisionConfig types
+    'src/gates/triangulation.ts',       // Triangulation consumes vision verdict
+    'src/types.ts',                     // GateResult, VisionConfig types
   ],
   'src/gates/triangulation.ts': [
-    'src/gates/vision.ts',          // Vision gate feeds triangulation
-    'src/gates/browser.ts',         // Browser gate feeds triangulation
-    'src/types.ts',                 // GateResult type
+    'src/gates/vision.ts',              // Vision gate feeds triangulation
+    'src/gates/browser.ts',             // Browser gate feeds triangulation
+    'src/types.ts',                     // GateResult type
+  ],
+  'src/gates/staging.ts': [
+    'src/types.ts',                     // StagingResult types
+    'src/runners/docker-runner.ts',     // Staging uses Docker runner
+  ],
+  'src/gates/invariants.ts': [
+    'src/types.ts',                     // InvariantResult types
+  ],
+
+  // ── Domain gates (all share same pattern: types.ts only) ──
+  'src/gates/a11y.ts':            ['src/types.ts'],
+  'src/gates/access.ts':          ['src/types.ts'],
+  'src/gates/capacity.ts':        ['src/types.ts'],
+  'src/gates/config.ts':          ['src/types.ts'],
+  'src/gates/contention.ts':      ['src/types.ts'],
+  'src/gates/filesystem.ts':      ['src/types.ts'],
+  'src/gates/infrastructure.ts':  ['src/types.ts'],
+  'src/gates/message.ts':         ['src/types.ts'],
+  'src/gates/observation.ts':     ['src/types.ts'],
+  'src/gates/performance.ts':     ['src/types.ts'],
+  'src/gates/propagation.ts':     ['src/types.ts'],
+  'src/gates/security.ts':        ['src/types.ts'],
+  'src/gates/serialization.ts':   ['src/types.ts'],
+  'src/gates/state.ts':           ['src/types.ts'],
+  'src/gates/temporal.ts':        ['src/types.ts'],
+
+  // ── Runners / Parsers ──
+  'src/runners/docker-runner.ts': ['src/types.ts'],
+  'src/parsers/git-diff.ts':     ['src/types.ts'],
+
+  // ── Types (the root — when fixing types, show the main consumer) ──
+  'src/types.ts': [
+    'src/verify.ts',                    // Main consumer of all types
   ],
 };
 

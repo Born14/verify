@@ -288,11 +288,10 @@ async function processBundle(
     }
   }
 
-  // ─── Subprocess validation ────────────────────────────────────────────
-  console.log('  [6/7] Subprocess validation...');
-  const results: CandidateResult[] = [];
+  // ─── Subprocess validation (parallel) ────────────────────────────────
+  console.log(`  [6/7] Subprocess validation (${dedupCandidates.length} candidates in parallel)...`);
 
-  for (const candidate of dedupCandidates) {
+  const validationPromises = dedupCandidates.map(async (candidate) => {
     const h = hashEdits(candidate.edits);
     attemptedHashes.add(h);
 
@@ -301,9 +300,21 @@ async function processBundle(
       candidate.id, candidate.strategy, candidate.edits,
       split, packageRoot, runConfig,
     );
-    results.push(result);
 
-    // Record attempt for prior-attempts context (Fix 7) and history (Fix 10)
+    const sign = result.score > 0 ? '+' : '';
+    const partial = result.partialScore !== undefined ? ` partial=${result.partialScore.toFixed(2)}` : '';
+    const timeout = result.timedOut ? ' (timed out)' : '';
+    const editInfo = result.skippedEdits ? ` edits=${result.appliedEdits}/${(result.appliedEdits ?? 0) + (result.skippedEdits ?? 0)}` : '';
+    console.log(`          "${candidate.strategy}": score=${sign}${result.score.toFixed(1)}${partial}${editInfo}  improvements=${result.improvements.length}  regressions=${result.regressions.length}${timeout}`);
+
+    return { candidate, result, hash: h };
+  });
+
+  const validationResults = await Promise.all(validationPromises);
+
+  const results: CandidateResult[] = [];
+  for (const { candidate, result, hash: h } of validationResults) {
+    results.push(result);
     attempts.push({
       hash: h,
       strategy: candidate.strategy,
@@ -311,12 +322,6 @@ async function processBundle(
       passed: result.score > 0 && result.regressions.length === 0,
       failedScenarios: result.regressions,
     });
-
-    const sign = result.score > 0 ? '+' : '';
-    const partial = result.partialScore !== undefined ? ` partial=${result.partialScore.toFixed(2)}` : '';
-    const timeout = result.timedOut ? ' (timed out)' : '';
-    const editInfo = result.skippedEdits ? ` edits=${result.appliedEdits}/${(result.appliedEdits ?? 0) + (result.skippedEdits ?? 0)}` : '';
-    console.log(`          score=${sign}${result.score.toFixed(1)}${partial}${editInfo}  improvements=${result.improvements.length}  regressions=${result.regressions.length}${timeout}`);
   }
   console.log('');
 

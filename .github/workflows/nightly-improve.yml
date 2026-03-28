@@ -9,7 +9,7 @@ on:
       supply_sources:
         description: 'Scenario supply sources (comma-separated: fuzz,harvest,receipts)'
         required: false
-        default: 'fuzz'
+        default: 'fuzz,harvest'
       llm_provider:
         description: 'LLM provider for improve (gemini, claude, anthropic, none)'
         required: false
@@ -52,11 +52,11 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Run fixture fuzzer
-        if: contains(github.event.inputs.supply_sources || 'fuzz', 'fuzz')
+        if: contains(github.event.inputs.supply_sources || 'fuzz,harvest', 'fuzz')
         run: bun run scripts/supply/fuzz.ts --max-variants=50
 
       - name: Run external corpus harvester
-        if: contains(github.event.inputs.supply_sources || '', 'harvest')
+        if: contains(github.event.inputs.supply_sources || 'fuzz,harvest', 'harvest')
         run: bun run scripts/supply/harvest.ts --max-scenarios=100
 
       - name: Run receipt scraper

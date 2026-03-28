@@ -10,24 +10,58 @@ import type { LLMCallFn, ImproveConfig } from './types.js';
 import { createClaudeProvider } from '../campaign/claude-brain.js';
 import { createClaudeCodeFileProvider } from '../campaign/claude-code-brain.js';
 
+// ---------------------------------------------------------------------------
+// RETRY WRAPPER — exponential backoff for transient API failures
+// ---------------------------------------------------------------------------
+
+function withRetry(fn: LLMCallFn, maxRetries = 3): LLMCallFn {
+  return async (systemPrompt, userPrompt) => {
+    let lastError: Error | null = null;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await fn(systemPrompt, userPrompt);
+      } catch (err: any) {
+        lastError = err;
+        const status = parseInt(err.message?.match(/error (\d+)/)?.[1] ?? '0');
+        const isRetryable = status === 429 || status === 500 || status === 502
+          || status === 503 || status === 529
+          || err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT'
+          || err.code === 'UND_ERR_CONNECT_TIMEOUT'
+          || err.message?.includes('fetch failed');
+
+        if (!isRetryable || attempt === maxRetries) {
+          throw err;
+        }
+
+        // Exponential backoff: 2s, 4s, 8s (with jitter)
+        const delayMs = (2 ** (attempt + 1)) * 1000 + Math.random() * 1000;
+        const retryIn = (delayMs / 1000).toFixed(1);
+        console.log(`        [LLM RETRY] Attempt ${attempt + 1}/${maxRetries} failed (${status || err.code || 'network'}), retrying in ${retryIn}s...`);
+        await new Promise(r => setTimeout(r, delayMs));
+      }
+    }
+    throw lastError!;
+  };
+}
+
 export function createLLMProvider(config: ImproveConfig): LLMCallFn | null {
   switch (config.llm) {
     case 'gemini':
       if (!config.apiKey) throw new Error('Gemini requires --api-key');
-      return createGeminiProvider(config.apiKey);
+      return withRetry(createGeminiProvider(config.apiKey));
     case 'anthropic':
       if (!config.apiKey) throw new Error('Anthropic requires --api-key');
-      return createAnthropicProvider(config.apiKey);
+      return withRetry(createAnthropicProvider(config.apiKey));
     case 'claude':
       if (!config.apiKey) throw new Error('Claude requires --api-key (ANTHROPIC_API_KEY)');
-      return createClaudeProvider(config.apiKey, { model: config.claudeModel });
+      return withRetry(createClaudeProvider(config.apiKey, { model: config.claudeModel }));
     case 'claude-code': {
-      // Claude Code IS the LLM — exchange via filesystem
+      // Claude Code IS the LLM — exchange via filesystem, no retry needed
       const exchangeDir = join(import.meta.dir, '../../.verify');
       return createClaudeCodeFileProvider(exchangeDir);
     }
     case 'ollama':
-      return createOllamaProvider(config.ollamaHost ?? 'http://localhost:11434', config.ollamaModel ?? 'qwen3:4b');
+      return withRetry(createOllamaProvider(config.ollamaHost ?? 'http://localhost:11434', config.ollamaModel ?? 'qwen3:4b'));
     case 'none':
       return null;
   }
