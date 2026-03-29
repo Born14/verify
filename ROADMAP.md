@@ -264,6 +264,102 @@ npx @sovereign-labs/verify self-test     # Should work for any consumer
 
 ---
 
+### P3.5: Developer Experience + Demo
+**Effort:** 1-2 days
+**Unblocks:** Go-to-market — the bridge between engineering and adoption
+
+#### The Problem
+
+Verify's internal language (K5, G5, F9, "containment attribution," "narrowing injection," "convergence loop," "epoch staleness," "parity grid cells") is engineering terminology that means nothing to someone evaluating the package. The gates work. But nobody will discover that if the first thing they see is jargon.
+
+#### Two Layers of Language
+
+**What the user sees** (human-readable, zero jargon):
+```
+verify: FAIL
+  ✗ That CSS selector doesn't exist in your code
+  ✗ Your edit changed files you didn't declare
+  → Try: use .nav-link instead of .sidebar-nav
+```
+
+**What the developer sees** (if they dig into the result object):
+```
+Gate: grounding (FAIL) — selector .sidebar-nav not found in server.js
+Gate: containment/G5 (FAIL) — 2 unexplained mutations
+Narrowing: { hint: "use .nav-link", bannedFingerprints: [...] }
+```
+
+The internals stay complex. The surface stays simple. Same package, two audiences.
+
+#### Three Output Surfaces
+
+| Surface | Consumer | What matters |
+|---------|----------|-------------|
+| **CLI** (`npx @sovereign-labs/verify check`) | Developer trying it out | First impression. Zero jargon. Plain English. |
+| **`VerifyResult.attestation`** | Agent framework displaying status | Human-readable summary shown in UI |
+| **`VerifyResult.narrowing.hint`** | LLM receiving feedback to retry | Clear enough for both humans reading logs AND LLMs acting on it |
+| **`VerifyResult.gates[].detail`** | Developer debugging a specific gate | Can stay technical — they're already deep |
+
+The primary consumers after launch will be **agent framework builders** (LangChain, CrewAI, custom loops) who wrap verify and surface results to their users. They read `VerifyResult` in code. Their users see `attestation`.
+
+#### The Demo Command
+
+```bash
+npx @sovereign-labs/verify demo
+```
+
+Runs a pre-built `govern()` convergence loop that tells a story in 3 iterations:
+
+```
+═══ Verify Demo: Agent Convergence Loop ═══
+
+Goal: "Add a profile section to the about page"
+
+Iteration 1 of 3:
+  Applying 2 edits to server.js...
+  Running 25 verification gates...
+  ✗ FAIL — That CSS selector doesn't exist in your code (.profile-nav)
+  → Learning: won't try .profile-nav again
+  → Hint: available selectors on /about include .nav-link, .hero, .card
+
+Iteration 2 of 3:
+  Applying 2 edits to server.js...
+  Running 25 verification gates...
+  ✗ FAIL — Your edit changed 3 files but only declared changes to 1
+  → Learning: edits must match declarations
+  → Hint: declare all files you intend to modify
+
+Iteration 3 of 3:
+  Applying 1 edit to server.js...
+  Running 25 verification gates...
+  ✓ PASS — All 25 gates clear
+
+Converged in 3 iterations.
+Each failure narrowed the search space. The agent can't repeat mistakes.
+```
+
+No video needed. No website. Ships with the npm package. First thing anyone runs.
+
+**The demo story isn't "the model is dumb."** It's "even the best model benefits from a verification loop that remembers what failed."
+
+#### Implementation
+
+1. **Audit `attestation` strings** across all 25 gates — rewrite to plain English. No gate codes in the user-facing summary. "Grounding gate failed: selector not found" → "That CSS selector doesn't exist in your code."
+
+2. **Audit `narrowing.hint`** strings — make them actionable for both humans and LLMs. "Banned fingerprint" → "This exact approach already failed. Try a different selector."
+
+3. **Build `demo` CLI command** — `src/cli.ts` case 'demo'. Pre-built scenario with 3 iterations showing grounding fail → containment fail → pass. Uses `govern()` internally. Prints human-readable output. ~100 LOC.
+
+4. **Rewrite README top 50 lines** — zero jargon first impression. The engineering terminology lives in FAILURE-TAXONOMY.md and ASSESSMENT.md for people who want depth. The README speaks to someone who's never heard of verify.
+
+#### Done When
+- `npx @sovereign-labs/verify demo` runs and prints the convergence story
+- `attestation` strings on all gates are human-readable
+- README first 50 lines contain zero internal jargon (no K5, G5, F9, "containment," "narrowing injection")
+- Someone who's never seen verify can understand the README and run the demo in under 60 seconds
+
+---
+
 ### P4: Expand Real-World Sources (Phase 2)
 **Effort:** 1-2 days per source
 **Unblocks:** Richer discovery fuel for the improve loop
