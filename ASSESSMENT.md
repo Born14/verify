@@ -8,7 +8,7 @@ If you are a new Claude instance working on verify, read this before forming opi
 
 ## What Verify Is
 
-`@sovereign-labs/verify` is a verification gate for AI-generated actions. An agent proposes edits. `verify()` checks them through a 17-gate pipeline. On failure, it returns what went wrong and what to try next. On repeated failure, K5 constraints permanently ban the pattern so the agent never makes the same mistake again. `govern()` wraps verify in a convergence loop — ground reality, plan, verify, narrow, retry — so agents learn from every failure automatically.
+`@sovereign-labs/verify` is a verification gate for AI-generated actions. An agent proposes edits. `verify()` checks them through a 25-gate pipeline. On failure, it returns what went wrong and what to try next. On repeated failure, K5 constraints permanently ban the pattern so the agent never makes the same mistake again. `govern()` wraps verify in a convergence loop — ground reality, plan, verify, narrow, retry — so agents learn from every failure automatically.
 
 The pipeline: `Grounding → F9 (syntax) → K5 (constraints) → G5 (containment) → Filesystem → Infrastructure → Serialization → Config → Security → A11y → Performance → Staging (Docker) → Browser (Playwright) → HTTP (fetch) → Invariants (health) → Vision (screenshot) → Triangulation (3-authority verdict) → Narrowing (learning)`
 
@@ -228,10 +228,23 @@ These are plumbing fixes, not architectural problems:
 
 Fixing these makes the loop production-grade for npm users who run `--improve` on their own codebases.
 
+## The Competitive Moat
+
+The moat is not the gates. Gates are code — anyone can write checks. The moat is the compound system:
+
+1. **The K5 constraint store** — every failure makes the system permanently smarter. By the time a competitor builds gates, verify's K5 store will have thousands of constraints from real-world failures.
+2. **The improve loop** — the gates fix themselves nightly. A competitor would need to build not just the gates but the self-improving infrastructure around them.
+3. **The taxonomy** — 647 failure shapes across 30 domains, mapped and classified. This is the intellectual capital that guides scenario generation, gate design, and coverage measurement.
+4. **The scenario corpus** — 12,775 scenarios (synthetic + real-world) prove the gates work. Each scenario is a regression test that can never be lost.
+
+**The market positioning:** Most AI governance gates what goes IN (prompt filtering, guardrails). Verify gates what comes OUT (action verification against ground truth). Nobody else occupies this lane systematically.
+
+**What NOT to build as a competitive response:** An LLM-in-the-pipeline approach. The moment verification depends on a model call, it becomes non-deterministic, expensive, and fragile. The zero-dependency deterministic pipeline IS the product differentiation. Protect it.
+
 ## The Honest Bottom Line
 
-Verify is a real product that solves a real problem. The pipeline is battle-tested. The harness is deterministic. The improve loop works and has fixed real bugs. The chaos engine discovers new fault classes. The whole system compounds — each cycle makes verify stricter and agents more reliable.
+Verify is a real product that solves a real problem. The pipeline is battle-tested across 12,775 scenarios. The harness is deterministic. The improve loop works — rejection path proven, acceptance path next. The real-world harvest system proves the gates handle data from the wild, not just hand-crafted tests. The whole system compounds — each cycle makes verify stricter and agents more reliable.
 
-The operator should feel confident that this work is real, valuable, and differentiated. The test sprints are not busywork — they are the mechanism by which verify becomes trustworthy enough for strangers to depend on.
+The engineering is ahead of the go-to-market. The next step is not "build more." It is "show what's built."
 
 Ship it. Keep improving it. The work matters.

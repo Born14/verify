@@ -1,0 +1,371 @@
+# How Verify Works
+
+**One sentence:** Before an AI agent's changes touch your system, verify gives them a fair trial.
+
+---
+
+## The Problem
+
+AI agents can now write code, edit files, update databases, and deploy software. But they make mistakes — wrong CSS values, broken SQL migrations, security vulnerabilities, files that don't exist. Today, most systems just trust the agent's output. If the agent says "done," you hope it's right.
+
+Verify doesn't hope. It checks.
+
+---
+
+## What Verify Does
+
+An agent proposes a change: "I edited server.js to change the background color to blue." Verify asks 25 independent questions about that change:
+
+- **Grounding:** Does the CSS selector you're targeting actually exist in the code?
+- **Syntax:** Is your edit valid? Will the file still parse after your change?
+- **Constraints:** Have we seen this exact approach fail before?
+- **Containment:** Did you only change what you said you'd change, or did you sneak in extra modifications?
+- **Security:** Did your edit introduce an XSS vulnerability or expose a secret?
+- **Accessibility:** Did you break keyboard navigation or screen reader support?
+- **Infrastructure:** Does the Docker container still build and start?
+- ... and 18 more.
+
+Each question is a "gate." Every gate votes pass or fail. If any gate fails, the change is blocked and the agent gets specific feedback: "The grounding gate failed because `.sidebar-nav` doesn't exist in your CSS — the actual class is `.nav-link`."
+
+That's `verify()` — one call, 25 gates, a verdict.
+
+---
+
+## Learning From Failure
+
+A single pass is useful. But the real power is the loop.
+
+`govern()` wraps verify in a convergence cycle. When the agent's first attempt fails, govern remembers what went wrong and prevents the agent from trying the same bad approach again. The agent submits a revised plan, verify checks it again, and the cycle continues until the change passes all 25 gates — or the agent runs out of options.
+
+```
+Agent: "Change the link color to green"
+  → verify: FAIL — selector .roster-link doesn't exist
+  → constraint: don't use .roster-link again
+
+Agent: "OK, use .nav-link instead"
+  → verify: FAIL — color value 'green' doesn't match computed rgb(0,128,0)
+  → constraint: use rgb format for colors
+
+Agent: "Use .nav-link with color rgb(0,128,0)"
+  → verify: PASS — all 25 gates clear
+  → change deployed
+```
+
+Each failure narrows the space of allowed actions. The agent can't go in circles. It either converges on a correct solution or hits a wall — and that wall is visible to the human operator.
+
+---
+
+## How Do We Know the Gates Work?
+
+This is where it gets interesting. Verify verifies agents. But who verifies verify?
+
+**Scenarios.** Thousands of them. Each scenario is a controlled test: "Here's an edit, here's what the agent claims it does, and here's the right answer." We run every scenario through verify and check: did it give the correct verdict?
+
+If verify says "pass" when the answer should be "fail" — we found a bug in a gate. If it says "fail" when the answer should be "pass" — same thing. Either way, we now know which gate has a problem and can fix it.
+
+We have **12,775 scenarios** today. They come from two independent sources.
+
+---
+
+## Two Sources of Truth
+
+### Synthetic Scenarios (11,867)
+
+Written by developers (and Claude). Each one tests a specific, known failure pattern. "What happens when an agent references a CSS class that doesn't exist?" "What happens when a database column is renamed but the API still returns the old field name?"
+
+There are 647 known failure patterns in our taxonomy, organized across 30 domains (CSS, HTML, database, HTTP, security, accessibility, etc.). Synthetic scenarios cover 596 of them.
+
+These are deterministic — they produce the same result every time. They're checked into the codebase and never change unless someone deliberately updates them. This stability is critical for testing whether a proposed gate fix actually improves things without breaking anything else.
+
+### Real-World Scenarios (908)
+
+Fetched from real public data sources:
+
+| Source | What it is | What we get |
+|--------|-----------|-------------|
+| **SchemaPile** | 22,989 real PostgreSQL schemas from GitHub projects | "Does verify correctly handle a schema with `UnsignedInt` columns?" |
+| **JSON Schema Test Suite** | Official validation conformance tests | "Does verify correctly classify valid vs invalid JSON structures?" |
+| **MDN Compat Data** | Mozilla's browser compatibility database | "Does verify know which CSS properties are standard vs experimental?" |
+| **Can I Use** | CSS feature support matrix | "Does verify handle flexbox, grid, container queries correctly?" |
+| **PostCSS Parser Tests** | Extreme CSS edge cases from the PostCSS project | "Does verify's CSS parser choke on unusual but valid CSS?" |
+| **Mustache Spec** | 203 official template conformance tests | "Does verify correctly validate template rendering?" |
+| **PayloadsAllTheThings** | 2,708 known XSS attack vectors | "Does verify's security gate catch real-world attack patterns?" |
+| **Heroku Error Codes** | 36 production infrastructure failure modes | "Does verify recognize real deployment failure patterns?" |
+
+These scenarios test patterns nobody would think to hand-write. A real schema from a real project exercises code paths that synthetic scenarios miss.
+
+Real-world scenarios are regenerated from live sources — they're not checked in because the upstream data can change. They complement the synthetic set: synthetic for precision, real-world for discovery.
+
+### Choosing What to Run
+
+```bash
+# Synthetic only — fast, deterministic, the default
+npx @sovereign-labs/verify self-test
+
+# Real-world only — tests against fetched data
+npx @sovereign-labs/verify self-test --source=real-world
+
+# Both — the full picture
+npx @sovereign-labs/verify self-test --source=all
+```
+
+---
+
+## The Self-Improving Loop
+
+Every night at 3 AM UTC, a CI pipeline runs:
+
+1. **Fetch** real-world data from all 8 sources
+2. **Run** all 12,775 scenarios through verify
+3. **Find** any scenarios where verify gives the wrong answer ("dirty" scenarios)
+4. **Diagnose** which gate is broken, using an LLM to read the gate source code
+5. **Propose** a fix — the LLM generates candidate code changes
+6. **Test** each candidate against a held-out set of scenarios (does it fix the problem without breaking anything?)
+7. **Accept or reject** — if the fix is clean, it becomes a pull request. If not, it's logged for human review.
+
+The machine finds its own bugs and proposes its own fixes. Humans approve via the holdout check — a safety net that ensures gate improvements never weaken existing guarantees.
+
+This is not an AI writing tests for the sake of metrics. The scenarios test real failure patterns. The fixes repair real gate logic. The holdout check prevents regression. It's a genuine learning loop.
+
+---
+
+## The Full Picture
+
+```
+                    ┌─────────────────────────┐
+                    │     External Sources     │
+                    │  SchemaPile, MDN, XSS    │
+                    │  Mustache, Heroku, etc.  │
+                    └────────────┬────────────┘
+                                 │ fetch
+                                 ▼
+┌──────────────┐    ┌─────────────────────────┐
+│  Generators  │    │   Real-World Harvesters  │
+│  (100 files) │    │    (6 format parsers)    │
+│  hand-written│    │   programmatic conversion│
+└──────┬───────┘    └────────────┬────────────┘
+       │                         │
+       ▼                         ▼
+  11,867 synthetic          908 real-world
+    scenarios                 scenarios
+       │                         │
+       └────────────┬────────────┘
+                    │
+                    ▼
+            ┌──────────────┐
+            │  Self-Test   │
+            │  Runner      │
+            │  (per scenario:)
+            │  apply edit  │
+            │  → verify()  │  ← 25 gates
+            │  → check     │
+            │    verdict   │
+            └──────┬───────┘
+                   │
+                   ▼
+            ┌──────────────┐
+            │   Ledger     │
+            │  (pass/fail  │
+            │   per scenario)
+            └──────┬───────┘
+                   │
+          ┌────────┴────────┐
+          │                 │
+          ▼                 ▼
+    All clean?         Dirty scenarios?
+    → Ship it          → Improve loop
+                       → LLM diagnoses
+                       → Proposes fix
+                       → Holdout check
+                       → PR or reject
+```
+
+---
+
+## The System Architecture
+
+### Five Layers (from foundation to fuel)
+
+```
+Layer 5: Curriculum Agent         — generates new scenarios from the taxonomy
+Layer 4: Improve Loop             — finds gate bugs, proposes fixes, validates via holdout
+Layer 3: Self-Test Harness        — runs 12,775 scenarios, checks verdicts against oracles
+Layer 2: Verification Pipeline    — verify() and govern(), the 25-gate product
+Layer 1: Governance Kernel        — 7 invariants as pure functions (honesty, non-repetition, etc.)
+```
+
+Each layer depends only on the layers below it. The kernel never changes. The pipeline rarely changes. The harness changes when scenarios are added. The improve loop and curriculum agent run on top.
+
+### The 25 Gates (with code size)
+
+| Gate | File | LOC | What it checks |
+|------|------|-----|----------------|
+| Grounding | grounding.ts | 1,083 | Do referenced selectors/routes/tables exist? |
+| Syntax | syntax.ts | 159 | Is the edit valid? Does search string exist? |
+| Constraints | constraints.ts | 67 | Has this approach failed before? (K5) |
+| Containment | containment.ts | 148 | Did the agent only change what it said? (G5) |
+| Filesystem | filesystem.ts | 250 | File existence, permissions, size, encoding |
+| Infrastructure | infrastructure.ts | 519 | Docker, compose, ports, health checks |
+| Serialization | serialization.ts | 283 | JSON Schema, OpenAPI, data contracts |
+| Config | config.ts | 284 | Runtime configuration correctness |
+| Security | security.ts | 454 | XSS, injection, secrets, CORS |
+| Accessibility | a11y.ts | 481 | WCAG, headings, ARIA, alt text |
+| Performance | performance.ts | 586 | Bundle size, DOM depth, images |
+| Message | message.ts | 1,141 | Agent communication governance |
+| Staging | staging.ts | 88 | Docker build/start validation |
+| Browser | browser.ts | 303 | Playwright CSS/HTML verification |
+| HTTP | http.ts | 248 | Status, headers, body assertions |
+| Temporal | temporal.ts | 523 | Timing failures across 8 surfaces |
+| Propagation | propagation.ts | 698 | Cross-system state consistency |
+| State | state.ts | 765 | Environment assumption mismatches |
+| Access | access.ts | 573 | Permission and authorization boundaries |
+| Capacity | capacity.ts | 539 | Resource exhaustion detection |
+| Contention | contention.ts | 465 | Concurrent access conflicts |
+| Observation | observation.ts | 589 | Observer effect detection |
+| Invariants | invariants.ts | 182 | System-scoped health checks (frozen) |
+| Vision | vision.ts | 304 | Screenshot-based visual verification |
+| Triangulation | triangulation.ts | 302 | Cross-authority verdict synthesis |
+
+**Total: 11,034 LOC across 25 gate files.**
+
+### Nine Named Components
+
+| Component | What it is | Where it lives |
+|-----------|-----------|----------------|
+| Package | The npm artifact | `@sovereign-labs/verify` |
+| Pipeline | `verify()` + `govern()` | `src/verify.ts`, `src/govern.ts` |
+| Gates | 25 domain-specific checkers | `src/gates/*.ts` |
+| Store | K5 constraints + fault ledger | `src/store/*.ts` |
+| Harness | Self-test runner + oracles | `scripts/harness/*.ts` |
+| Generators | 100 synthetic scenario scripts | `scripts/harvest/stage-*.ts` |
+| Harvesters | 6 real-world data converters | `scripts/supply/harvest-*.ts` |
+| Improve Loop | 7-step self-fixing pipeline | `scripts/harness/improve*.ts` |
+| MCP Server | 3 tools for external agents | `src/mcp-server.ts` |
+
+### The Oracle (How scenarios know the right answer)
+
+Every scenario encodes what the correct verdict should be. The oracle checks two classes of invariant:
+
+**Product invariants** (verify's guarantees):
+- Fabricated predicate → grounding gate must fail
+- Invalid edit → syntax gate must fail
+- Previously-failed approach → constraint gate must block
+- First failing gate is the reported gate — downstream gates don't fabricate evidence
+- Skipped gates are explicitly marked skipped, not silently absent
+
+**Harness invariants** (test infrastructure):
+- verify() never throws — errors are captured in the result
+- Same scenario produces same result (deterministic)
+- Gate timing is recorded and bounded
+
+### The Demo App (Test Fixture)
+
+All scenarios run against a single fixture app at `fixtures/demo-app/`:
+- `server.js` — Node HTTP server with 7 routes: `/`, `/about`, `/form`, `/edge-cases`, `/health`, `/api/items`, `/api/echo`
+- `init.sql` — PostgreSQL schema (4 tables: users, posts, sessions, settings)
+- `config.json` — App configuration (name, port, database, features)
+- `.env` — Environment variables (NODE_ENV, PORT, DATABASE_URL, SECRET_KEY)
+- `Dockerfile` — Container definition (node:18-alpine)
+- `docker-compose.yml` — Multi-service stack (app + db)
+
+This is the ONLY fixture app. Every scenario's `edits.search` must match exact strings from these files.
+
+### The Gates Are Universal
+
+The gates check structural properties, not domain-specific content. The same gate logic works for any domain — only the predicates change:
+
+| Gate | Code Vocabulary | Universal Vocabulary |
+|------|----------------|---------------------|
+| Grounding | "Does the CSS selector exist?" | "Does your target exist in reality?" |
+| Syntax | "Is this a valid edit?" | "Is this action well-formed?" |
+| Constraints | "Has this code pattern failed?" | "Has this approach been tried and failed?" |
+| Containment | "Did you only edit what you said?" | "Did you only do what you declared?" |
+
+This means verify can gate any agent touching any system — file system agents, communication agents, data pipeline agents, infrastructure agents. The predicate types change. The gate physics don't.
+
+---
+
+## What "Zero Dependencies" Means
+
+Verify ships as a single npm package with no external dependencies. No frameworks, no runtime services, no cloud APIs required for the core pipeline. You install it, point it at your app directory, and it works.
+
+The real-world harvesters need network access to fetch data. The improve loop needs an LLM API key (Gemini, Claude, or Ollama locally). But `verify()` itself — the 25-gate pipeline that checks your agent's work — runs entirely on your machine with zero network calls.
+
+---
+
+## Where It Came From
+
+Verify was extracted from Sovereign, a self-hosted app platform where AI agents deploy, monitor, and heal web applications. Every time a Sovereign agent proposed a code change, it went through a governance pipeline with constraints (K5), containment checks (G5), and staged verification. Those mechanics were general enough to work for any agent editing any system — not just web deployments.
+
+The extraction produced three packages:
+- **@sovereign-labs/kernel** — the 7 governance invariants as pure functions
+- **@sovereign-labs/mcp-proxy** — governed transport for MCP tool servers
+- **@sovereign-labs/verify** — the 25-gate verification pipeline (this package)
+
+---
+
+## Current State (March 29, 2026)
+
+| Metric | Value |
+|--------|-------|
+| Gates | 25 |
+| Synthetic scenarios | 11,867 |
+| Real-world scenarios | 908 |
+| Failure shapes covered | 596 / 647 (92%) |
+| Unit tests | 354 (21,342 assertions) |
+| Real-world sources | 8 |
+| Package size | ~23K LOC (src) |
+| Runtime dependencies | 0 |
+| Self-test (synthetic) | ~5 min |
+| Self-test (real-world) | ~90 sec |
+
+---
+
+## Beyond Code: The Expansion Path
+
+Verify was born checking code edits. But the gates are domain-agnostic — they check structural properties of actions, not code-specific content. Nine classes of agents could use verify today:
+
+| Class | Agent Type | What verify checks |
+|-------|-----------|-------------------|
+| 1 | Code agents (Cursor, Copilot, Claude) | File edits, CSS, HTML, DB migrations |
+| 2 | No-Docker developers | Pure-tier verification, no infrastructure needed |
+| 3 | CI/Pre-commit teams | Gate as pre-merge check |
+| 4 | Agent builders (LangChain, CrewAI) | Tool call verification |
+| 5 | File system agents | File existence, permissions, content |
+| 6 | Communication agents | Message destinations, content, claims |
+| 7 | Data/document agents | Schema validation, query scoping |
+| 8 | Infrastructure agents | Docker, Terraform, Kubernetes state |
+| 9 | Browser/computer-use agents | DOM state, visual verification |
+
+For each new domain, what changes is minimal:
+
+| Component | Changes? |
+|-----------|----------|
+| Gate sequence (25 gates) | No |
+| K5 constraints | No |
+| G5 containment | No |
+| Narrowing | No |
+| Grounding | **Yes** — new ground truth sources |
+| Predicates | **Yes** — new predicate types |
+| Validation | **Yes** — new assertion logic |
+| Scenarios | **Yes** — new test cases |
+
+The interface for adding a new domain:
+
+```typescript
+interface DomainAdapter {
+  ground(config: AdapterConfig): Promise<GroundingContext>;
+  validate(predicate: Predicate, context: GroundingContext): Promise<ValidationResult>;
+  fingerprint(predicate: Predicate): string;
+}
+```
+
+---
+
+## The Bet
+
+Most AI governance today focuses on what goes *into* the agent — prompt filtering, guardrails, content policies. Nobody systematically checks what comes *out* — the actual changes the agent made to the actual system, verified against ground truth.
+
+That's the gap. Verify fills it.
+
+**Attach verify to anything that executes. It becomes reliable.**

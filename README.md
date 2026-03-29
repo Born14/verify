@@ -676,6 +676,77 @@ Without Docker, F9/K5/G5/Filesystem gates still run — you get syntax validatio
 }
 ```
 
+## Fault Management
+
+Track and classify scenarios where verify gives wrong answers:
+
+```bash
+# List unresolved faults
+npx @sovereign-labs/verify faults list
+
+# Review faults interactively
+npx @sovereign-labs/verify faults review
+
+# Summary by classification
+npx @sovereign-labs/verify faults summary
+
+# Filter by classification
+npx @sovereign-labs/verify faults list --filter=false_positive
+```
+
+### Fault Classifications
+
+| Classification | Meaning | Action |
+|---------------|---------|--------|
+| `false_positive` | Verify wrongly PASSES (should fail) | Gate has a blind spot — needs fix |
+| `false_negative` | Verify wrongly FAILS (should pass) | Gate is too strict — needs relaxing |
+| `bad_hint` | Narrowing sends wrong direction | Hint logic needs correction |
+| `correct` | Verify got it right | No action — scenario confirms gate works |
+| `agent_fault` | Agent made a genuine mistake | Not a verify bug |
+| `ambiguous` | Can't determine correct verdict | Needs human judgment |
+
+## Writing New Scenarios
+
+Every scenario follows the same pattern — a JSON object with edits, predicates, and expected outcome:
+
+```typescript
+{
+  id: 'my-scenario-001',
+  description: 'What this tests',
+  edits: [{ file: 'server.js', search: 'exact string', replace: 'new string' }],
+  predicates: [{ type: 'css', selector: '.nav', property: 'color', expected: 'red' }],
+  expectedSuccess: false,  // Should verify pass or fail?
+  tags: ['css', 'grounding', 'MY-SHAPE-ID'],
+  rationale: 'Why this scenario tests the failure shape',
+}
+```
+
+**Critical constraint:** `edits.search` must be an EXACT substring from the demo-app fixture file. If the string doesn't exist, the syntax gate rejects immediately.
+
+### Adding a Scenario to an Existing Generator
+
+1. Open `scripts/harvest/stage-{domain}.ts`
+2. Add a `scenarios.push({...})` call following the pattern above
+3. Run the generator: `bun scripts/harvest/stage-{domain}.ts`
+4. Verify it loads: `bun run self-test --families=G`
+
+### Adding a New Generator
+
+1. Create `scripts/harvest/stage-{name}.ts`
+2. Follow the pattern: read demo-app files → generate scenarios → write to `fixtures/scenarios/{name}-staged.json`
+3. The runner picks up `*-staged.json` files automatically — no wiring needed
+
+## LLM Provider Configuration
+
+| Provider | Env Var | Model | Notes |
+|----------|---------|-------|-------|
+| `gemini` | `GEMINI_API_KEY` | gemini-2.5-flash | Default for CI. Temp 0.2 |
+| `anthropic` | `ANTHROPIC_API_KEY` | claude-sonnet-4-20250514 | Temp 0.2, max 4096 |
+| `claude` | `ANTHROPIC_API_KEY` | Configurable | Uses RELATED_FILES context |
+| `claude-code` | N/A | N/A | Filesystem exchange via MCP |
+| `ollama` | `OLLAMA_HOST` | qwen3:4b (default) | Local, no API key needed |
+| `none` | N/A | N/A | Dry-run plumbing tests |
+
 ## License
 
 MIT
