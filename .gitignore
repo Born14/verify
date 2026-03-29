@@ -1,3 +1,6 @@
+# Build output
+dist/
+
 # Self-test runtime artifacts
 data/self-test-*.jsonl
 data/self-test-summary-*.json
@@ -8,6 +11,15 @@ data/subprocess-ledger.jsonl
 # Browser gate temp files
 .verify-tmp/
 fixtures/demo-app/.verify-tmp/
+
+# Real-world harvest cache (fetched data, 24h TTL, never committed)
+.verify-cache/
+
+# Real-world scenarios (generated from fetched data, not committed)
+fixtures/scenarios/real-world/
+
+# Harvest manifest (runtime metadata)
+data/harvest-manifest.json
 
 # Keep the data directory itself
 !data/.gitkeep

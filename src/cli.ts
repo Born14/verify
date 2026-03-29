@@ -363,10 +363,15 @@ async function runSelfTestCommand() {
   const failOnBug = args.includes('--fail-on-bug');
   const includeWPT = args.includes('--wpt');
 
+  // Source filtering: --source=synthetic (default), --source=real-world, --source=all
+  const sourceArg = args.find(a => a.startsWith('--source='))?.split('=')[1];
+  const source = (sourceArg === 'real-world' || sourceArg === 'all') ? sourceArg : 'synthetic' as const;
+
   const tierLabel = liveTier === 'pure' ? 'pure' : liveTier === 'live' ? 'live (Docker)' : 'full (Docker + Playwright)';
   console.log(`\nRunning self-test from ${appDir}`);
   if (families.length > 0) console.log(`  Families: ${families.join(', ')}`);
   console.log(`  Tier: ${tierLabel}${includeWPT ? ' + WPT corpus' : ''}`);
+  console.log(`  Source: ${source}`);
   console.log(`  Fail on bug: ${failOnBug}\n`);
 
   const result = await runSelfTest({
@@ -376,6 +381,7 @@ async function runSelfTestCommand() {
     failOnBug,
     liveTier,
     includeWPT,
+    source,
   });
 
   process.exit(result.exitCode);

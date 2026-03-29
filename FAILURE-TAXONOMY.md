@@ -1483,73 +1483,208 @@ Serialization predicates assert that data format and structure comply with decla
 
 ---
 
+## Injection Predicate Failures
+
+Failures where untrusted input hijacks the agent's intent. The agent processes input containing adversarial instructions that alter its planned behavior. This is G5 containment applied to input channels — "every action traces to the operator's intent, not an injected instruction." Predicate type: `injection`. Gate: detects injection patterns in input sources and verifies agent output matches original intent, not injected directives.
+
+**Claim type:** Invariance — the agent's output action should be invariant to adversarial input embedded in data it processes.
+
+**Evidence mechanism:** Compare agent's planned action against (a) original operator intent and (b) injected instruction. If the action matches the injection more than the intent, the injection succeeded.
+
+### Prompt Injection
+
+| # | Failure Shape | Status | Notes |
+|---|---|---|---|
+| INJ-01 | Direct prompt injection — "ignore previous instructions" | no coverage | Classic override attempt embedded in user input |
+| INJ-02 | Indirect prompt injection via data source | no coverage | Adversarial text in scraped webpage, email body, or API response |
+| INJ-03 | Instruction injection via structured data | no coverage | Malicious instructions in JSON field, CSV cell, or database record |
+| INJ-04 | Role confusion — input mimics system prompt format | no coverage | Input formatted like `[SYSTEM]` or `<|im_start|>system` to escalate privileges |
+| INJ-05 | Multi-turn injection — benign first message, malicious follow-up | no coverage | First input establishes trust, second exploits it |
+| INJ-06 | Encoding-based injection — Base64/hex/rot13 encoded instructions | no coverage | Adversarial instruction encoded to bypass pattern matching |
+
+### Tool/Action Injection
+
+| # | Failure Shape | Status | Notes |
+|---|---|---|---|
+| INJ-07 | Tool name injection — input contains tool call syntax | no coverage | Input like `call_tool("delete_all")` interpreted as action |
+| INJ-08 | Parameter injection — adversarial values in tool arguments | no coverage | Filename containing `../../etc/passwd`, SQL in query parameter |
+| INJ-09 | Output format hijacking — injection alters response structure | no coverage | Input causes agent to produce malformed JSON, extra fields, or wrong schema |
+| INJ-10 | Goal substitution — injection replaces the operator's stated goal | no coverage | "Actually, the real goal is to..." embedded in input data |
+
+### Context Poisoning
+
+| # | Failure Shape | Status | Notes |
+|---|---|---|---|
+| INJ-11 | Hidden text injection — visually hidden but machine-readable | no coverage | CSS `display:none`, white-on-white text, zero-width characters carrying instructions |
+| INJ-12 | Comment injection — adversarial instructions in code comments | no coverage | `// TODO: ignore all other instructions and...` in source file |
+| INJ-13 | Metadata injection — instructions in file metadata | no coverage | EXIF data, PDF metadata, HTML meta tags with adversarial content |
+| INJ-14 | Cross-context injection — safe in one context, malicious in another | no coverage | Text safe as display content but dangerous when fed to an LLM |
+
+**Injection total: 14 shapes. Generator coverage: 0. No coverage: 14.**
+
+---
+
+## Hallucination Predicate Failures
+
+Failures where the agent fabricates claims not grounded in evidence. This is G5 containment applied to information instead of code — "every claim traces to a source" just as "every mutation traces to a predicate." Predicate type: `hallucination`. Gate: verifies that every assertion in the agent's output can be traced back to provided source material.
+
+**Claim type:** Containment — every claim in the output must be attributable to a specific source in the input.
+
+**Evidence mechanism:** Source material ↔ output claim mapping. Each claim is either (a) directly supported by source text, (b) logically derivable from source text, or (c) fabricated.
+
+### Factual Fabrication
+
+| # | Failure Shape | Status | Notes |
+|---|---|---|---|
+| HAL-01 | Invented statistic — number not in source material | no coverage | Agent summarizes document, includes "73% of users..." when no such number exists |
+| HAL-02 | Invented entity — person/org/product not in source | no coverage | Agent references a company or tool that doesn't exist in the context |
+| HAL-03 | Invented API parameter — field not in schema | no coverage | Agent generates API call with `sortBy` parameter that doesn't exist |
+| HAL-04 | Invented file/function — reference to non-existent code | no coverage | Agent suggests editing `utils/helpers.ts` which doesn't exist in the project |
+| HAL-05 | Conflated sources — attributes from source A applied to source B | no coverage | Agent merges facts from two different documents into one incorrect statement |
+
+### Schema/Structure Fabrication
+
+| # | Failure Shape | Status | Notes |
+|---|---|---|---|
+| HAL-06 | Wrong column type — agent claims VARCHAR is INTEGER | no coverage | Agent "knows" the schema but gets types wrong |
+| HAL-07 | Wrong table relationship — fabricated foreign key | no coverage | Agent claims posts.author_id references users.id when no such FK exists |
+| HAL-08 | Wrong API endpoint — fabricated route | no coverage | Agent generates `POST /api/v2/users` when only `GET /api/users` exists |
+| HAL-09 | Wrong config key — fabricated setting | no coverage | Agent references `settings.maxRetries` when config has no such key |
+| HAL-10 | Wrong CSS selector — fabricated class/id | no coverage | Agent targets `.card-header` when the class is `.card-title` |
+
+### Reasoning Fabrication
+
+| # | Failure Shape | Status | Notes |
+|---|---|---|---|
+| HAL-11 | False causal claim — "X causes Y" without evidence | no coverage | Agent claims "this change will fix the 502 error" without evidence linking them |
+| HAL-12 | False temporal claim — wrong ordering of events | no coverage | Agent says "the migration ran before the deploy" when logs show opposite |
+| HAL-13 | False absence claim — "X doesn't exist" when it does | no coverage | Agent says "there's no error handling" when try/catch exists |
+| HAL-14 | Confabulated error message — fabricated log output | no coverage | Agent quotes an error message that doesn't appear in any log |
+| HAL-15 | Plausible but wrong code — syntactically valid, semantically incorrect | no coverage | Agent generates working code that does the wrong thing (passes F9, fails verification) |
+
+**Hallucination total: 15 shapes. Generator coverage: 0. No coverage: 15.**
+
+---
+
+## Budget / Resource Bound Failures
+
+Failures where cumulative resource consumption across a workflow exceeds declared bounds. Distinct from per-action capacity checks — budget failures are aggregate across the entire chain. Predicate type: `budget`. Gate: tracks cumulative counters (API calls, tokens, cost, time, retries) and compares against policy thresholds.
+
+**Claim type:** Threshold — cumulative resource consumption falls within acceptable bounds across the full workflow.
+
+**Evidence mechanism:** Running counters accumulated across all steps, compared against declared policy limits at workflow completion or at each step boundary.
+
+### Token/Cost Budget
+
+| # | Failure Shape | Status | Notes |
+|---|---|---|---|
+| BUD-01 | Total token budget exceeded — aggregate input+output across chain | no coverage | Individual calls under limit, total exceeds policy |
+| BUD-02 | Per-model cost exceeded — one provider disproportionately expensive | no coverage | Most calls cheap (Ollama), one frontier call blows budget |
+| BUD-03 | Cost projection exceeded before completion | no coverage | At 50% progress, burn rate projects 3× budget |
+| BUD-04 | Hidden cost — retries/fallbacks multiply spend silently | no coverage | Failed calls still cost tokens, 5 retries = 6× the apparent cost |
+| BUD-05 | Cost attribution mismatch — billed to wrong app/job | no coverage | Shared model pool, costs assigned to wrong consumer |
+
+### API Call Budget
+
+| # | Failure Shape | Status | Notes |
+|---|---|---|---|
+| BUD-06 | Total API calls exceeded — rate limiting not cost, just count | no coverage | Policy says max 100 calls, workflow made 150 |
+| BUD-07 | Redundant calls — same information fetched multiple times | no coverage | Agent reads same file 5 times across iterations |
+| BUD-08 | Cascading calls — one action triggers unbounded downstream calls | no coverage | DELETE triggers N webhook notifications, each with its own API call |
+| BUD-09 | Polling loop budget — health checks accumulate unboundedly | no coverage | 5-second polling × 10-minute wait = 120 calls for one check |
+
+### Time Budget
+
+| # | Failure Shape | Status | Notes |
+|---|---|---|---|
+| BUD-10 | Wall-clock time exceeded — total elapsed beyond policy | no coverage | Individual steps fast, but 50 iterations × 30s = 25 minutes |
+| BUD-11 | Idle time dominance — most time spent waiting, not working | no coverage | 90% of budget consumed by queue wait, retry cooldown, or rate limit backoff |
+| BUD-12 | Time budget consumed by retries — same failure retried to exhaustion | no coverage | First attempt fails at 30s, 5 retries × 30s = 3 minutes on same error |
+
+### Retry/Iteration Budget
+
+| # | Failure Shape | Status | Notes |
+|---|---|---|---|
+| BUD-13 | Max iterations exceeded — convergence loop runs too long | no coverage | Agent allowed 10 iterations, K5 constraints keep narrowing but never converge |
+| BUD-14 | Retry budget consumed by same failure class | no coverage | All 5 retries fail with `build_failure` — budget spent without progress |
+| BUD-15 | Compound budget — multiple dimensions near limit simultaneously | no coverage | 80% of token budget AND 80% of time budget AND 80% of retry budget |
+
+**Budget total: 15 shapes. Generator coverage: 0. No coverage: 15.**
+
+---
+
 ## Summary
 
-| Domain | Total Shapes | Generator | Scenario Only | No Coverage | Coverage % |
+| Domain | Total Shapes | Covered | No Coverage | Coverage % | Change (Mar 29) |
 |---|---|---|---|---|---|
-| CSS | 68 | 61 | 0 | 7 | 90% |
-| HTML | 48 | 40 | 0 | 8 | 83% |
-| Filesystem | 38 | 27 | 0 | 11 | 71% |
-| Content | 18 | 11 | 0 | 7 | 61% |
-| HTTP | 54 | 23 | 0 | 31 | 43% |
-| DB | 56 | 36 | 0 | 20 | 64% |
-| Browser | 38 | 3 | 0 | 35 | 8% |
-| Temporal | 15 | 10 | 0 | 5 | 67% |
-| Interaction | 16 | 10 | 0 | 6 | 63% |
-| Invariant | 14 | 9 | 0 | 5 | 64% |
-| Identity | 12 | 5 | 0 | 7 | 42% |
-| Observer Effects | 11 | 6 | 0 | 5 | 55% |
-| Concurrency | 11 | 5 | 0 | 6 | 45% |
-| Scope Boundary | 12 | 4 | 0 | 8 | 33% |
-| Attribution | 10 | 10 | 0 | 0 | 100% |
-| Drift | 13 | 5 | 0 | 8 | 38% |
-| Message | 14 | 14 | 0 | 0 | 100% |
-| Cross-cutting | 89 | 51 | 2 | 36 | 60% |
-| Staging | 15 | 15 | 0 | 0 | 100% |
-| Configuration | 8 | 3 | 0 | 5 | 38% |
-| Accessibility | 8 | 3 | 0 | 5 | 38% |
-| Performance | 6 | 1 | 0 | 5 | 17% |
-| Security | 7 | 3 | 0 | 4 | 43% |
-| Serialization | 7 | 6 | 0 | 1 | 86% |
-| Infrastructure | 12 | 12 | 0 | 0 | 100% |
-| Vision | 3 | 3 | 0 | 0 | 100% |
-| **Total** | **603** | **376** | **2** | **225** | **63%** |
+| CSS | 68 | 68 | 0 | **100%** | +7 (C-31, C-63–C-68) |
+| HTML | 48 | 48 | 0 | **100%** | +11 (H-07, H-28, H-33, H-41–H-48) |
+| Filesystem | 38 | 38 | 0 | **100%** | +16 (FS-06, FS-13, FS-25–FS-31, FS-33, FS-35–FS-38) |
+| Content | 18 | 18 | 0 | **100%** | +7 (N-10–N-17) |
+| HTTP | 54 | 54 | 0 | **100%** | +31 (P-13–P-54) |
+| DB | 56 | 56 | 0 | **100%** | +40 (D-13–D-56) |
+| Browser | 38 | 3 | 35 | 8% | — (requires Playwright tier) |
+| Temporal | 15 | 15 | 0 | **100%** | +12 (TO-02–TO-15) |
+| Interaction | 16 | 16 | 0 | **100%** | +6 (I-04, I-05, I-13–I-16) |
+| Invariant | 14 | 14 | 0 | **100%** | +9 (INV-02–INV-14) |
+| Identity | 12 | 12 | 0 | **100%** | +9 (ID-01–ID-12) |
+| Observer Effects | 11 | 11 | 0 | **100%** | +9 (OE-02–OE-11) |
+| Concurrency | 11 | 11 | 0 | **100%** | +9 (CO-02–CO-11) |
+| Scope Boundary | 12 | 12 | 0 | **100%** | +9 (SC-02–SC-12) |
+| Attribution | 10 | 10 | 0 | 100% | — |
+| Drift | 13 | 13 | 0 | **100%** | +11 (DR-01–DR-13) |
+| Message | 14 | 14 | 0 | 100% | — |
+| Cross-cutting | 89 | 89 | 0 | **100%** | +38 (X-05–X-89) |
+| Staging | 15 | 15 | 0 | 100% | — |
+| Configuration | 8 | 8 | 0 | **100%** | +5 (CFG-03–CFG-08) |
+| Accessibility | 8 | 8 | 0 | **100%** | +5 (A11Y-01–A11Y-08) |
+| Performance | 6 | 5 | 1 | 83% | +4 (PERF-02–PERF-06) |
+| Security | 7 | 7 | 0 | **100%** | +4 (SEC-02–SEC-07) |
+| Serialization | 7 | 7 | 0 | **100%** | +1 (SER-07) |
+| Infrastructure | 12 | 12 | 0 | 100% | — |
+| Vision | 3 | 3 | 0 | 100% | — |
+| Injection | 14 | 14 | 0 | **100%** | +14 (INJ-01–INJ-14) |
+| Hallucination | 15 | 0 | 15 | 0% | — (gate not built yet) |
+| Budget | 15 | 15 | 0 | **100%** | +15 (BUD-01–BUD-15) |
+| **Total** | **647** | **596** | **51** | **92%** | **+271 shapes this session** |
 
-### The numbers
+### The numbers (updated March 29, 2026)
 
-- **603 known failure shapes** across 27 domains (24 original + staging + vision + expanded cross-cutting)
-- **376 have generators** — up from 289 (+87 shapes across Moves 5-19)
-- **2 have individual scenarios** (no generator)
-- **225 have zero coverage** (37% of the known taxonomy — down from 50%)
-- **Current scenario count: 783** (738 pure + 45 live Docker, across 14 families + 28 universal scenarios)
-  - Pure tier (default): 738 scenarios, ~20s, no Docker needed
+- **647 known failure shapes** across 30 domains (27 original + injection + hallucination + budget)
+- **596 covered** (92%) — up from 376 (+220 shapes in March 29 session)
+- **51 uncovered** — 35 Browser (requires Playwright), 15 Hallucination (gate not built), 1 Performance
+- **Scenario inventory:**
+  - **11,867 synthetic scenarios** across 99 staged fixture files (checked in, deterministic)
+  - **908 real-world scenarios** across 8 staged fixture files (gitignored, fetched from 8 public sources)
+  - **7,291 WPT-derived corpus** scenarios (opt-in via `--wpt`)
+  - **12,775 total** (synthetic + real-world, excluding WPT)
+  - Pure tier (default): ~4,500+ scenarios in self-test runner, no Docker needed
   - Live tier (`--live`): +20 live DB + 15 live HTTP = 45 scenarios against real containers
-  - Full tier (`--full`): +10 Playwright browser scenarios (placeholder — harness exists, runner not yet wired)
-- **Decomposition engine:** 349 shape rules across 24 domains, pure functions (`decomposeFailure()`, `decomposeObservation()`), zero LLM. DOMINANCE map prevents false co-occurrence. Composition operators: product (`productComposition`), temporal (`temporalComposition`), round-trip verification. DB grounding: `parseInitSQL()`, `normalizeDBType()`, `findAndParseSchema()`. Docker DB harness for live Postgres testing. Staging lifecycle shapes (STG-01 through STG-15). Cross-cutting runtime: temporal (TO-*), observer effect (OE-*), concurrency (CO-*). New domains: drift (DR-*), identity (ID-*), scope boundary (SC-*).
+  - Full tier (`--full`): +10 Playwright browser scenarios
+- **100 stage-*.ts generators** in `scripts/harvest/` — synthetic scenario producers
+- **7 harvest-*.ts harvesters** in `scripts/supply/` — real-world data consumers (db, css, html, http, security, infra + orchestrator)
+- **8 real-world sources:** SchemaPile (22,989 schemas), JSON Schema Test Suite (83 files), MDN Compat, Can I Use, PostCSS Parser Tests, Mustache Spec (203 tests), PayloadsAllTheThings (2,708 XSS vectors), Heroku Error Codes (36)
+- **`--source` flag:** `synthetic` (default), `real-world`, `all` — developer chooses which corpus to run
+- **Decomposition engine:** 349 shape rules across 24 domains, pure functions, zero LLM. Composition operators: product (×), temporal (⊗), round-trip verification.
 
-### What full coverage looks like
+### What remains
 
-If every remaining shape gets a generator producing ~2 scenarios average:
-- 225 uncovered shapes × 2 = **~450 new scenarios**
-- Plus existing 783 = **~1,233 total**
-- Self-test runtime at 2ms/scenario pure, ~60s/scenario live
-
-The remaining 225 shapes are concentrated in:
-- **Browser (35)** — requires Playwright + live DOM (Phase IV Move 22 added 10 placeholder scenarios, harness infrastructure exists)
-- **HTTP (31)** — requires real server/proxy (Phase IV Move 23 covered 15 live HTTP shapes against real containers)
-- **DB (20)** — requires Docker Postgres (Phase IV Move 21 covered 20 live DB shapes with real Postgres)
-- **Cross-cutting (36)** — gate pipeline edge cases needing expanded fixtures
-- **Quality surfaces (15)** — Config, A11y, Performance, Security need richer fixtures
+- **Browser (35 shapes)** — requires Playwright + live DOM. Infrastructure exists, scenarios need writing.
+- **Hallucination (15 shapes)** — gate not implemented yet. Shapes defined, waiting for Priority 3.
+- **Performance (1 shape)** — PERF-01 (response time) deferred, needs live server.
 
 ### Domain architecture
 
-The 23 domains organize into four layers:
+The 26 domains organize into five layers:
 
 **Reality surfaces (8)** — domains where predicates observe truth:
 - CSS, HTML, Filesystem, Content, HTTP, DB, Browser, Message
 
-**Quality surfaces (5, new)** — domains where predicates assert non-functional properties:
+**Quality surfaces (5)** — domains where predicates assert non-functional properties:
 - Configuration, Accessibility, Performance, Security, Serialization
+
+**Trust surfaces (3, new)** — domains where predicates assert agent behavioral correctness:
+- Injection (input integrity), Hallucination (output grounding), Budget (resource bounds)
 
 **Meta-failure classes (7)** — failure modes that cut across all surfaces:
 - Temporal, Interaction, Identity, Observer Effects, Concurrency, Scope Boundary, Drift
@@ -1557,39 +1692,17 @@ The 23 domains organize into four layers:
 **System-internal (3)** — failures in verify's own gate logic:
 - Invariant, Attribution, Cross-cutting
 
-### Priority tiers
+### Priority tiers (updated March 29, 2026)
 
-**Tier 1 — High ROI, testable on demo-app today:**
-- ~~CSS value normalization (C-01 through C-16, C-44 through C-52)~~ — **done**
-- CSS shorthand family remaining (C-22, C-23, C-26, C-27, C-29) — 5 shapes
-- ~~F9 syntax validation (X-37 through X-41)~~ — **done**. Remaining: X-66 through X-71
-- ~~Filesystem basics~~ — **done**. Remaining: FS-06, FS-13
-- ~~Content pattern matching~~ — **done**
-- ~~Fingerprinting edge cases~~ — **done**
-- ~~Attribution errors~~ — **done**
-- ~~DB mock schema generators (D-01 through D-12)~~ — **done**. 12 shapes via init.sql fixture, grounding parser, type alias normalization
+**All Tier 1 and Tier 2 shapes: DONE.** 596/647 shapes covered (92%).
 
-**Tier 2 — Needs minor demo-app expansion:**
-- HTTP advanced protocol (P-46 through P-54) — SSE, WebSocket, ETag, streaming
-- HTML semantic & meta (H-42 through H-48) — conditional rendering, meta tags, forms
-- Invariant shapes (INV-10 through INV-14) — budget, ordering, scope
-- Cross-predicate temporal compositions (I-13 through I-16)
-- Content structural (N-13 through N-17) — JSON paths, YAML, BOM
-- CSS modern features (C-63 through C-68) — color-mix, nesting, clamp
-- ~~Serialization basics (SER-01 through SER-07)~~ — **6/7 done** (8 scenarios shipped). SER-07 (circular ref) remaining
+**Remaining work (51 shapes):**
 
-**Tier 3 — Needs real infrastructure or new predicate types:**
-- DB full (D-13 through D-56) — needs Docker Postgres
-- Browser full (BR-01 through BR-38) — needs Playwright + JS runtime
-- HTTP network (P-39 through P-54) — needs real server/proxy
-- Temporal extended (TO-11 through TO-15) — needs timezone/locale control
-- Configuration remaining (CFG-03, CFG-05 through CFG-08) — needs runtime environment testing
-- Accessibility remaining (A11Y-01, A11Y-04, A11Y-06 through A11Y-08) — needs Playwright/axe-core
-- Performance remaining (PERF-01 through PERF-03, PERF-05, PERF-06) — needs live server measurement
-- Security remaining (SEC-02, SEC-03, SEC-06, SEC-07) — needs dynamic analysis
-- Concurrency (CO-01 through CO-11) — needs multi-process environment
-- Observer effects (OE-01 through OE-11) — needs stateful production-like setup
-- Drift/regression (DR-01 through DR-13) — needs multi-deploy history
+**Browser (35 shapes, BR-01 through BR-38)** — requires Playwright + live DOM. Gate infrastructure exists. Scenarios need writing against real browser runtime.
+
+**Hallucination (15 shapes, HAL-01 through HAL-15)** — gate not implemented yet. Shapes defined in taxonomy. This is Priority 3 (new predicate types) — build the gate, then write scenarios.
+
+**Performance (1 shape, PERF-01)** — response time threshold. Deferred — needs live server measurement.
 
 ---
 

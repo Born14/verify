@@ -29,7 +29,7 @@ import { checkInvariants } from './oracle.js';
 import { Ledger, collectRunIdentity } from './ledger.js';
 import { printProgress, printSummary, saveSummary } from './report.js';
 import { generateAllScenarios, generateFamily } from './scenario-generator.js';
-import { loadExternalScenarios, loadUniversalScenarios, loadStagedScenarios, loadWPTScenarios } from './external-scenario-loader.js';
+import { loadExternalScenarios, loadUniversalScenarios, loadStagedScenarios, loadRealWorldScenarios, loadWPTScenarios } from './external-scenario-loader.js';
 import { startMockServer, stopMockServer, type MockServer } from '../../fixtures/http-server.js';
 
 const MAX_SCENARIO_TIMEOUT = 10 * 60 * 1000; // 10 min
@@ -243,36 +243,55 @@ export async function runSelfTest(config: RunConfig): Promise<{ exitCode: number
     printInfraStatus(infra, tier);
   }
 
-  // Built-in scenarios always run against the fixture (demo-app)
-  // They hardcode demo-app selectors/strings and would produce false failures on other apps
-  let scenarios: VerifyScenario[];
-  if (config.families && config.families.length > 0) {
-    scenarios = config.families.flatMap(f => generateFamily(f, fixtureDir));
-  } else {
-    scenarios = generateAllScenarios(fixtureDir);
+  // Source filtering: synthetic (default), real-world, or all
+  const sourceMode = config.source ?? 'synthetic';
+  const includeSynthetic = sourceMode === 'synthetic' || sourceMode === 'all';
+  const includeRealWorld = sourceMode === 'real-world' || sourceMode === 'all';
+
+  let scenarios: VerifyScenario[] = [];
+
+  // Synthetic scenarios: built-in generators + staged fixtures
+  if (includeSynthetic) {
+    // Built-in scenarios always run against the fixture (demo-app)
+    // They hardcode demo-app selectors/strings and would produce false failures on other apps
+    if (config.families && config.families.length > 0) {
+      scenarios = config.families.flatMap(f => generateFamily(f, fixtureDir));
+    } else {
+      scenarios = generateAllScenarios(fixtureDir);
+    }
+
+    // Universal scenarios: health-checked, portable, always run against demo-app
+    const universals = loadUniversalScenarios(fixtureDir);
+    if (universals.length > 0) {
+      scenarios = [...scenarios, ...universals];
+      console.log(`  + ${universals.length} universal scenarios from fixtures/scenarios/universal.json`);
+    }
+
+    // Per-gate staged scenarios from fixtures/scenarios/*-staged.json
+    const staged = loadStagedScenarios(fixtureDir);
+    if (staged.length > 0) {
+      scenarios = [...scenarios, ...staged];
+      console.log(`  + ${staged.length} per-gate staged scenarios (synthetic)`);
+    }
+
+    // WPT harvested scenarios (opt-in via --wpt)
+    if (config.includeWPT) {
+      const wpt = loadWPTScenarios(fixtureDir);
+      if (wpt.length > 0) {
+        scenarios = [...scenarios, ...wpt];
+        console.log(`  + ${wpt.length} WPT scenarios`);
+      }
+    }
   }
 
-  // Universal scenarios: health-checked, portable, always run against demo-app
-  // These test verify gate logic (CSS spec, shorthand, color normalization) not app-specific content
-  const universals = loadUniversalScenarios(fixtureDir);
-  if (universals.length > 0) {
-    scenarios = [...scenarios, ...universals];
-    console.log(`  + ${universals.length} universal scenarios from fixtures/scenarios/universal.json`);
-  }
-
-  // Per-gate staged scenarios from fixtures/scenarios/*-staged.json
-  const staged = loadStagedScenarios(fixtureDir);
-  if (staged.length > 0) {
-    scenarios = [...scenarios, ...staged];
-    console.log(`  + ${staged.length} per-gate staged scenarios`);
-  }
-
-  // WPT harvested scenarios from fixtures/scenarios/wpt-staged.json (opt-in via --wpt)
-  if (config.includeWPT) {
-    const wpt = loadWPTScenarios(fixtureDir);
-    if (wpt.length > 0) {
-      scenarios = [...scenarios, ...wpt];
-      console.log(`  + ${wpt.length} WPT scenarios`);
+  // Real-world scenarios: from fixtures/scenarios/real-world/*-staged.json
+  if (includeRealWorld) {
+    const realWorld = loadRealWorldScenarios(fixtureDir);
+    if (realWorld.length > 0) {
+      scenarios = [...scenarios, ...realWorld];
+      console.log(`  + ${realWorld.length} real-world scenarios`);
+    } else {
+      console.log(`  ⊘ No real-world scenarios found (run: bun scripts/supply/harvest-real.ts)`);
     }
   }
 

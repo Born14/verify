@@ -116,19 +116,19 @@ Do not hedge on the loop's value to appear "balanced." The loop works. It has pr
 - Every sprint adds scenarios that make the npm package more reliable for everyone.
 - The loop is young (weeks, not months) but has already closed multiple real bugs end-to-end. Young and working is a feature, not a flaw, for this audience.
 
-## Current State (March 25, 2026)
+## Current State (March 27, 2026)
 
 | Component | Status | Confidence |
 |-----------|--------|------------|
-| Pipeline (18 gates) | Shipped v0.5.2 on npm | High |
+| Pipeline (18 gates + 7 cross-cutting) | Shipped v0.5.2 on npm, 25 total gates | High |
 | `govern()` convergence loop | Shipped, 24 scenarios (15 core + 9 pipeline integration), convergence detection proven | High |
-| Self-test harness | 346 tests, 21,320 assertions, 0 failures (1 skip — vision gate, missing API key) | High |
-| Scenario corpus | 8,271 total (952 per-gate + 28 universal + 7,291 WPT) | High |
-| Staged scenario files | 19 domain-specific + 1 universal + 1 WPT = 21 files | High |
-| Harvest scripts | 22 generators producing deterministic scenarios from fixtures | High |
-| Tiered self-test (Phase IV) | Pure (747) + Live Docker (45) + Playwright (10, placeholder) | High |
-| Decomposition engine (349 rules, 24 domains) | 376/603 failure classes covered (63%) | High |
-| Failure taxonomy (603 shapes, 27 domains) | Complete algebra, 349 with decomposition rules | High |
+| Self-test harness | 346 tests, 21,322 assertions, 0 failures (13 skip — vision gate, Docker-dependent) | High |
+| Scenario corpus | 12,775 total (11,867 synthetic + 908 real-world). 107 staged files. `--source` flag for synthetic/real-world/all | High |
+| Staged scenario files | 99 synthetic + 8 real-world + 1 WPT = 108 files | High |
+| Generators + harvesters | 100 stage-*.ts generators (synthetic) + 7 harvest-*.ts harvesters (real-world, 8 public sources) | High |
+| Tiered self-test (Phase IV) | Pure (4,500+) + Live Docker (45) + Playwright (10, placeholder) | High |
+| Decomposition engine (349 rules, 24 domains) | 596/647 failure classes covered (92%) | High |
+| Failure taxonomy (647 shapes, 30 domains) | Complete algebra, 349 with decomposition rules | High |
 | External scenarios (21 custom) | Working, loaded from `.verify/custom-scenarios.json` | High |
 | Improve loop (7-stage) | Built, proven end-to-end, has 10 identified gaps | Medium-High |
 | Chaos engine (3 MCP tools) | Built, proven in 2 sessions | Medium-High |
@@ -141,7 +141,7 @@ Do not hedge on the loop's value to appear "balanced." The loop works. It has pr
 
 Phase V industrialized scenario generation and fixed a critical K5 constraint bleeding bug.
 
-**Scenario harvesting:** 22 generator scripts in `scripts/harvest/` produce deterministic scenarios from the demo-app fixtures. Each gate has its own staged JSON file in `fixtures/scenarios/`. The generators read real fixture data (file hashes, directory counts, terraform state, etc.) so scenarios stay grounded in reality.
+**Scenario harvesting:** Two independent sources. **Synthetic:** 100 generator scripts in `scripts/harvest/` produce deterministic scenarios from demo-app fixtures (11,867 scenarios, 99 staged files). **Real-world:** 7 harvesters in `scripts/supply/` fetch from 8 public data sources (SchemaPile, MDN, Can I Use, PostCSS, Mustache spec, JSON Schema Test Suite, PayloadsAllTheThings XSS, Heroku errors) producing 908 scenarios in `fixtures/scenarios/real-world/` (gitignored, regenerated nightly). Developer selects via `--source=synthetic|real-world|all`.
 
 | Gate | Staged File | Scenarios |
 |------|------------|-----------|
@@ -153,24 +153,31 @@ Phase V industrialized scenario generation and fixed a critical K5 constraint bl
 | JSON Schema | `json-schema-staged.json` | 83 |
 | Content | `content-staged.json` | 66 |
 | HTTP | `http-staged.json` | 66 |
-| Axe A11y | `axe-a11y-staged.json` | 39 |
-| Universal | `universal.json` | 28 |
-| Filesystem | `filesystem-staged.json` | 25 |
-| K5 (Constraints) | `k5-staged.json` | 25 |
-| Config | `config-staged.json` | 22 |
-| Security | `security-staged.json` | 20 |
-| Infrastructure | `infrastructure-staged.json` | 17 |
-| Serialization | `serialization-staged.json` | 16 |
-| G5 (Containment) | `g5-staged.json` | 16 |
-| Performance | `performance-staged.json` | 14 |
-| Message | `message-staged.json` | 14 |
 | A11y | `a11y-staged.json` | 60 |
-| Triangulation | `triangulation-staged.json` | 6 |
-| **Total** | | **8,271** |
+| Axe A11y | `axe-a11y-staged.json` | 39 |
+| Message | `message-staged.json` | 35 |
+| Performance | `performance-staged.json` | 32 |
+| + 48 parity grid files | `{class}-{capability}-staged.json` | 30 each (1,440 total) |
+| + 10 original domain files | Various | 30 each (300 total) |
+| **Total staged** | | **9,875** |
 
 **K5 constraint bleeding fix:** Constraints seeded by a failing `verify()` call were persisting to `{appDir}/.verify/memory.jsonl` and poisoning subsequent calls. Session-scoped cleanup now runs automatically in both success and failure paths. Each `verify()` call is isolated by default. `govern()` uses `learning: 'persistent'` to preserve cross-attempt learning in convergence loops.
 
 **Grounding gate enhancement:** Route-scoped CSS extraction (`extractRouteBlocks`, `extractRouteHTML`), class token extraction for data-dependent predicate detection, mtime-based cache invalidation.
+
+### Phase VI+VII: Operation Bolster (March 27, 2026)
+
+Systematic depth expansion bringing every non-WPT staged fixture file to 30+ scenarios minimum. Non-WPT scenarios increased from 1,776 to 2,584 (+46%).
+
+**The problem:** WPT (7,291 scenarios) masked thin coverage everywhere else. 26 files had ≤15 scenarios ("thin tier"), 34 had 16-29 ("adequate tier"). Six files had only 6 scenarios.
+
+**The solution:** Two idempotent bolster scripts:
+- `bolster-thin.ts` — Deep custom expansion for 26 thinnest files. 8 domain-specific bolster functions covering temporal, propagation, state, access, capacity, contention, and observation families. New failure shapes: TC-06, TB-07, TH-06, TD-07, PH-07, PERF-SINGLE.
+- `bolster-adequate.ts` — Family-specific + generic expansion for 34 adequate-tier files. 5 family-specific bolsters + 15 cross-file consistency templates + 22 edit-based inconsistency templates.
+
+Both scripts use parametric expansion against the demo-app parameter bank (config keys, env vars, CSS selectors, routes, DB tables). Both are idempotent — `loadFixture()` strips prior `-bolster-` IDs before regenerating.
+
+**Result:** All 70 non-WPT files at exactly 30+. 346 tests, 21,322 assertions, 0 failures.
 
 ### Layer 6: External Corpus Harvesters (March 25-26, 2026)
 

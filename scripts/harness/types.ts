@@ -193,6 +193,8 @@ export interface RunConfig {
   includeWPT?: boolean;
   /** Run only scenarios with these IDs (for subprocess validation — skip scenario generation overhead). */
   scenarioIds?: string[];
+  /** Scenario source filter: 'synthetic' (default), 'real-world', or 'all'. */
+  source?: 'synthetic' | 'real-world' | 'all';
 }
 
 // =============================================================================
