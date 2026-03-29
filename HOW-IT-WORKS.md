@@ -350,15 +350,19 @@ For each new domain, what changes is minimal:
 | Validation | **Yes** — new assertion logic |
 | Scenarios | **Yes** — new test cases |
 
-The interface for adding a new domain:
+Adding a new domain requires two small functions — not a heavyweight adapter:
 
 ```typescript
-interface DomainAdapter {
-  ground(config: AdapterConfig): Promise<GroundingContext>;
-  validate(predicate: Predicate, context: GroundingContext): Promise<ValidationResult>;
-  fingerprint(predicate: Predicate): string;
-}
+// Grounding provider — what exists in this system right now?
+// Gmail: contacts, labels, drafts. Discord: channels, roles. Terraform: resources.
+type GroundingProvider = () => Promise<GroundingContext>;
+
+// Evidence provider — did the claimed action actually happen?
+// "Agent said it sent the email" → check the Sent folder → { exists: true/false }
+type EvidenceProvider = (claim: string) => Promise<{ exists: boolean; fresh: boolean; detail: string }>;
 ```
+
+Each provider is ~50 lines wrapping a platform API. The gates, K5 constraints, G5 containment, and narrowing all work unchanged.
 
 ---
 

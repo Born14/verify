@@ -575,31 +575,151 @@ When external users run `govern()`, their failures can optionally feed back to i
 
 Tier 2 lets us see which shapes are failing in the wild without seeing anyone's code. Tier 3 gives us real-world scenarios directly from production agent failures. This is the network effect: "Your agent's first attempt is as smart as everyone's hundredth."
 
-### P7: Domain Expansion (Wedge Strategy)
+### P7: Domain Expansion (Provider Model + Action Gate)
 
-Verify currently gates code agents. The expansion follows a 3-tier wedge strategy — each tier proves the thesis to a wider audience:
+#### Drop the "Adapter" Framing
+
+The original plan called for per-domain adapters. Building the filesystem and infrastructure gates proved this was wrong — K5, G5, grounding, narrowing all worked unchanged. No new gates were written. New domains were added by:
+
+1. Adding a predicate type to the union
+2. Adding a validation function
+
+That's it. The word "adapter" implies heavyweight plugin architecture. What's actually needed is two small functions per domain.
+
+#### The Provider Interface (2 functions per domain)
+
+```typescript
+// Grounding provider — what exists in this system right now?
+type GroundingProvider = () => Promise<GroundingContext>;
+
+// Evidence provider — did the claimed action actually happen?
+type EvidenceProvider = (claim: string) => Promise<{ exists: boolean; fresh: boolean; detail: string }>;
+```
+
+Examples — all return the same shape:
+
+```typescript
+// Gmail
+ground: () => ({ contacts, labels, drafts, recentSent })
+evidence: (claim) => { check Sent folder via Gmail API → { exists, fresh, detail } }
+
+// Discord
+ground: () => ({ channels, roles, recentMessages })
+evidence: (claim) => { check channel messages via Discord API → { exists, fresh, detail } }
+
+// OpenClaw / any task system
+ground: () => ({ tasks, agents, schedules, lastRuns })
+evidence: (claim) => { check task status via API → { exists, fresh, detail } }
+
+// Outlook
+ground: () => ({ contacts, folders, rules, calendar })
+evidence: (claim) => { check calendar via Graph API → { exists, fresh, detail } }
+```
+
+Each provider is a ~50-line file wrapping a platform API. Ship as thin npm packages: `@sovereign-labs/verify-gmail`, `verify-discord`, etc.
+
+#### The Action Gate (1 new gate)
+
+Generalized version of the message gate's claim-evidence pipeline. Not limited to messages — any agent claiming it did something gets verified:
+
+```
+┌─────────────────────────────────────────────┐
+│              verify() pipeline              │
+│  Grounding → F9 → K5 → G5 → ... → Action   │
+│                                     Gate    │
+└──────────────────────┬──────────────────────┘
+                       │
+          ┌────────────┴────────────┐
+          │     Action Gate         │
+          │                         │
+          │  1. Parse claim         │
+          │  2. Call evidence()     │
+          │  3. Check freshness     │
+          │  4. Pass/fail           │
+          └────────────┬────────────┘
+                       │
+          ┌────────────┴────────────┐
+          │  Provider Registry      │
+          │                         │
+          │  gmail:    { ground, evidence }  ← npm package or user-supplied
+          │  discord:  { ground, evidence }  ← npm package or user-supplied
+          │  openclaw: { ground, evidence }  ← user writes 2 functions
+          │  custom:   { ground, evidence }  ← user writes 2 functions
+          └─────────────────────────┘
+```
+
+New predicate type:
+```typescript
+{ type: 'action_completed', system: 'gmail', check: 'message_in_sent', params: { to: 'team@...' } }
+{ type: 'action_completed', system: 'discord', check: 'message_in_channel', params: { channel: '#deploys' } }
+{ type: 'action_completed', system: 'openclaw', check: 'task_status', params: { task: 'write-report', status: 'done' } }
+```
+
+#### The Real-World Pain (Why This Matters)
+
+From a Reddit thread about OpenClaw: "The agent says it will do X, Y, and Z, and then nothing happens." One user spent 30 hours trying to fix agent autonomy. This is the claim-without-evidence problem.
+
+With verify:
+```typescript
+const result = await govern({
+  goal: 'Write the weekly report and update the task',
+  providers: {
+    ground: () => openclaw.getTasks(),
+    evidence: {
+      task_updated: (claim) => {
+        const task = openclaw.getTask(claim.taskId);
+        return { exists: task.modifiedAt > attemptStartTime, fresh: true };
+      },
+      file_created: (claim) => {
+        return { exists: fs.existsSync(claim.path), fresh: true };
+      }
+    }
+  }
+});
+// Agent claims "report written" but file doesn't exist → BLOCKED
+// Agent claims "task updated" but modifiedAt is stale → BLOCKED
+// K5 remembers the lying pattern → banned next session
+```
+
+No more "apologizing and repeating the same mistake." K5 bans the pattern permanently.
+
+#### Market Wedge (3 Tiers)
 
 **Tier 1: Land customers (prove the thesis)**
 
-| Domain | Why first | Wedge story | Predicates needed |
-|--------|----------|-------------|-------------------|
-| **Next.js / React SSR** | Largest agent-writing population (Cursor, Windsurf, Claude Code). Rich failure shapes: hydration, RSC boundaries, CSS modules vs Tailwind. | "Your Cursor agent broke SSR hydration and you didn't know until production. Verify catches it in 3 seconds." | Hydration consistency, bundle size, Core Web Vitals (CSS/HTML/HTTP already built) |
-| **Database Migrations** | Highest fear. Data loss, downtime, rollback nightmares. Scariest automation frontier. | "Your agent added a NOT NULL column without a default. Verify blocks it before production." | Referential integrity, data preservation (row count), index existence, constraint validation, reversibility proofs (schema predicates partially built) |
-| **API Contracts / OpenAPI** | #1 cause of integration failures. Every team with external consumers lives in fear. | "Your agent removed a field from the API response. 47 downstream consumers would have broken." | Schema compatibility (breaking vs non-breaking), response shape, status code contracts (HTTP predicates built) |
+| Domain | Wedge story | What's needed |
+|--------|-------------|---------------|
+| **Next.js / React SSR** | "Your Cursor agent broke SSR hydration. Verify catches it in 3 seconds." | Hydration predicate type + grounding provider |
+| **Database Migrations** | "Your agent added NOT NULL without a default. Verify blocks it." | Referential integrity predicates (schema predicates partially built) |
+| **API Contracts / OpenAPI** | "Your agent removed a response field. 47 consumers would have broken." | Schema compatibility predicates (HTTP predicates built) |
 
 **Tier 2: Prove universality (expand TAM)**
 
-| Domain | Wedge story | New predicates |
-|--------|-------------|----------------|
-| **Infrastructure-as-Code** (Terraform/Pulumi) | "Your agent opened port 22 to 0.0.0.0/0." | Security group rules, cost ceilings, blast radius (Alexei Gate already built) |
-| **Mobile** (React Native/Flutter) | "App store rejection takes days to fix, not minutes." | Navigation, platform rendering, permissions manifest |
-| **CI/CD Pipeline Config** | "A bad pipeline change breaks every deploy for every team." | Step ordering, secret exposure, cache invalidation |
+| Domain | Wedge story | What's needed |
+|--------|-------------|---------------|
+| **Infrastructure-as-Code** | "Your agent opened port 22 to 0.0.0.0/0." | Provider for Terraform state (Alexei Gate already built) |
+| **Task Systems** (OpenClaw, Linear, Jira) | "Your agent said it updated the task. It didn't." | `action_completed` predicate + task API provider |
+| **Communication** (Gmail, Slack, Discord) | "Your agent sent the email to the wrong person." | `action_completed` predicate + messaging API provider |
 
 **Tier 3: Universal agent governance (the vision sale)**
-- **Document/Content agents** — fact-checking, citation, PII detection
-- **Communication agents** (Slack, email, tickets) — recipient validation, content policy, escalation paths
+- **Document agents** — fact-checking, citation, PII detection
+- **Mobile agents** — app store rejection prevention
+- **CI/CD agents** — pipeline config verification
 
-Each domain needs: grounding adapter, predicate types, validation logic, scenarios. Gate sequence and K5/G5 mechanics are universal. Design the adapter interface against the DB migration case (most rigorous type requirements) — if it handles referential integrity proofs, it handles anything.
+#### What Changes Per Domain
+
+| Component | Changes? |
+|-----------|----------|
+| Gate sequence (25 gates + action gate) | **No** |
+| K5 constraints | **No** |
+| G5 containment | **No** |
+| Narrowing | **No** |
+| Grounding provider | **Yes** — 1 function per domain (~50 LOC) |
+| Evidence provider | **Yes** — 1 function per domain (~50 LOC) |
+| Predicate types | **Yes** — add to union + validator |
+| Scenarios | **Yes** — new test cases |
+
+The gates are the architecture. The predicates are the extension model. The providers are just I/O plumbing.
 
 ### The Encoding Gate (Scenario Promotion Pipeline)
 When the curriculum agent or chaos engine discovers a verify bug in a live session, the fault needs to be promoted to a permanent scenario. The encoding pipeline prevents taxonomy pollution:
