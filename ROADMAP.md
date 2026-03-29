@@ -439,14 +439,31 @@ When external users run `govern()`, their failures can optionally feed back to i
 
 Tier 2 lets us see which shapes are failing in the wild without seeing anyone's code. Tier 3 gives us real-world scenarios directly from production agent failures. This is the network effect: "Your agent's first attempt is as smart as everyone's hundredth."
 
-### P7: Domain Expansion
-Verify currently gates code agents. The DomainAdapter interface (see HOW-IT-WORKS.md) allows expansion to:
-- **Communication agents** (Slack, email) — message predicates, destination governance
-- **Data pipeline agents** (Airflow, dbt) — schema predicates, row count assertions
-- **Infrastructure agents** (Terraform, K8s) — state file verification (already built: The Alexei Gate)
-- **Browser agents** (computer use) — DOM state, visual verification (gates exist, scenarios thin)
+### P7: Domain Expansion (Wedge Strategy)
 
-Each domain needs: grounding adapter, predicate types, validation logic, scenarios. Gate sequence and K5/G5 mechanics are universal.
+Verify currently gates code agents. The expansion follows a 3-tier wedge strategy — each tier proves the thesis to a wider audience:
+
+**Tier 1: Land customers (prove the thesis)**
+
+| Domain | Why first | Wedge story | Predicates needed |
+|--------|----------|-------------|-------------------|
+| **Next.js / React SSR** | Largest agent-writing population (Cursor, Windsurf, Claude Code). Rich failure shapes: hydration, RSC boundaries, CSS modules vs Tailwind. | "Your Cursor agent broke SSR hydration and you didn't know until production. Verify catches it in 3 seconds." | Hydration consistency, bundle size, Core Web Vitals (CSS/HTML/HTTP already built) |
+| **Database Migrations** | Highest fear. Data loss, downtime, rollback nightmares. Scariest automation frontier. | "Your agent added a NOT NULL column without a default. Verify blocks it before production." | Referential integrity, data preservation (row count), index existence, constraint validation, reversibility proofs (schema predicates partially built) |
+| **API Contracts / OpenAPI** | #1 cause of integration failures. Every team with external consumers lives in fear. | "Your agent removed a field from the API response. 47 downstream consumers would have broken." | Schema compatibility (breaking vs non-breaking), response shape, status code contracts (HTTP predicates built) |
+
+**Tier 2: Prove universality (expand TAM)**
+
+| Domain | Wedge story | New predicates |
+|--------|-------------|----------------|
+| **Infrastructure-as-Code** (Terraform/Pulumi) | "Your agent opened port 22 to 0.0.0.0/0." | Security group rules, cost ceilings, blast radius (Alexei Gate already built) |
+| **Mobile** (React Native/Flutter) | "App store rejection takes days to fix, not minutes." | Navigation, platform rendering, permissions manifest |
+| **CI/CD Pipeline Config** | "A bad pipeline change breaks every deploy for every team." | Step ordering, secret exposure, cache invalidation |
+
+**Tier 3: Universal agent governance (the vision sale)**
+- **Document/Content agents** — fact-checking, citation, PII detection
+- **Communication agents** (Slack, email, tickets) — recipient validation, content policy, escalation paths
+
+Each domain needs: grounding adapter, predicate types, validation logic, scenarios. Gate sequence and K5/G5 mechanics are universal. Design the adapter interface against the DB migration case (most rigorous type requirements) — if it handles referential integrity proofs, it handles anything.
 
 ### The Encoding Gate (Scenario Promotion Pipeline)
 When the curriculum agent or chaos engine discovers a verify bug in a live session, the fault needs to be promoted to a permanent scenario. The encoding pipeline prevents taxonomy pollution:
