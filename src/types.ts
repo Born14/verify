@@ -34,7 +34,8 @@ export interface Predicate {
   type: 'css' | 'html' | 'content' | 'db' | 'http' | 'http_sequence'
     | 'filesystem_exists' | 'filesystem_absent' | 'filesystem_unchanged' | 'filesystem_count'
     | 'infra_resource' | 'infra_attribute' | 'infra_manifest'
-    | 'serialization' | 'config' | 'security' | 'a11y' | 'performance';
+    | 'serialization' | 'config' | 'security' | 'a11y' | 'performance'
+    | 'hallucination';
 
   /** CSS selector (for css/html types) */
   selector?: string;
@@ -128,6 +129,13 @@ export interface Predicate {
     | 'unminified_assets' | 'render_blocking' | 'dom_depth' | 'cache_headers' | 'duplicate_deps';
   /** Threshold value (ms for timing, bytes for size) */
   threshold?: number;
+
+  // --- Hallucination predicate fields ---
+  /** What the agent asserts (e.g., "users table has phone column") */
+  claim?: string;
+  // source field already exists above (reused for hallucination: 'schema' | 'routes' | 'css' | file path)
+  /** Expected: is this claim grounded in reality or fabricated? */
+  halAssert?: 'grounded' | 'fabricated';
 }
 
 /**
@@ -271,7 +279,7 @@ export interface GateResult {
   gate: 'grounding' | 'F9' | 'K5' | 'G5' | 'staging' | 'browser' | 'http' | 'invariants' | 'vision' | 'triangulation'
     | 'infrastructure' | 'serialization' | 'config' | 'security' | 'a11y' | 'performance'
     | 'filesystem' | 'access' | 'capacity' | 'contention' | 'state' | 'temporal' | 'propagation'
-    | 'observation' | 'goal' | 'content';
+    | 'observation' | 'goal' | 'content' | 'hallucination';
   /** Did this gate pass? */
   passed: boolean;
   /** Human-readable detail */

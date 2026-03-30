@@ -1536,33 +1536,33 @@ Failures where the agent fabricates claims not grounded in evidence. This is G5 
 
 | # | Failure Shape | Status | Notes |
 |---|---|---|---|
-| HAL-01 | Invented statistic — number not in source material | no coverage | Agent summarizes document, includes "73% of users..." when no such number exists |
-| HAL-02 | Invented entity — person/org/product not in source | no coverage | Agent references a company or tool that doesn't exist in the context |
-| HAL-03 | Invented API parameter — field not in schema | no coverage | Agent generates API call with `sortBy` parameter that doesn't exist |
-| HAL-04 | Invented file/function — reference to non-existent code | no coverage | Agent suggests editing `utils/helpers.ts` which doesn't exist in the project |
-| HAL-05 | Conflated sources — attributes from source A applied to source B | no coverage | Agent merges facts from two different documents into one incorrect statement |
+| HAL-01 | Invented statistic — number not in source material | generator | `stage-hallucination.ts` — content source check for fabricated numbers |
+| HAL-02 | Invented entity — person/org/product not in source | generator | `stage-hallucination.ts` — content source check for non-existent entities |
+| HAL-03 | Invented API parameter — field not in schema | generator | `stage-hallucination.ts` — file content check for fabricated parameters |
+| HAL-04 | Invented file/function — reference to non-existent code | generator | `stage-hallucination.ts` — file existence check |
+| HAL-05 | Conflated sources — attributes from source A applied to source B | generator | `stage-hallucination.ts` — cross-file content verification |
 
 ### Schema/Structure Fabrication
 
 | # | Failure Shape | Status | Notes |
 |---|---|---|---|
-| HAL-06 | Wrong column type — agent claims VARCHAR is INTEGER | no coverage | Agent "knows" the schema but gets types wrong |
-| HAL-07 | Wrong table relationship — fabricated foreign key | no coverage | Agent claims posts.author_id references users.id when no such FK exists |
-| HAL-08 | Wrong API endpoint — fabricated route | no coverage | Agent generates `POST /api/v2/users` when only `GET /api/users` exists |
-| HAL-09 | Wrong config key — fabricated setting | no coverage | Agent references `settings.maxRetries` when config has no such key |
-| HAL-10 | Wrong CSS selector — fabricated class/id | no coverage | Agent targets `.card-header` when the class is `.card-title` |
+| HAL-06 | Wrong column type — agent claims VARCHAR is INTEGER | generator | `stage-hallucination.ts` — schema type verification via `parseInitSQL` |
+| HAL-07 | Wrong table relationship — fabricated foreign key | generator | `stage-hallucination.ts` — schema column existence check |
+| HAL-08 | Wrong API endpoint — fabricated route | generator | `stage-hallucination.ts` — route extraction verification |
+| HAL-09 | Wrong config key — fabricated setting | generator | `stage-hallucination.ts` — config.json key path resolution |
+| HAL-10 | Wrong CSS selector — fabricated class/id | generator | `stage-hallucination.ts` — CSS selector existence check |
 
 ### Reasoning Fabrication
 
 | # | Failure Shape | Status | Notes |
 |---|---|---|---|
-| HAL-11 | False causal claim — "X causes Y" without evidence | no coverage | Agent claims "this change will fix the 502 error" without evidence linking them |
-| HAL-12 | False temporal claim — wrong ordering of events | no coverage | Agent says "the migration ran before the deploy" when logs show opposite |
-| HAL-13 | False absence claim — "X doesn't exist" when it does | no coverage | Agent says "there's no error handling" when try/catch exists |
-| HAL-14 | Confabulated error message — fabricated log output | no coverage | Agent quotes an error message that doesn't appear in any log |
-| HAL-15 | Plausible but wrong code — syntactically valid, semantically incorrect | no coverage | Agent generates working code that does the wrong thing (passes F9, fails verification) |
+| HAL-11 | False causal claim — "X causes Y" without evidence | generator | `stage-hallucination.ts` — file content check for fabricated causal elements |
+| HAL-12 | False temporal claim — wrong ordering of events | generator | `stage-hallucination.ts` — file content check for fabricated temporal references |
+| HAL-13 | False absence claim — "X doesn't exist" when it does | generator | `stage-hallucination.ts` — file content check for presence/absence |
+| HAL-14 | Confabulated error message — fabricated log output | generator | `stage-hallucination.ts` — content-wide search for fabricated messages |
+| HAL-15 | Plausible but wrong code — syntactically valid, semantically incorrect | generator | `stage-hallucination.ts` — schema column verification |
 
-**Hallucination total: 15 shapes. Generator coverage: 0. No coverage: 15.**
+**Hallucination total: 15 shapes. Generator coverage: 15 (100%). No coverage: 0.**
 
 ---
 
@@ -1670,7 +1670,7 @@ Failures where cumulative resource consumption across a workflow exceeds declare
 ### What remains
 
 - **Browser (35 shapes)** — requires Playwright + live DOM. Infrastructure exists, scenarios need writing.
-- **Hallucination (15 shapes)** — gate not implemented yet. Shapes defined, waiting for Priority 3.
+- **Hallucination (15 shapes)** — gate implemented (P2). 30 scenarios covering all 15 shapes. 47 unit tests.
 - **Performance (1 shape)** — PERF-01 (response time) deferred, needs live server.
 
 ### Domain architecture
@@ -1694,13 +1694,13 @@ The 26 domains organize into five layers:
 
 ### Priority tiers (updated March 29, 2026)
 
-**All Tier 1 and Tier 2 shapes: DONE.** 596/647 shapes covered (92%).
+**All Tier 1 and Tier 2 shapes: DONE.** 611/647 shapes covered (94%).
 
 **Remaining work (51 shapes):**
 
 **Browser (35 shapes, BR-01 through BR-38)** — requires Playwright + live DOM. Gate infrastructure exists. Scenarios need writing against real browser runtime.
 
-**Hallucination (15 shapes, HAL-01 through HAL-15)** — gate not implemented yet. Shapes defined in taxonomy. This is Priority 3 (new predicate types) — build the gate, then write scenarios.
+**Hallucination (15 shapes, HAL-01 through HAL-15)** — gate implemented (P2, March 2026). 30 scenarios (2 per shape: grounded + fabricated). 47 unit tests. Deterministic — no LLM in the pipeline.
 
 **Performance (1 shape, PERF-01)** — response time threshold. Deferred — needs live server measurement.
 
