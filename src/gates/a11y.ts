@@ -160,8 +160,10 @@ function checkHeadingHierarchy(files: Array<{ relativePath: string; content: str
 
     const headings: number[] = [];
     let match;
+    // Strip HTML comments to avoid matching headings inside <!-- ... -->
+    const contentWithoutComments = file.content.replace(/<!--[\s\S]*?-->/g, '');
     headingRegex.lastIndex = 0;
-    while ((match = headingRegex.exec(file.content)) !== null) {
+    while ((match = headingRegex.exec(contentWithoutComments)) !== null) {
       headings.push(parseInt(match[1], 10));
     }
 

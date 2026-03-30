@@ -17,8 +17,9 @@ Verify is a 25-gate verification pipeline for AI agent actions. It works. The en
 |------|--------|-------|
 | Unit tests (`bun test`) | **341 pass, 0 fail**, 13 skip | 21,342 assertions. 12.9s. Skips are Docker/Gemini-dependent. |
 | Real-world self-test (`--source=real-world`) | **708 clean, 0 bugs** | 90.5s. All 8 sources fetched and harvested. |
-| Synthetic self-test (post-P0) | **5,253 scenarios, 5,248 clean, 5 dirty** | 24 min. 1 skipped (>500KB edit). Dirty scenarios were capacity gate false positives — fixed. |
+| Synthetic self-test (post-P1.5) | **5,264 scenarios, 5,263 clean, 1 dirty** | ~27 min. 1 dirty is IB-01 gate timing (542s, `unexpected` severity — not a gate bug). |
 | Improve loop (P1) | **ACCEPTED** | Full cycle: baseline → diagnose → generate → validate → holdout → accepted. Score +0.8, 0 regressions. |
+| Gate audit (P1.5) | **3 bugs found, 3 fixed** | audit-003 (secrets false positive), audit-004 (a11y comment), audit-009 (multi-line SQL). |
 
 **Verdict:** All systems operational. Gates healthy. Improve loop acceptance path proven.
 
@@ -99,7 +100,7 @@ This evolved into **pattern-based edits**: the LLM says `{ pattern: "eval_disabl
 
 ---
 
-### P1.5: Gate Audit — 10 Targeted Bug Scenarios
+### P1.5: Gate Audit — 10 Targeted Bug Scenarios — DONE (March 29-30)
 **Effort:** 2-4 hours
 **Unblocks:** Real gate improvements via the improve loop
 
@@ -148,6 +149,23 @@ Run, collect dirty results, feed to improve loop. Each dirty scenario = a gate f
 - Dirty count reported (expected: several of the 10 should be dirty)
 - Dirty scenarios fed to improve loop or manually fixed
 - Gates measurably stronger
+
+#### Result
+
+10 scenarios written in `fixtures/scenarios/gate-audit-staged.json`. Required `intent` field (`false_negative`/`false_positive`) to enable invariant checking — without it, scenarios appeared clean regardless of gate behavior.
+
+**Baseline:** 3 of 10 scenarios dirty (audit-003, audit-004, audit-009). 7 scenarios passed clean — those gate behaviors aren't actually broken or are already handled by other mechanisms.
+
+**Improve loop attempt:** LLM correctly diagnosed security.ts bugs. Generated fix: flatten content for multi-line SQL + improve comment detection. Best candidate scored +1.7 (2 improvements, 0 regressions). But holdout check timed out (120s for 1552 scenarios) — treated all 1552 as regressions, rejecting the fix. Fixed holdout timeout to scale with scenario count.
+
+**Manual fixes applied (all 3 bugs):**
+1. **audit-003** (security/secrets): Added test fixture detection — skip lines with `// test`, `test-fixture`, or values prefixed with `test-` in `scanSecrets()`.
+2. **audit-004** (a11y/headings): Strip HTML comments (`<!--...-->`) before heading hierarchy scan in `checkHeadingHierarchy()`.
+3. **audit-009** (security/SQL injection): Added multi-line patterns to `scanSQLInjection()` — scans full file content for `query(\n  \`...${}\`)` patterns alongside existing per-line scan.
+
+**Verification:** All 341 unit tests pass (0 fail, 21,342 assertions). All 3 audit scenarios pass with fixes applied.
+
+**Infrastructure fix:** `runHoldout()` timeout now scales: `Math.max(120_000, holdoutSize * 1000)` instead of fixed 120s. Prevents false overfitting rejection for large holdout sets.
 
 ---
 

@@ -103,6 +103,11 @@ function scanSQLInjection(files: Array<{ relativePath: string; content: string }
     { regex: /(?:query|execute|run)\s*\(\s*['"].*\+/g, detail: 'String concatenation in SQL query (potential injection)' },
     { regex: /(?:SELECT|INSERT|UPDATE|DELETE|DROP)\s.*\+\s*(?:req\.|params\.|body\.|query\.)/gi, detail: 'User input concatenated into SQL' },
   ];
+  // Multi-line patterns: query call on one line, template literal with interpolation on next
+  const multiLinePatterns = [
+    { regex: /(?:query|execute|run)\s*\(\s*\n\s*`[^`]*\$\{/g, detail: 'Template literal in SQL query (potential injection)' },
+    { regex: /(?:query|execute|run)\s*\(\s*\n\s*['"][^'"]*\+/g, detail: 'String concatenation in SQL query (potential injection)' },
+  ];
 
   for (const file of files) {
     const lines = file.content.split('\n');
@@ -112,6 +117,15 @@ function scanSQLInjection(files: Array<{ relativePath: string; content: string }
         if (regex.test(lines[i])) {
           findings.push({ check: 'sql_injection', file: file.relativePath, line: i + 1, detail, severity: 'high' });
         }
+      }
+    }
+    // Multi-line scan against full content
+    for (const { regex, detail } of multiLinePatterns) {
+      regex.lastIndex = 0;
+      let match;
+      while ((match = regex.exec(file.content)) !== null) {
+        const line = file.content.substring(0, match.index).split('\n').length;
+        findings.push({ check: 'sql_injection', file: file.relativePath, line, detail, severity: 'high' });
       }
     }
   }
@@ -139,6 +153,9 @@ function scanSecrets(files: Array<{ relativePath: string; content: string }>): S
       // Skip comments
       const trimmed = lines[i].trim();
       if (trimmed.startsWith('//') || trimmed.startsWith('#') || trimmed.startsWith('*')) continue;
+      // Skip test fixtures — values prefixed with 'test' or lines with test/fixture comments
+      if (/\/\/\s*test|\/\*\s*test|test.?fixture/i.test(lines[i])) continue;
+      if (/[:=]\s*['"]test[-_]/i.test(lines[i])) continue;
       for (const { regex, detail } of patterns) {
         regex.lastIndex = 0;
         if (regex.test(lines[i])) {

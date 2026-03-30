@@ -239,11 +239,13 @@ export async function runHoldout(
     overlayEdits(edits, tempDir);
 
     // Only run holdout scenarios in subprocess (not full corpus)
+    // Scale timeout with holdout size — baseline runs ~3 scenarios/sec
     const holdoutIds = new Set(holdout.map(e => e.id));
     const holdoutRunConfig: RunConfig = { ...runConfig, scenarioIds: [...holdoutIds] };
-    let subResult = await runSubprocess(tempDir, packageRoot, holdoutRunConfig);
+    const holdoutTimeoutMs = Math.max(120_000, holdoutSize * 1000);
+    let subResult = await runSubprocess(tempDir, packageRoot, holdoutRunConfig, holdoutTimeoutMs);
     if (subResult.timedOut) {
-      const retryResult = await runSubprocess(tempDir, packageRoot, holdoutRunConfig, 240_000);
+      const retryResult = await runSubprocess(tempDir, packageRoot, holdoutRunConfig, holdoutTimeoutMs * 2);
       if (retryResult.timedOut) {
         // Timeout is suspicious — treat as regression, not clean
         return { verdict: 'regression', holdoutSize, regressionCount: holdoutSize, confidence };

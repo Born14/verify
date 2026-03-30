@@ -17,6 +17,7 @@
       }
     ],
     "expectedSuccess": true,
+    "intent": "false_negative",
     "tags": [
       "gate-audit",
       "grounding",
@@ -43,6 +44,7 @@
       }
     ],
     "expectedSuccess": true,
+    "intent": "false_negative",
     "tags": [
       "gate-audit",
       "grounding",
@@ -70,6 +72,7 @@
       }
     ],
     "expectedSuccess": true,
+    "intent": "false_negative",
     "tags": [
       "gate-audit",
       "grounding",
@@ -97,6 +100,7 @@
       }
     ],
     "expectedSuccess": true,
+    "intent": "false_negative",
     "tags": [
       "gate-audit",
       "security",
@@ -124,6 +128,7 @@
       }
     ],
     "expectedSuccess": true,
+    "intent": "false_negative",
     "tags": [
       "gate-audit",
       "a11y",
@@ -151,6 +156,7 @@
       }
     ],
     "expectedSuccess": true,
+    "intent": "false_negative",
     "tags": [
       "gate-audit",
       "propagation",
@@ -177,6 +183,7 @@
       }
     ],
     "expectedSuccess": true,
+    "intent": "false_negative",
     "tags": [
       "gate-audit",
       "state",
@@ -203,6 +210,7 @@
       }
     ],
     "expectedSuccess": true,
+    "intent": "false_negative",
     "tags": [
       "gate-audit",
       "temporal",
@@ -230,6 +238,7 @@
       }
     ],
     "expectedSuccess": false,
+    "intent": "false_positive",
     "tags": [
       "gate-audit",
       "containment",
@@ -257,6 +266,7 @@
       }
     ],
     "expectedSuccess": true,
+    "intent": "false_negative",
     "tags": [
       "gate-audit",
       "security",
@@ -284,6 +294,7 @@
       }
     ],
     "expectedSuccess": true,
+    "intent": "false_negative",
     "tags": [
       "gate-audit",
       "grounding",
