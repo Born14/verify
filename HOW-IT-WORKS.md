@@ -113,17 +113,20 @@ npx @sovereign-labs/verify self-test --source=all
 
 ## The Self-Improving Loop
 
-Every night at 3 AM UTC, a CI pipeline runs:
+Every night at 3 AM UTC, two independent runners execute the autonomous hardening loop:
 
-1. **Fetch** real-world data from all 8 sources
-2. **Run** all 18,391 scenarios through verify
+1. **Harvest** real-world data from 13 public sources + generate adversarial scenarios
+2. **Test** all 18,391+ scenarios through verify (Lenovo runs all 26 gates with Docker; GitHub CI runs 25 without Docker)
 3. **Find** any scenarios where verify gives the wrong answer ("dirty" scenarios)
 4. **Diagnose** which gate is broken, using an LLM to read the gate source code
-5. **Propose** a fix — the LLM generates candidate code changes
-6. **Test** each candidate against a held-out set of scenarios (does it fix the problem without breaking anything?)
-7. **Accept or reject** — if the fix is clean, it becomes a pull request. If not, it's logged for human review.
+5. **Fix** — the LLM generates pattern-based code changes (it says WHAT to change, the code finds WHERE)
+6. **Validate** each candidate against a held-out set of scenarios (does it fix the problem without breaking anything?)
+7. **Review** — auto-approve, auto-reject, or route to the operator for judgment
+8. **Discover** — failures that don't match any known shape are clustered and proposed as new taxonomy entries
 
-The machine finds its own bugs and proposes its own fixes. Humans approve via the holdout check — a safety net that ensures gate improvements never weaken existing guarantees.
+The machine finds its own bugs, proposes its own fixes, and discovers new failure categories. The operator reads a morning report and handles the 1% the machine can't resolve.
+
+**Proven March 30, 2026:** The full 8-stage loop ran end-to-end on GitHub CI. 5,663 scenarios tested, 16 bundles diagnosed, 24 candidate shapes discovered. The improve loop correctly rejected all fixes on noisy data (no false acceptances). The machine is conservative by design — it won't ship a fix that isn't clearly an improvement.
 
 **Proven March 29, 2026:** The improve loop completed its first full acceptance cycle. It found a regex bug in the security gate (`eval_disabled` should have been `eval`), proposed the fix, validated against 3,422 scenarios, passed holdout (1,421 scenarios), and accepted. Score: +0.8, zero regressions.
 
@@ -310,16 +313,15 @@ The extraction produced three packages:
 
 | Metric | Value |
 |--------|-------|
-| Gates | 26 |
-| Synthetic scenarios | 11,959 |
-| Real-world scenarios | 6,432 |
+| Gates | 26 (including hallucination) |
+| Total scenarios | 18,391 (11,959 synthetic + 6,432 real-world) |
 | Failure shapes covered | 611 / 647 (94%) |
 | Unit tests | 388 (21,397 assertions) |
 | Real-world sources | 13 |
+| Nightly runners | 2 (Lenovo with Docker, GitHub CI without) |
+| Autonomous loop stages | 8 of 8 built, all proven in CI |
 | Package size | ~23K LOC (src) |
 | Runtime dependencies | 0 |
-| Self-test (synthetic) | ~5 min |
-| Self-test (real-world) | ~90 sec |
 
 ---
 

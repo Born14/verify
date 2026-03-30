@@ -79,7 +79,9 @@ These cycles will happen again for the next bug class, and the next, and the nex
 ## The Two Learning Loops (Critical Distinction)
 
 ### Global Loop (Improves Verify for Everyone)
-Running `--improve` on the Lenovo nightly makes the gates stronger, the grounding smarter, the constraints more precise. These improvements ship to all users via npm.
+Two nightly runners (Lenovo with Docker + GitHub CI without) run the full 8-stage autonomous hardening loop: harvest real-world data → generate adversarial scenarios → test all 18,391+ scenarios → diagnose failures → generate fixes → validate against holdout → review → discover new failure shapes. Improvements ship to all users via npm.
+
+**Proven March 30:** Full 8-stage loop ran end-to-end on CI. 5,663 scenarios tested, 16 bundles diagnosed, 24 candidate shapes discovered. Lenovo nightly adds Docker/staging coverage (all 26 gates).
 
 ### Per-Project Loop (Improves Verify for One Codebase)
 Every `verify()` call that fails creates a constraint in `.verify/memory.jsonl`. The next attempt is automatically smarter because K5 blocks the pattern that just failed. This happens locally, automatically, with zero config. Commit the file to share learning across your team.

@@ -272,9 +272,9 @@ bun run self-test --families=G  # New hallucination scenarios pass
 
 ---
 
-### P3: npm 0.6.0 Bump
-**Effort:** 1-2 hours
-**Unblocks:** Market signal, public artifact
+### P3: npm 0.6.0 Bump + Convergence Demo
+**Effort:** 1-2 days (bump: 1-2 hours, demo: 1 day)
+**Unblocks:** Market signal, public artifact, the "show don't tell" moment
 
 #### Changelog for 0.6.0
 - Real-world harvest system (6 harvesters, 8 public sources, 908+ scenarios)
@@ -296,10 +296,59 @@ bun run self-test --families=G  # New hallucination scenarios pass
 7. `npm publish --access public` from `/tmp/verify-push/`
 8. Update memory file `verify-package.md` with new version
 
+#### The Convergence Demo
+
+**The insight:** Verify's fun isn't in the gates. It's in the convergence. K5 narrowing the search space in real time. The agent getting smarter with each attempt. That's a performance, not a security checkpoint.
+
+**The pitch:** "We're the only system where the agent gets smarter with each attempt AND the system that checks it gets smarter every night."
+
+**`npx @sovereign-labs/verify demo`**
+
+Ships with the npm package. Runs a pre-built `govern()` loop against the demo-app fixture. The agent has a goal ("add a profile section to the about page") but deliberately starts with bad approaches. The terminal shows the convergence story:
+
+```
+═══ Verify Demo: Watch an Agent Learn ═══
+
+Goal: "Add a profile section to the about page"
+
+Attempt 1:
+  Agent edits server.js — uses selector .profile-nav
+  Running 26 verification gates...
+  ✗ That CSS selector doesn't exist in your code.
+    Available selectors: .hero, .card, .nav-link, .team-list, .badge
+  → Remembered: .profile-nav is banned. Won't try it again.
+
+Attempt 2:
+  Agent edits server.js — uses .card, adds profile HTML
+  Running 26 verification gates...
+  ✗ Your edit changed 3 sections but only declared changes to 1.
+  → Remembered: scope must match declaration.
+
+Attempt 3:
+  Agent edits server.js — adds profile section after .card, declares correctly
+  Running 26 verification gates...
+  ✓ All 26 gates passed. Converged in 3 attempts.
+
+The goal wasn't given to verify. The agent just stopped repeating what failed.
+```
+
+**Implementation:** `src/cli.ts` case 'demo'. Pre-built scenario with 3 `govern()` iterations. Uses the real pipeline — real gates, real K5, real grounding. ~150 LOC. The edits and predicates are crafted to fail at grounding (attempt 1), containment (attempt 2), and pass (attempt 3). The terminal output is the product — colorized, human-readable, tells a story.
+
+**The narrative beats:**
+1. "No instructions given to verify about what's correct"
+2. "Watch the agent make the same mistakes every agent makes"
+3. "Each failure makes the next attempt smarter"
+4. "The gates that caught those mistakes? They improve themselves every night."
+
+**Why this demo sells:** The customer sees their pain (agent uses wrong selector, changes too much, ships broken code) and verify's answer (specific feedback, memory, convergence). 30 seconds from install to understanding. The agent is the star. Verify is the coach.
+
+**What the customer shares:** Not "look at this 26-gate pipeline." They share: "watch what happens when an agent has to prove its work."
+
 #### Verification
 ```bash
 npm info @sovereign-labs/verify version  # Should show 0.6.0
 npx @sovereign-labs/verify self-test     # Should work for any consumer
+npx @sovereign-labs/verify demo          # Should show the convergence story
 ```
 
 ---
@@ -847,109 +896,77 @@ This is what puts the operator in the tower. Every piece below is either built, 
 ### Stage-by-Stage Status
 
 #### Stage 1: HARVEST — Fetch real-world data
-**Status: BUILT**
+**Status: BUILT + RUNNING**
 
-`scripts/supply/harvest-real.ts` fetches from 8 public sources (SchemaPile, MDN, Can I Use, PostCSS, Mustache, JSON Schema Test Suite, PayloadsAllTheThings, Heroku). 24h cache. 908 scenarios from real data.
+`scripts/supply/harvest-real.ts` fetches from 13 public sources. 24h cache. 6,432 real-world scenarios. Fuzz generates 50 adversarial variants per run.
 
-Already in nightly CI workflow. No work needed.
+Runs on both Lenovo nightly (systemd timer) and GitHub CI (Actions workflow).
 
 #### Stage 2: PROBE — Automated gate audit
-**Status: BUILT (March 30)**
+**Status: BUILT + RUNNING**
 
-Today: a human (Claude) reads gate source code and writes targeted scenarios. 3/11 hit rate (270x more efficient than brute force).
+Curriculum agent (`scripts/harvest/curriculum-agent.ts --adversarial`) reads gate source code, generates adversarial inputs via Gemini, validates them deterministically. Wired into both nightly runners with 5-minute timeout.
 
-Autonomous version: the curriculum agent (P5 Phase 2b) reads each gate file, generates adversarial inputs designed to break it, validates them (Phase 3 structural checks), writes `*-adversarial-staged.json`.
-
-**What's needed:**
-- P5 curriculum agent built (currently scoped, not implemented)
-- Adversarial mode reads gate source code, not just taxonomy shapes
-- Phase 3 validation prevents garbage scenarios
-- Runs nightly after harvest, before self-test
-
-**Key insight from today:** The LLM doesn't need to find the bug. It needs to generate inputs that MIGHT trigger a bug. The self-test determines if they actually do. Cast a wide net, let the test harness filter.
+Generated 316 scenarios on first CI run. Key insight: the LLM doesn't need to find the bug — it generates inputs that MIGHT trigger one. The self-test determines if they actually do.
 
 #### Stage 3: TEST — Run all scenarios
-**Status: BUILT**
+**Status: BUILT + RUNNING**
 
-`bun run self-test --source=all` runs synthetic + real-world + adversarial. 5,264+ scenarios. Produces ledger with clean/dirty per scenario.
+Two runners with different capabilities:
+- **Lenovo** (systemd): `--live --source=all` — Docker available, all 26 gates including staging. ~5,663 scenarios.
+- **GitHub CI** (Actions): pure tier — no Docker, staging gate skipped. 25 of 26 gates.
 
-Already in nightly CI. Runner crash fixed (P0). Intent field backfilled.
+Runner crash fixed (P0). Intent field backfilled on 4,090 scenarios. Fuzz intent inheritance bug fixed.
 
 #### Stage 4: DIAGNOSE — Bundle and identify root cause
-**Status: BUILT**
+**Status: BUILT + PROVEN**
 
-`improve.ts` steps 1-4: baseline → bundle by invariant/gate → LLM diagnosis. Works correctly — proven on P1 (eval regression) and P1.5 (gate audit bugs).
+`improve.ts` bundles dirty scenarios by root cause, Gemini diagnoses each bundle. Proven on: P1 eval regression (correct diagnosis), P1.5 gate audit bugs (3 real bugs found), and two full CI nightly runs (16 bundles processed each).
 
-**Known gap:** Bundling groups by invariant name, not gate. audit-004 (a11y) got bundled with security bugs. Fix: inspect `gatesFailed` to split bundles by actual gate.
+**Known gap:** Bundling groups by invariant name, not gate. A11y bug got bundled with security bugs. Future fix: inspect `gatesFailed` to split bundles by actual gate.
 
 #### Stage 5: FIX — Generate pattern-based fix candidates
-**Status: BUILT**
+**Status: BUILT + PROVEN**
 
-Pattern-based edits: LLM says `{ pattern: "eval_disabled", replacement: "eval" }`, code greps the file, finds all occurrences, builds grounded search/replace. Proven: +1.8 score, 2 improvements, 0 regressions.
-
-Enhanced diagnosis prompts include scenario descriptions + gate failure details + source code view.
+Pattern-based edits: LLM says `{ pattern: "eval_disabled", replacement: "eval" }`, code greps the file, finds all occurrences, builds grounded search/replace. Proven: +1.8 score, 2 improvements, 0 regressions. Accepted by holdout.
 
 #### Stage 6: VALIDATE — Subprocess test + holdout
-**Status: BUILT (with recent fix)**
+**Status: BUILT + PROVEN**
 
-Subprocess validation runs candidate fix against dirty + sample of clean scenarios. Holdout check runs winner against held-out set. Timeout now scales with scenario count (was hardcoded at 120s, broke on 1,552 scenarios).
+Subprocess validation + holdout check. Timeout scales with scenario count. Scoring: `improvements - (regressions × 10) - (lines × 0.1)`. Winner must score > 0 with 0 regressions.
 
-Scoring: `improvements - (regressions × 10) - (lines × 0.1)`. Winner must score > 0 with 0 regressions.
+Proven: accepted the P1 eval fix. Correctly rejected all 16 bundles on noisy nightly data (no false acceptances).
 
 #### Stage 7: REVIEW — Auto-approve / reject / route
-**Status: BUILT (March 30)**
+**Status: BUILT (March 30) — `scripts/harness/review-fix.ts`**
 
-Today: `⚠ Accepted edits are NOT auto-applied. Review and apply manually.`
+Deterministic safety checks (bounded surface: only gate files, frozen files blocked, score > 0, 0 regressions) + optional LLM review. Three dispositions: approve → create PR, reject → log reason, route → create GitHub issue.
 
-Autonomous version: a reviewer step after holdout acceptance:
+Wired into CI workflow after validate step. Correctly skipped on both nightly runs (nothing accepted to review). **Unproven on a real acceptance in CI** — proven locally on P1.
 
-```
-Reviewer prompt:
-  You are the verify code reviewer. An automated improve loop proposes this change.
-
-  1. Does this fix make the gate MORE correct?
-  2. Does it make verify a STRONGER commercial product?
-  3. Does it introduce any risk?
-
-  If all three pass: APPROVE (auto-merge)
-  If #3 fails: REJECT with reason
-  If #1 or #2 is unclear: ROUTE to operator with one-paragraph summary
-```
-
-Three dispositions:
-- **Auto-merge** → `git apply`, commit with `[auto-fix]` prefix, push
-- **Auto-reject** → log reason, move to next bundle
-- **Route to operator** → create GitHub issue with diff, diagnosis, and one-paragraph summary
-
-**What's needed:**
-- Reviewer LLM call after holdout acceptance (~500 tokens per review)
-- `git apply` integration for auto-merge path
-- GitHub issue creation for route-to-operator path
-- Safety: auto-merge only touches gate files (bounded surface), never frozen files
-- Confidence threshold: first N auto-merges require operator confirmation to build trust
+Confidence ramp: first 10 auto-merges require operator confirmation.
 
 #### Stage 8: DISCOVER — Unclassified failures → new shapes
-**Status: BUILT (March 30)**
+**Status: BUILT + RUNNING (March 30) — `scripts/harness/discover-shapes.ts`**
 
-Today: when `decomposeFailure()` returns no matching shape, it's logged but not acted on.
+Clusters unclassified failures by gate + error signature. Proposes shapes at 3+ occurrences. `--confirm` deduplicates against existing taxonomy (Jaccard similarity) and appends confirmed shapes to FAILURE-TAXONOMY.md. Creates GitHub issue with taxonomy diff for operator review.
 
-Autonomous version:
-- Unclassified failures flagged with `shape: 'UNCLASSIFIED'`
-- Clustered by gate + predicate type + error signature
-- When a cluster reaches 3+ occurrences → propose as candidate shape
-- Candidate shape gets: ID, domain, description, claim type (auto-derived from cluster)
-- Reviewer Claude confirms or rejects: "yes, this is new" or "this is a variant of shape X"
-- Confirmed shapes added to FAILURE-TAXONOMY.md with `status: discovered`
-- Curriculum agent picks them up on the next nightly → scenarios generated → coverage closes
+**Proven:** First CI run found 24 candidate clusters. Second run confirmed 7 shapes and created issue #23 with taxonomy diff. Shapes were noisy (invariant descriptions from poisoned data) — clean data should produce real failure shapes.
 
-**What's needed:**
-- Unclassified failure tracking in the ledger
-- Clustering logic (gate + error signature grouping)
-- Candidate shape proposal format
-- Review routing (same as Stage 7 — route to operator or auto-confirm if cluster is strong)
-- Taxonomy append (add new shape to FAILURE-TAXONOMY.md programmatically)
+**Remaining gap:** Confirmed shapes are appended to taxonomy in CI workspace but not auto-committed. Operator must merge the diff from the issue. Future: auto-commit after operator reacts 👍 on the issue.
 
-This is the stage that makes the taxonomy a living language. Without it, the taxonomy is frozen at 647. With it, the taxonomy grows from real evidence.
+### Two Nightly Runners
+
+| Runner | Schedule | Docker | Gates | Staging | Trigger |
+|--------|----------|--------|-------|---------|---------|
+| **Lenovo** (systemd timer) | 3 AM UTC | Yes | All 26 | Works | `sudo systemctl start verify-nightly.service` |
+| **GitHub CI** (Actions) | 3 AM UTC | No | 25 of 26 | Skipped | `gh workflow run nightly-improve.yml --repo Born14/verify` |
+
+**Lenovo** is the primary nightly — full Docker environment, live tier, all gates. Logs at `data/nightly-logs/nightly-YYYY-MM-DD.log`. Script: `scripts/nightly.sh`.
+
+**GitHub CI** is the backup — public visibility, PR validation, runs even if Lenovo is down. Creates GitHub issues for reports. Limited to pure tier (no Docker on free runners).
+
+Both run independently at 3 AM UTC. The Lenovo run covers scenarios that GitHub CI can't test (1,236+ staging-dependent scenarios).
 
 ### The Morning Report
 
@@ -1067,27 +1084,37 @@ fixtures/
 .github/workflows/
   nightly-improve.yml    — 5-stage CI pipeline
 
-FAILURE-TAXONOMY.md      — 647 shapes × 30 domains
+FAILURE-TAXONOMY.md      — 647+ shapes × 30 domains (grows via Stage 8 discover)
 REAL-WORLD-SOURCES.md    — 100+ external sources mapped
 HOW-IT-WORKS.md          — Plain-language system overview
-SYSTEM-ANALYSIS.md       — March 29 baseline results + assessment
+
+scripts/
+  nightly.sh             — Lenovo nightly runner (systemd, Docker, live tier)
+  harness/
+    review-fix.ts        — Stage 7: auto-approve/reject/route
+    discover-shapes.ts   — Stage 8: cluster + confirm + taxonomy append
+
+.github/workflows/
+  nightly-improve.yml    — GitHub CI nightly (backup, no Docker)
 ```
 
 ---
 
-## Current Numbers
+## Current Numbers (March 30, 2026)
 
 | Metric | Value |
 |--------|-------|
-| Gates | 25 |
-| Synthetic scenarios | 11,867 |
-| Real-world scenarios | 908 |
-| Failure shapes covered | 596/647 (92%) |
+| Gates | 26 (including hallucination) |
+| Synthetic scenarios | 11,959 |
+| Real-world scenarios | 6,432 |
+| Total scenarios | 18,391 |
+| Failure shapes covered | 611/647 (94%) |
 | Parity grid | 80/80 (100%) |
-| Unit tests | 354 (21,342 assertions) |
-| Real-world sources | 8 |
+| Unit tests | 388 (21,397 assertions) |
+| Real-world sources | 13 |
+| Nightly runners | 2 (Lenovo + GitHub CI) |
+| Autonomous loop stages | 8/8 built |
 | Runtime dependencies | 0 |
-| Package LOC | 113,672 |
 
 ---
 
@@ -1095,10 +1122,13 @@ SYSTEM-ANALYSIS.md       — March 29 baseline results + assessment
 
 Most AI governance gates what goes INTO the agent. Verify gates what comes OUT.
 
-The engineering is done. The gap is go-to-market. This roadmap closes that gap:
-- P0 fixes the operational blocker
-- P1 proves the product claim
-- P2 expands the product surface
-- P3 ships the public artifact
-- P4 deepens the data moat
-- P5 makes the supply chain self-sustaining
+**We're the only system where the agent gets smarter with each attempt AND the system that checks it gets smarter every night.**
+
+The engineering is done. The autonomous loop is running. This roadmap closes the gap to market:
+- P0-P1.5: operational fixes (done)
+- P2: hallucination gate (done)
+- P3.5: DX polish (done)
+- P4: real-world sources expanded to 13 (done)
+- P5: curriculum agent (done)
+- Stages 2,7,8: autonomous loop wired (done)
+- P3: npm 0.6.0 + convergence demo (next — after clean baseline confirmed)
