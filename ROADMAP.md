@@ -436,8 +436,8 @@ No video needed. No website. Ships with the npm package. First thing anyone runs
 
 ---
 
-### P5: Curriculum Agent (Automated Scenario Generation)
-**Effort:** 1 week
+### P5: Curriculum Agent (Automated Scenario Generation) — DONE (March 30)
+**Effort:** 1 session
 **Unblocks:** Self-sustaining supply chain — the machine writes its own tests
 
 #### What It Is
@@ -609,6 +609,35 @@ stage  agent         harvesters
 - Phase 3 validation rejects scenarios with bad search strings (critical guardrail)
 - Running against uncovered shapes produces scenarios that load and pass/fail correctly
 - Adversarial mode produces at least some scenarios that verify gets wrong (improve loop fuel)
+
+#### Result
+
+Single file: `scripts/harvest/curriculum-agent.ts` (~410 LOC). All four CLI modes working.
+
+**Coverage mode (CSS domain, 11 shapes):**
+```
+Generated: 44 scenarios → Accepted: 39 (89%)
+Rejected: 5 (2 duplicates, 3 hallucinated search strings)
+```
+
+**Adversarial mode (security domain, 4 shapes):**
+```
+Generated: 12 scenarios → Accepted: 12 (100%)
+```
+
+**Phase 3 validation working correctly:**
+- Rejects missing required fields (id, description, rationale, intent)
+- Rejects hallucinated search strings via `indexOf === -1` check
+- Rejects invalid predicate types
+- Rejects duplicate scenarios via SHA-256 hash
+- Tags must include shape ID (e.g. `C-22`)
+
+**Taxonomy survey:** 306 uncovered shapes detected across 22 domains. Phase 1 is deterministic, 0 tokens.
+
+**Total in curriculum-staged.json:** 51 scenarios (39 CSS coverage + 12 security adversarial).
+**Runner integration:** Automatic — `*-staged.json` files are picked up by `loadStagedScenarios()`.
+
+**Cost:** CSS batch (11 shapes, 3 LLM calls): ~17K input / ~14K output tokens. Security adversarial (4 shapes, 1 call): ~7K in / ~4K out. Total: ~$0.01 on Gemini 2.5 Flash.
 
 ---
 
