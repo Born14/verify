@@ -65,6 +65,17 @@ jobs:
         env:
           RECEIPTS_PATH: ${{ secrets.RECEIPTS_PATH }}
 
+      - name: Probe — adversarial scenario generation
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          echo "=== Stage 2: PROBE — adversarial gate audit ==="
+          bun scripts/harvest/curriculum-agent.ts --adversarial --provider=gemini --max=10 2>&1 || true
+          if [ -f fixtures/scenarios/curriculum-staged.json ]; then
+            COUNT=$(bun -e "console.log(JSON.parse(require('fs').readFileSync('fixtures/scenarios/curriculum-staged.json','utf-8')).length)" 2>/dev/null || echo "0")
+            echo "  Curriculum scenarios: $COUNT"
+          fi
+
       - name: Count new scenarios
         id: count
         run: |
@@ -251,11 +262,101 @@ jobs:
           fi
 
   # ─────────────────────────────────────────────────────────────
+  # Stage 7: Review — Auto-approve, reject, or route to operator
+  # ─────────────────────────────────────────────────────────────
+  review:
+    name: Review & Apply
+    needs: [improve, validate]
+    if: needs.improve.outputs.verdict == 'accepted' && needs.validate.outputs.clean == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      disposition: ${{ steps.review.outputs.disposition }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Download improve results
+        uses: actions/download-artifact@v4
+        with:
+          name: improve-results
+          path: artifacts/improve
+
+      - name: Review accepted fix
+        id: review
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          echo "=== Stage 7: REVIEW ==="
+          bun scripts/harness/review-fix.ts \
+            --ledger=artifacts/improve/data/improvement-ledger.jsonl \
+            --provider=gemini 2>&1 | tee review-output.txt || true
+
+          # Parse disposition from output
+          if grep -q 'DISPOSITION: approve' review-output.txt; then
+            echo "disposition=approve" >> $GITHUB_OUTPUT
+          elif grep -q 'DISPOSITION: reject' review-output.txt; then
+            echo "disposition=reject" >> $GITHUB_OUTPUT
+          else
+            echo "disposition=route" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload review artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: review-results
+          path: review-output.txt
+          retention-days: 30
+
+  # ─────────────────────────────────────────────────────────────
+  # Stage 8: Discover — Unclassified failures → new shapes
+  # ─────────────────────────────────────────────────────────────
+  discover:
+    name: Discover New Shapes
+    needs: baseline
+    if: needs.baseline.outputs.failing_count != '0'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Download baseline ledger
+        uses: actions/download-artifact@v4
+        with:
+          name: baseline-ledger
+          path: data/
+
+      - name: Discover unclassified failures
+        id: discover
+        run: |
+          echo "=== Stage 8: DISCOVER ==="
+          bun scripts/harness/discover-shapes.ts \
+            --ledger=data/self-test-ledger.jsonl 2>&1 | tee discover-output.txt || true
+
+      - name: Upload discover artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: discover-results
+          path: discover-output.txt
+          retention-days: 30
+
+  # ─────────────────────────────────────────────────────────────
   # Stage 5: Report — Create PR or issue with results
   # ─────────────────────────────────────────────────────────────
   report:
     name: Nightly Report
-    needs: [supply, baseline, improve, validate]
+    needs: [supply, baseline, improve, validate, review, discover]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -276,25 +377,27 @@ jobs:
           VERDICT="${{ needs.improve.outputs.verdict || 'skipped' }}"
           IMPROVEMENTS="${{ needs.improve.outputs.improvements || '0' }}"
           CLEAN="${{ needs.validate.outputs.clean || 'skipped' }}"
+          REVIEW="${{ needs.review.outputs.disposition || 'skipped' }}"
 
           cat > nightly-report.md << EOF
           ## Nightly Improve Report — $DATE
 
           | Stage | Result |
           |-------|--------|
-          | Supply | $SUPPLY new scenarios |
+          | Supply + Probe | $SUPPLY new scenarios |
           | Baseline | $BASELINE_FAIL failing / $BASELINE_TOTAL total |
           | Improve | Verdict: **$VERDICT** ($IMPROVEMENTS improvements) |
           | Validate | Clean: **$CLEAN** |
+          | Review | Disposition: **$REVIEW** |
 
           ### Pipeline
           \`\`\`
-          Supply ($SUPPLY new) → Baseline ($BASELINE_FAIL/$BASELINE_TOTAL) → Improve ($VERDICT) → Validate ($CLEAN)
+          Harvest → Probe → Test ($BASELINE_FAIL/$BASELINE_TOTAL) → Improve ($VERDICT) → Validate ($CLEAN) → Review ($REVIEW)
           \`\`\`
           EOF
 
-          # Determine if we should create a PR
-          if [ "$VERDICT" = "accepted" ] && [ "$CLEAN" = "true" ]; then
+          # Determine action: PR for approved fixes, issue otherwise
+          if [ "$REVIEW" = "approve" ]; then
             echo "action=pr" >> $GITHUB_OUTPUT
           else
             echo "action=issue" >> $GITHUB_OUTPUT

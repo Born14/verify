@@ -854,7 +854,7 @@ This is what puts the operator in the tower. Every piece below is either built, 
 Already in nightly CI workflow. No work needed.
 
 #### Stage 2: PROBE — Automated gate audit
-**Status: NOT BUILT (manual today)**
+**Status: BUILT (March 30)**
 
 Today: a human (Claude) reads gate source code and writes targeted scenarios. 3/11 hit rate (270x more efficient than brute force).
 
@@ -897,7 +897,7 @@ Subprocess validation runs candidate fix against dirty + sample of clean scenari
 Scoring: `improvements - (regressions × 10) - (lines × 0.1)`. Winner must score > 0 with 0 regressions.
 
 #### Stage 7: REVIEW — Auto-approve / reject / route
-**Status: NOT BUILT**
+**Status: BUILT (March 30)**
 
 Today: `⚠ Accepted edits are NOT auto-applied. Review and apply manually.`
 
@@ -929,7 +929,7 @@ Three dispositions:
 - Confidence threshold: first N auto-merges require operator confirmation to build trust
 
 #### Stage 8: DISCOVER — Unclassified failures → new shapes
-**Status: NOT BUILT**
+**Status: BUILT (March 30)**
 
 Today: when `decomposeFailure()` returns no matching shape, it's logged but not acted on.
 
