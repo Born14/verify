@@ -766,6 +766,206 @@ classify (harness_fault vs app_failure) → only app_failures with
 
 ---
 
+## The Autonomous Hardening Loop (The Capstone)
+
+This is what puts the operator in the tower. Every piece below is either built, partially built, or needs to be built. When all 8 stages run without human intervention, verify is self-sustaining — the operator reads reports, makes strategic calls, and handles the 1% the machine can't resolve.
+
+### The 8 Stages
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    NIGHTLY (3 AM UTC, no human)                 │
+│                                                                 │
+│  Stage 1: HARVEST         Fetch real-world data from 8+ sources │
+│  Stage 2: PROBE           Gate audit — read gate code,          │
+│                           generate adversarial scenarios         │
+│  Stage 3: TEST            Run all scenarios (synthetic +        │
+│                           real-world + adversarial)              │
+│  Stage 4: DIAGNOSE        Bundle dirty scenarios by gate,       │
+│                           LLM identifies root cause              │
+│  Stage 5: FIX             Generate pattern-based fix candidates │
+│  Stage 6: VALIDATE        Subprocess test + holdout check       │
+│  Stage 7: REVIEW          Auto-approve / auto-reject / route    │
+│  Stage 8: DISCOVER        Unclassified failures → new shapes    │
+│                                                                 │
+│  Output: Morning report to operator                             │
+│  "5 bugs found, 4 auto-fixed, 1 needs you. 2 new shapes found" │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Stage-by-Stage Status
+
+#### Stage 1: HARVEST — Fetch real-world data
+**Status: BUILT**
+
+`scripts/supply/harvest-real.ts` fetches from 8 public sources (SchemaPile, MDN, Can I Use, PostCSS, Mustache, JSON Schema Test Suite, PayloadsAllTheThings, Heroku). 24h cache. 908 scenarios from real data.
+
+Already in nightly CI workflow. No work needed.
+
+#### Stage 2: PROBE — Automated gate audit
+**Status: NOT BUILT (manual today)**
+
+Today: a human (Claude) reads gate source code and writes targeted scenarios. 3/11 hit rate (270x more efficient than brute force).
+
+Autonomous version: the curriculum agent (P5 Phase 2b) reads each gate file, generates adversarial inputs designed to break it, validates them (Phase 3 structural checks), writes `*-adversarial-staged.json`.
+
+**What's needed:**
+- P5 curriculum agent built (currently scoped, not implemented)
+- Adversarial mode reads gate source code, not just taxonomy shapes
+- Phase 3 validation prevents garbage scenarios
+- Runs nightly after harvest, before self-test
+
+**Key insight from today:** The LLM doesn't need to find the bug. It needs to generate inputs that MIGHT trigger a bug. The self-test determines if they actually do. Cast a wide net, let the test harness filter.
+
+#### Stage 3: TEST — Run all scenarios
+**Status: BUILT**
+
+`bun run self-test --source=all` runs synthetic + real-world + adversarial. 5,264+ scenarios. Produces ledger with clean/dirty per scenario.
+
+Already in nightly CI. Runner crash fixed (P0). Intent field backfilled.
+
+#### Stage 4: DIAGNOSE — Bundle and identify root cause
+**Status: BUILT**
+
+`improve.ts` steps 1-4: baseline → bundle by invariant/gate → LLM diagnosis. Works correctly — proven on P1 (eval regression) and P1.5 (gate audit bugs).
+
+**Known gap:** Bundling groups by invariant name, not gate. audit-004 (a11y) got bundled with security bugs. Fix: inspect `gatesFailed` to split bundles by actual gate.
+
+#### Stage 5: FIX — Generate pattern-based fix candidates
+**Status: BUILT**
+
+Pattern-based edits: LLM says `{ pattern: "eval_disabled", replacement: "eval" }`, code greps the file, finds all occurrences, builds grounded search/replace. Proven: +1.8 score, 2 improvements, 0 regressions.
+
+Enhanced diagnosis prompts include scenario descriptions + gate failure details + source code view.
+
+#### Stage 6: VALIDATE — Subprocess test + holdout
+**Status: BUILT (with recent fix)**
+
+Subprocess validation runs candidate fix against dirty + sample of clean scenarios. Holdout check runs winner against held-out set. Timeout now scales with scenario count (was hardcoded at 120s, broke on 1,552 scenarios).
+
+Scoring: `improvements - (regressions × 10) - (lines × 0.1)`. Winner must score > 0 with 0 regressions.
+
+#### Stage 7: REVIEW — Auto-approve / reject / route
+**Status: NOT BUILT**
+
+Today: `⚠ Accepted edits are NOT auto-applied. Review and apply manually.`
+
+Autonomous version: a reviewer step after holdout acceptance:
+
+```
+Reviewer prompt:
+  You are the verify code reviewer. An automated improve loop proposes this change.
+
+  1. Does this fix make the gate MORE correct?
+  2. Does it make verify a STRONGER commercial product?
+  3. Does it introduce any risk?
+
+  If all three pass: APPROVE (auto-merge)
+  If #3 fails: REJECT with reason
+  If #1 or #2 is unclear: ROUTE to operator with one-paragraph summary
+```
+
+Three dispositions:
+- **Auto-merge** → `git apply`, commit with `[auto-fix]` prefix, push
+- **Auto-reject** → log reason, move to next bundle
+- **Route to operator** → create GitHub issue with diff, diagnosis, and one-paragraph summary
+
+**What's needed:**
+- Reviewer LLM call after holdout acceptance (~500 tokens per review)
+- `git apply` integration for auto-merge path
+- GitHub issue creation for route-to-operator path
+- Safety: auto-merge only touches gate files (bounded surface), never frozen files
+- Confidence threshold: first N auto-merges require operator confirmation to build trust
+
+#### Stage 8: DISCOVER — Unclassified failures → new shapes
+**Status: NOT BUILT**
+
+Today: when `decomposeFailure()` returns no matching shape, it's logged but not acted on.
+
+Autonomous version:
+- Unclassified failures flagged with `shape: 'UNCLASSIFIED'`
+- Clustered by gate + predicate type + error signature
+- When a cluster reaches 3+ occurrences → propose as candidate shape
+- Candidate shape gets: ID, domain, description, claim type (auto-derived from cluster)
+- Reviewer Claude confirms or rejects: "yes, this is new" or "this is a variant of shape X"
+- Confirmed shapes added to FAILURE-TAXONOMY.md with `status: discovered`
+- Curriculum agent picks them up on the next nightly → scenarios generated → coverage closes
+
+**What's needed:**
+- Unclassified failure tracking in the ledger
+- Clustering logic (gate + error signature grouping)
+- Candidate shape proposal format
+- Review routing (same as Stage 7 — route to operator or auto-confirm if cluster is strong)
+- Taxonomy append (add new shape to FAILURE-TAXONOMY.md programmatically)
+
+This is the stage that makes the taxonomy a living language. Without it, the taxonomy is frozen at 647. With it, the taxonomy grows from real evidence.
+
+### The Morning Report
+
+Every night produces one report. The operator reads it with coffee:
+
+```
+═══ Verify Nightly Report — March 31, 2026 ═══
+
+Harvest: 908 real-world scenarios refreshed (3 new from SchemaPile update)
+Probe:   15 adversarial scenarios generated, 2 triggered dirty
+Test:    5,279 scenarios — 5,274 clean, 5 dirty
+Diagnose: 2 bundles (security gate: 3 dirty, a11y gate: 2 dirty)
+
+Fixes:
+  ✓ security/scanSecrets: auto-fixed (comment-skip for test patterns)
+    Score: +1.7 | Holdout: clean | Review: APPROVED | Merged: abc123f
+  ✓ a11y/headingHierarchy: auto-fixed (strip HTML comments before scan)
+    Score: +2.1 | Holdout: clean | Review: APPROVED | Merged: def456a
+  ✗ security/scanSQLInjection: needs operator — multi-line query fix
+    touches core scan loop, reviewer uncertain about performance impact
+    → GitHub issue #47 created with diff + diagnosis
+
+Discovery:
+  New candidate shape: "CSS calc() expression not evaluated by grounding"
+    Cluster: 3 occurrences across SchemaPile + PostCSS scenarios
+    Gate: grounding | Signature: calc_not_resolved
+    → Awaiting operator confirmation to add to taxonomy
+
+Coverage: 649/649 shapes (was 647 yesterday — 2 confirmed from last week's candidates)
+Dirty rate: 0.09% (5/5,279) — down from 0.14% last week
+
+Next action needed: Review issue #47 (security scan loop change)
+```
+
+That's the tower. One report. One issue to review. Everything else handled.
+
+### Build Order
+
+The 8 stages have dependencies:
+
+```
+BUILT:     1 (harvest) → 3 (test) → 4 (diagnose) → 5 (fix) → 6 (validate)
+NEEDS P5:  2 (probe) — curriculum agent adversarial mode
+NEW:       7 (review) — reviewer prompt + auto-merge + issue routing
+NEW:       8 (discover) — unclassified tracking + clustering + taxonomy append
+```
+
+Sequence:
+1. **P5 first** — builds Stage 2 (probe). The loop can run Stages 1,2,3,4,5,6 autonomously after this. Human still reviews fixes (Stage 7) and shapes (Stage 8).
+2. **Stage 7 second** — reviewer prompt. Now fixes auto-merge. Human only handles routed issues.
+3. **Stage 8 third** — shape discovery. Now the taxonomy grows. Human confirms new shapes.
+4. **Confidence ramp** — first 10 auto-merges require operator confirmation. After 10 clean auto-merges, trust is established. Operator moves to the tower.
+
+### The Metric That Proves It
+
+**Dirty rate under adversarial probing.** Measured weekly.
+
+- Week 1: 27% (3/11 from manual gate audit)
+- Week 2: X% (after P1.5 fixes)
+- Week N: trending toward 0%
+
+The chart shows the gap between verify and perfect. Every week it shrinks. That's the evidence for the paper. That's the metric that proves the taxonomy is working. That's the number that makes enterprises buy.
+
+When the dirty rate under adversarial probing stays below 1% for 30 consecutive days, verify is production-grade. Not because it's perfect — because the autonomous loop catches and fixes everything the adversarial probe throws at it faster than new failure patterns emerge.
+
+---
+
 ## Critical Invariants (Do Not Break)
 
 1. **Zero runtime dependencies.** verify() runs with no network, no LLM, no external services. The curriculum agent and improve loop use LLMs — the gate pipeline does not.
