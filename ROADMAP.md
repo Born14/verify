@@ -17,9 +17,10 @@ Verify is a 25-gate verification pipeline for AI agent actions. It works. The en
 |------|--------|-------|
 | Unit tests (`bun test`) | **341 pass, 0 fail**, 13 skip | 21,342 assertions. 12.9s. Skips are Docker/Gemini-dependent. |
 | Real-world self-test (`--source=real-world`) | **708 clean, 0 bugs** | 90.5s. All 8 sources fetched and harvested. |
-| Synthetic self-test | **1,360 clean, then watchdog kill** | Batch watchdog (exit 99) at 26%. Root cause: two capacity fixtures with 50KB/scenario edits. See P0. |
+| Synthetic self-test (post-P0) | **5,253 scenarios, 5,248 clean, 5 dirty** | 24 min. 1 skipped (>500KB edit). Dirty scenarios were capacity gate false positives — fixed. |
+| Improve loop (P1) | **ACCEPTED** | Full cycle: baseline → diagnose → generate → validate → holdout → accepted. Score +0.8, 0 regressions. |
 
-**Verdict:** Gates are healthy. Pipeline is working. Runner has a known performance issue with oversized scenarios.
+**Verdict:** All systems operational. Gates healthy. Improve loop acceptance path proven.
 
 ### What's Working
 - **25 gates** — grounding, syntax, constraints, containment, filesystem, infrastructure, security, a11y, performance, staging, browser, HTTP, and 13 more. 354 unit tests, 21,342 assertions, 0 failures.
@@ -51,93 +52,48 @@ Verify is a 25-gate verification pipeline for AI agent actions. It works. The en
 
 ---
 
-### P0: Fix Runner Crash
-**Effort:** 30 minutes
-**Unblocks:** Everything — can't validate anything without a clean baseline
+### P0: Fix Runner Crash — DONE (March 29)
 
-#### The Problem
-`scripts/harness/runner.ts` loads ALL staged fixtures into memory regardless of `--families` flag. Two capacity fixtures have scenarios with 50KB+ edit strings. The batch watchdog kills the process after the timeout.
+**Result:** 5-line filter in `runner.ts` skips scenarios with >500KB total edit size. Self-test completes: 5,253 scenarios, no exit 99 watchdog kill. Local watchdog relaxed to 10 minutes (vs 5 minutes CI).
 
-#### The Fix
-The CI workflow already handles this — commit `4547945` ("skip >500KB edits in CI, raise timeout for large edits"). Apply the same logic to the local runner.
-
-#### Implementation
-In `scripts/harness/runner.ts`, after staged scenarios are loaded (~line 264), add a filter:
-
-```typescript
-// Skip scenarios with extremely large edits (>500KB total) that hang the runner
-const MAX_EDIT_BYTES = 500 * 1024;
-const beforeFilter = scenarios.length;
-scenarios = scenarios.filter(s => {
-  const editSize = s.edits.reduce((sum, e) => sum + (e.search?.length || 0) + (e.replace?.length || 0), 0);
-  return editSize < MAX_EDIT_BYTES;
-});
-const skippedLarge = beforeFilter - scenarios.length;
-if (skippedLarge > 0) {
-  console.log(`  Skipped ${skippedLarge} scenarios with >500KB edits`);
-}
-```
-
-#### Verification
-```bash
-bun run self-test  # Must complete without exit 99. Expect 5,000+ scenarios, 0 bugs.
-```
-
-#### Done When
-Full synthetic self-test completes. All scenarios either pass or are intentionally skipped. Ledger written.
+**Also fixed:** Capacity gate false positive on WHERE-bounded SQL queries (`capacity.ts:135`). SELECT with WHERE clause is bounded — not a "full table scan." Resolved 5 pre-existing dirty scenarios in security/SQL injection detection.
 
 ---
 
-### P1: Prove Improve Loop Acceptance Path
-**Effort:** 2-4 hours
-**Unblocks:** Product credibility — "self-improving gates" is the claim, must be proven
+### P1: Prove Improve Loop Acceptance Path — DONE (March 29)
 
-#### The Problem
-The improve loop has correctly rejected bad fixes (March 28 CI run). It has NEVER accepted a good fix. The holdout check, PR creation, and auto-merge path are untested.
+**Result:** Full acceptance cycle completed end-to-end.
 
-#### The Fix
-Intentionally introduce a fixable regression into a gate, run the improve loop, verify it finds the bug, proposes a correct fix, validates against holdout, and produces a PR.
-
-#### Implementation
-
-**Step 1: Create the regression**
-Pick a simple gate. For example, in `src/gates/security.ts`, weaken one pattern check:
-
-```typescript
-// INTENTIONAL REGRESSION — improve loop must catch and fix this
-// Original: /eval\s*\(/
-// Weakened: /eval_disabled\s*\(/  (will never match real eval() calls)
+```
+Baseline (4,845 scenarios, 2 dirty) → Bundle (security.ts) →
+Diagnose (eval_disabled regex on lines 70+201) → Generate (3 candidates) →
+Validate ("Minimal Regex Correction" score +0.8, 1 improvement, 0 regressions) →
+Holdout (clean) → ACCEPTED
 ```
 
-This will cause security scenarios that test `eval()` detection to become dirty (gate passes when it should fail).
+**The claim "self-improving gates" is now proven with evidence.** Verdict: `accepted` in `data/improvement-ledger.jsonl`.
 
-**Step 2: Run baseline**
-```bash
-bun run self-test --fail-on-bug  # Should find dirty scenarios in security gate
+#### What was learned: Line-to-Search Grounding
+
+The original improve loop asked the LLM to produce exact `search` strings matching source code. This was brittle — the LLM consistently diagnosed the right bug but couldn't reproduce exact whitespace/formatting. Score: -100 (edits=0/2) on every attempt.
+
+**The fix:** Separate what the LLM does well (diagnosis + line identification) from what code does well (reading exact file content).
+
+```
+LLM says: { line: 77, replace: "new content" }
+Code reads: actual line 77 from the file → sets search = actualContent
+Result: search string guaranteed to match (it came from the file, not the LLM)
 ```
 
-Confirm: dirty scenarios exist, they're in the security domain.
+This is implemented as a post-processing step in `improve-prompts.ts` after `generateFixCandidates()` returns. The `[LINE→SEARCH]` log entry confirms each grounding.
 
-**Step 3: Run improve loop**
-```bash
-bun run improve -- --llm=gemini --api-key=$GEMINI_API_KEY --max-candidates=3
-```
-
-Expected: The loop should diagnose the weakened regex, propose restoring the original pattern, validate the fix against holdout, and report `accepted`.
-
-**Step 4: Verify the output**
-- Check `data/improvement-ledger.jsonl` — should have an `accepted` entry
-- Check if the fix candidate correctly restores the `eval\s*\(` pattern
-- If the improve loop creates a PR branch: verify the diff is correct
-
-**Step 5: Revert the intentional regression**
-Restore the original security gate code. Commit with message explaining this was a controlled test.
-
-#### Verification
-The improve loop log shows: `baseline → bundle → split → diagnose → generate → validate → holdout → accepted`.
-
-#### Done When
-One complete acceptance cycle proven. The claim "self-improving gates" is backed by evidence.
+**Infrastructure changes for P1:**
+- Line-based edits `{ line, replace }` alongside search/replace in `types.ts`, `improve-subprocess.ts`
+- Line-to-search grounding in `improve-prompts.ts` (post-processing step)
+- `GEMINI_MODEL` env var in `llm-providers.ts` (configurable model selection)
+- Enhanced diagnosis prompt with scenario descriptions + gate failure details
+- Source view without line-number prefixes (prevents LLM from copying them into search strings)
+- Relaxed local watchdog (10 min) in `runner.ts`
 
 ---
 

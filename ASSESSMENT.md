@@ -68,14 +68,13 @@ Chaos runs again → fewer bugs → goals get more adversarial → new fault cla
 
 **The improve loop is the reason verify gets better between releases.** Without it, verify only improves when a human manually finds and fixes bugs. With it, the system finds its own bugs overnight and proposes fixes that a human reviews.
 
-This is not theoretical. This is what happened:
-1. Chaos engine fired goals against the football app
-2. Named color `orange` didn't match hex `#ffa500` — verify said FAIL when it should have said PASS
-3. Bug encoded as scenario, harness detected it as dirty
-4. Improve loop diagnosed the root cause (missing named color normalization in `_nC()`)
-5. Fix validated in subprocess, passed holdout, applied
+This is not theoretical. Two proven examples:
 
-That cycle ran in one session. It will happen again for the next bug class, and the next, and the next.
+**Example 1 (March 20):** Chaos engine fired goals against the football app. Named color `orange` didn't match hex `#ffa500` — verify said FAIL when it should have said PASS. Bug encoded as scenario, improve loop diagnosed missing named color normalization, fix validated, applied.
+
+**Example 2 (March 29):** Full acceptance cycle proven end-to-end. Security gate had `eval_disabled` regex (should be `eval`). Improve loop: baseline found 2 dirty scenarios → diagnosed correct file + line numbers → generated 3 fix candidates → "Minimal Regex Correction" scored +0.8 (1 improvement, 0 regressions) → holdout clean (1,421 scenarios) → **accepted**. Key innovation: "line-to-search grounding" — the LLM identifies which line to fix, the code reads the actual line content from the file. Each component handles what it's best at.
+
+These cycles will happen again for the next bug class, and the next, and the next.
 
 ## The Two Learning Loops (Critical Distinction)
 

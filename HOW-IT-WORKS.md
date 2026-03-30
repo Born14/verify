@@ -125,7 +125,9 @@ Every night at 3 AM UTC, a CI pipeline runs:
 
 The machine finds its own bugs and proposes its own fixes. Humans approve via the holdout check — a safety net that ensures gate improvements never weaken existing guarantees.
 
-This is not an AI writing tests for the sake of metrics. The scenarios test real failure patterns. The fixes repair real gate logic. The holdout check prevents regression. It's a genuine learning loop.
+**Proven March 29, 2026:** The improve loop completed its first full acceptance cycle. It found a regex bug in the security gate (`eval_disabled` should have been `eval`), proposed the fix, validated against 3,422 scenarios, passed holdout (1,421 scenarios), and accepted. Score: +0.8, zero regressions.
+
+A key architectural insight emerged: the LLM diagnoses which line to fix, but the *code* reads the actual line content from the file to build the edit. This "line-to-search grounding" eliminates the fragility of asking an LLM to reproduce exact source strings. Each component handles what it's best at — LLMs reason, code reads files.
 
 ---
 

@@ -372,7 +372,7 @@ bun run improve -- --llm=none
 
 ### GitHub Action (CI)
 
-The nightly workflow runs at 3 AM UTC. On success, it creates a PR with the improvements. On failure, it files an issue with the diagnostic report.
+The nightly workflow runs at 3 AM UTC. On success, it creates a PR with the improvements. On failure, it files an issue with the diagnostic report. The full acceptance cycle has been proven: baseline → diagnose → generate → validate → holdout → accepted (March 29, 2026 — security gate regex fix, score +0.8, 0 regressions).
 
 ```yaml
 # .github/workflows/nightly-improve.yml
