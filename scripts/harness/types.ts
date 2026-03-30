@@ -226,7 +226,9 @@ export interface ProposedEdit {
   file: string;
   search?: string;
   replace: string;
-  line?: number;  // 1-based line number — preferred over search for reliability
+  line?: number;       // 1-based line number
+  pattern?: string;    // substring to find — code greps file, builds search/replace from actual lines
+  replacement?: string; // what to replace pattern with (within matched lines)
 }
 
 export interface FixCandidate {

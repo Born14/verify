@@ -84,32 +84,45 @@ export function extractJSON<T = unknown>(raw: string): T | null {
     }
   }
 
-  // Strategy 4: truncated array recovery — find last complete object, close the array
-  const arrayStart = raw.indexOf('[');
-  if (arrayStart !== -1) {
-    // Find all complete top-level objects in the array
+  // Strategy 4: individual object recovery — extract each top-level {...} block
+  // independently, parse what we can, skip what we can't. Handles LLM producing
+  // invalid JSON in some objects (e.g., unescaped regex backslashes).
+  // First: sanitize invalid JSON escapes (\s, \d, \w, etc.) → double-escaped (\\s, \\d, \\w)
+  // Valid JSON escapes: \", \\, \/, \b, \f, \n, \r, \t, \uXXXX
+  const sanitized = (fenceStripped || raw.trim())
+    .replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
+  const cleanedInput = sanitized;
+  const arrStart = cleanedInput.indexOf('[');
+  if (arrStart !== -1) {
+    // Find top-level objects by tracking brace depth (skipping string interiors)
+    const results: unknown[] = [];
+    let objStart = -1;
     let depth = 0;
     let inStr = false;
-    let esc = false;
-    let lastObjEnd = -1;
-    for (let i = arrayStart + 1; i < raw.length; i++) {
-      const ch = raw[i];
-      if (esc) { esc = false; continue; }
-      if (ch === '\\' && inStr) { esc = true; continue; }
-      if (ch === '"') { inStr = !inStr; continue; }
-      if (inStr) continue;
-      if (ch === '{') depth++;
-      if (ch === '}') {
-        depth--;
-        if (depth === 0) lastObjEnd = i;
+    let prevCh = '';
+    for (let i = arrStart + 1; i < cleanedInput.length; i++) {
+      const ch = cleanedInput[i];
+      // Simple string tracking — skip escaped quotes
+      if (ch === '"' && prevCh !== '\\') inStr = !inStr;
+      if (!inStr) {
+        if (ch === '{') {
+          if (depth === 0) objStart = i;
+          depth++;
+        }
+        if (ch === '}') {
+          depth--;
+          if (depth === 0 && objStart >= 0) {
+            const block = cleanedInput.substring(objStart, i + 1);
+            try {
+              results.push(JSON.parse(block));
+            } catch { /* skip invalid object */ }
+            objStart = -1;
+          }
+        }
       }
+      prevCh = ch;
     }
-    if (lastObjEnd > arrayStart) {
-      const recovered = raw.substring(arrayStart, lastObjEnd + 1) + ']';
-      try {
-        return JSON.parse(recovered) as T;
-      } catch { /* continue */ }
-    }
+    if (results.length > 0) return results as T;
   }
 
   return null;
@@ -125,7 +138,7 @@ export function extractJSON<T = unknown>(raw: string): T | null {
  */
 export function hashEdits(edits: ProposedEdit[]): string {
   const normalized = edits
-    .map(e => `${e.file}::${e.line ?? e.search}::${e.replace}`)
+    .map(e => `${e.file}::${e.pattern ?? e.line ?? e.search}::${e.replacement ?? e.replace}`)
     .sort()
     .join('\n');
   return createHash('sha256').update(normalized).digest('hex').substring(0, 16);
