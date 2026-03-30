@@ -329,18 +329,69 @@ jobs:
           name: baseline-ledger
           path: data/
 
-      - name: Discover unclassified failures
+      - name: Discover and confirm new shapes
         id: discover
         run: |
-          echo "=== Stage 8: DISCOVER ==="
+          echo "=== Stage 8: DISCOVER + CONFIRM ==="
           bun scripts/harness/discover-shapes.ts \
-            --ledger=data/self-test-ledger.jsonl 2>&1 | tee discover-output.txt || true
+            --ledger=data/self-test-ledger.jsonl \
+            --confirm 2>&1 | tee discover-output.txt || true
+
+          # Extract new_shapes count from output
+          NEW=$(grep -oP 'new_shapes=\K\d+' discover-output.txt || echo "0")
+          echo "new_shapes=$NEW" >> $GITHUB_OUTPUT
+
+      - name: Create issue for discovered shapes
+        if: steps.discover.outputs.new_shapes != '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('discover-output.txt', 'utf8');
+            const date = new Date().toISOString().split('T')[0];
+            const count = '${{ steps.discover.outputs.new_shapes }}';
+
+            // Read the taxonomy diff
+            const { execSync } = require('child_process');
+            const diff = execSync('git diff FAILURE-TAXONOMY.md', { encoding: 'utf8' }).substring(0, 5000);
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[auto-discover] ${count} new shape(s) found — ${date}`,
+              body: [
+                `## Auto-Discovered Shapes`,
+                ``,
+                `Stage 8 found **${count}** new failure shape(s) not in the taxonomy.`,
+                `These have been appended to \`FAILURE-TAXONOMY.md\` in the CI workspace.`,
+                ``,
+                `### To accept: merge the changes below into main.`,
+                `### To reject: close this issue.`,
+                ``,
+                `<details><summary>Discover output</summary>`,
+                ``,
+                '```',
+                output.substring(0, 3000),
+                '```',
+                `</details>`,
+                ``,
+                `<details><summary>Taxonomy diff</summary>`,
+                ``,
+                '```diff',
+                diff,
+                '```',
+                `</details>`,
+              ].join('\n'),
+              labels: ['nightly', 'automated', 'taxonomy'],
+            });
 
       - name: Upload discover artifacts
         uses: actions/upload-artifact@v4
         with:
           name: discover-results
-          path: discover-output.txt
+          path: |
+            discover-output.txt
+            data/discovered-shapes.jsonl
           retention-days: 30
 
   # ─────────────────────────────────────────────────────────────

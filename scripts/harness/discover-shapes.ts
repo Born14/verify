@@ -11,11 +11,16 @@
  * 3. When a cluster reaches 3+ occurrences, proposes a candidate shape
  * 4. Writes candidates to data/discovered-shapes.jsonl for operator review
  *
+ * With --confirm: also compares candidates against FAILURE-TAXONOMY.md,
+ * confirms genuinely new shapes, and appends them to the taxonomy.
+ * This closes the loop: discover → confirm → taxonomy → curriculum → scenarios.
+ *
  * The curriculum agent picks up confirmed shapes on the next nightly run.
  *
  * Usage:
  *   bun scripts/harness/discover-shapes.ts --ledger=data/self-test-ledger.jsonl
  *   bun scripts/harness/discover-shapes.ts --threshold=3   # minimum cluster size
+ *   bun scripts/harness/discover-shapes.ts --confirm        # confirm + append to taxonomy
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'fs';
@@ -71,8 +76,16 @@ interface CandidateShape {
     occurrences: number;
     sampleScenarios: string[];
   };
-  status: 'proposed';
+  status: 'proposed' | 'confirmed' | 'duplicate';
   discoveredAt: string;
+  confirmedAt?: string;
+}
+
+interface TaxonomyShape {
+  id: string;
+  domain: string;
+  description: string;
+  keywords: string[];  // Normalized words for dedup matching
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -224,6 +237,211 @@ function inferClaimTypeFromGate(gate: string): string {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Taxonomy parsing + confirmation
+// ─────────────────────────────────────────────────────────────────────────────
+
+const TAXONOMY_PATH = join(PKG_ROOT, 'FAILURE-TAXONOMY.md');
+
+/** Domain heading → domain key used in GATE_TO_DOMAIN / DOMAIN_TO_PREFIX */
+const HEADING_TO_DOMAIN: Record<string, string> = {
+  'CSS Predicate Failures': 'css',
+  'HTML Predicate Failures': 'html',
+  'Filesystem Predicate Failures': 'filesystem',
+  'Content Predicate Failures': 'content',
+  'HTTP Predicate Failures': 'http',
+  'DB Predicate Failures': 'db',
+  'Temporal / Stateful Failures': 'temporal',
+  'Cross-Predicate Interaction Failures': 'crosscutting',
+  'Invariant / System Health Failures': 'invariant',
+  'Browser Runtime Failures': 'browser',
+  'Identity & Reference Failures': 'identity',
+  'Observer Effect Failures': 'observation',
+  'Concurrency / Multi-Actor Failures': 'concurrency',
+  'Scope Boundary Failures': 'scope',
+  'Attribution / Root Cause Failures': 'attribution',
+  'Drift / Regression Failures': 'drift',
+  'Message Predicate Failures': 'message',
+  'Cross-Cutting Failures (Gate-Level)': 'crosscutting',
+  'Configuration Predicate Failures': 'config',
+  'Accessibility (a11y) Predicate Failures': 'a11y',
+  'Performance Predicate Failures': 'performance',
+  'Security Predicate Failures': 'security',
+  'Serialization / API Contract Failures': 'serialization',
+  'Injection Predicate Failures': 'injection',
+  'Hallucination Predicate Failures': 'hallucination',
+  'Budget / Resource Bound Failures': 'budget',
+};
+
+/** Reverse: domain key → heading text */
+const DOMAIN_TO_HEADING: Record<string, string> = {};
+for (const [heading, domain] of Object.entries(HEADING_TO_DOMAIN)) {
+  // First match wins (some domains like 'crosscutting' map to two headings)
+  if (!DOMAIN_TO_HEADING[domain]) DOMAIN_TO_HEADING[domain] = heading;
+}
+
+/** Extract normalized keywords from a description for fuzzy matching */
+function extractKeywords(text: string): string[] {
+  return text.toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 2)
+    .filter(w => !['the', 'and', 'for', 'not', 'but', 'with', 'has', 'was', 'are', 'from'].includes(w));
+}
+
+/** Parse all existing shapes from FAILURE-TAXONOMY.md */
+function parseTaxonomy(): { shapes: TaxonomyShape[], maxIdPerPrefix: Map<string, number> } {
+  if (!existsSync(TAXONOMY_PATH)) return { shapes: [], maxIdPerPrefix: new Map() };
+
+  const content = readFileSync(TAXONOMY_PATH, 'utf-8');
+  const shapes: TaxonomyShape[] = [];
+  const maxIdPerPrefix = new Map<string, number>();
+
+  // Match table rows: | C-01 | description | status | notes |
+  const rowRe = /^\|\s*([A-Z0-9]+-\d+)\s*\|\s*([^|]+)\|/gm;
+  let match;
+  let currentDomain = 'unknown';
+
+  // Track headings for domain context
+  const lines = content.split('\n');
+  let lineIdx = 0;
+  for (const line of lines) {
+    lineIdx++;
+    // Check for domain heading
+    const headingMatch = line.match(/^## (.+)/);
+    if (headingMatch) {
+      const heading = headingMatch[1].trim();
+      if (HEADING_TO_DOMAIN[heading]) {
+        currentDomain = HEADING_TO_DOMAIN[heading];
+      }
+    }
+
+    // Check for shape row
+    const rowMatch = line.match(/^\|\s*([A-Z0-9]+-(\d+))\s*\|\s*([^|]+)\|/);
+    if (rowMatch) {
+      const id = rowMatch[1].trim();
+      const num = parseInt(rowMatch[2]);
+      const desc = rowMatch[3].trim();
+      const prefix = id.replace(/-\d+$/, '');
+
+      shapes.push({
+        id,
+        domain: currentDomain,
+        description: desc,
+        keywords: extractKeywords(desc),
+      });
+
+      const current = maxIdPerPrefix.get(prefix) ?? 0;
+      if (num > current) maxIdPerPrefix.set(prefix, num);
+    }
+  }
+
+  return { shapes, maxIdPerPrefix };
+}
+
+/** Check if a candidate is a duplicate of an existing shape */
+function isDuplicate(candidate: CandidateShape, existingShapes: TaxonomyShape[]): TaxonomyShape | null {
+  const candidateKeywords = extractKeywords(candidate.description);
+  const sameDomain = existingShapes.filter(s => s.domain === candidate.domain);
+
+  for (const existing of sameDomain) {
+    // Jaccard similarity on keywords
+    const intersection = candidateKeywords.filter(k => existing.keywords.includes(k));
+    const union = new Set([...candidateKeywords, ...existing.keywords]);
+    const similarity = union.size > 0 ? intersection.length / union.size : 0;
+
+    if (similarity > 0.4) return existing;
+  }
+
+  return null;
+}
+
+/** Find the right insertion point in the taxonomy for a new shape in a given domain */
+function findInsertionPoint(content: string, domain: string): number {
+  const heading = DOMAIN_TO_HEADING[domain];
+  if (!heading) return -1;
+
+  const headingIdx = content.indexOf(`## ${heading}`);
+  if (headingIdx === -1) return -1;
+
+  // Find the last table row in this section (before the next ## heading or ---)
+  const sectionStart = headingIdx;
+  const nextHeading = content.indexOf('\n## ', sectionStart + 1);
+  const nextSeparator = content.indexOf('\n---', sectionStart + 1);
+  const sectionEnd = Math.min(
+    nextHeading === -1 ? content.length : nextHeading,
+    nextSeparator === -1 ? content.length : nextSeparator,
+  );
+
+  const section = content.substring(sectionStart, sectionEnd);
+
+  // Find last table row (starts with |, contains a shape ID pattern)
+  const sectionLines = section.split('\n');
+  let lastRowOffset = -1;
+  let offset = sectionStart;
+  for (const line of sectionLines) {
+    if (/^\|\s*[A-Z0-9]+-\d+\s*\|/.test(line)) {
+      lastRowOffset = offset + line.length;
+    }
+    offset += line.length + 1; // +1 for \n
+  }
+
+  return lastRowOffset;
+}
+
+/** Append confirmed shapes to FAILURE-TAXONOMY.md */
+function appendToTaxonomy(confirmed: CandidateShape[], maxIdPerPrefix: Map<string, number>): number {
+  if (confirmed.length === 0) return 0;
+
+  let content = readFileSync(TAXONOMY_PATH, 'utf-8');
+  let appended = 0;
+
+  // Group by domain
+  const byDomain = new Map<string, CandidateShape[]>();
+  for (const shape of confirmed) {
+    const group = byDomain.get(shape.domain) ?? [];
+    group.push(shape);
+    byDomain.set(shape.domain, group);
+  }
+
+  // Process each domain (reverse order so insertion offsets don't shift)
+  const domains = [...byDomain.entries()].sort((a, b) => {
+    const posA = content.indexOf(`## ${DOMAIN_TO_HEADING[a[0]]}`);
+    const posB = content.indexOf(`## ${DOMAIN_TO_HEADING[b[0]]}`);
+    return posB - posA; // Reverse order
+  });
+
+  for (const [domain, shapes] of domains) {
+    const insertAt = findInsertionPoint(content, domain);
+    if (insertAt === -1) {
+      console.log(`  WARNING: Could not find section for domain "${domain}" — skipping ${shapes.length} shape(s)`);
+      continue;
+    }
+
+    const prefix = DOMAIN_TO_PREFIX[domain] ?? 'X';
+    let nextNum = (maxIdPerPrefix.get(prefix) ?? 99) + 1;
+
+    const rows: string[] = [];
+    for (const shape of shapes) {
+      const id = `${prefix}-${nextNum}`;
+      shape.proposedId = id; // Update with actual assigned ID
+      const shortDesc = shape.description
+        .replace(/^Discovered: [a-z]+ gate failure — /, '')
+        .substring(0, 80);
+      rows.push(`| ${id} | ${shortDesc} | discovered | Auto-discovered from ${shape.evidence.occurrences}x cluster (${shape.evidence.gate} gate) |`);
+      nextNum++;
+    }
+
+    const insert = '\n' + rows.join('\n');
+    content = content.substring(0, insertAt) + insert + content.substring(insertAt);
+    appended += rows.length;
+    maxIdPerPrefix.set(prefix, nextNum - 1);
+  }
+
+  writeFileSync(TAXONOMY_PATH, content);
+  return appended;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // CLI + Main
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -231,10 +449,11 @@ const args = process.argv.slice(2);
 const ledgerPath = args.find(a => a.startsWith('--ledger='))?.split('=')[1]
   ?? join(PKG_ROOT, 'data', 'self-test-ledger.jsonl');
 const threshold = parseInt(args.find(a => a.startsWith('--threshold='))?.split('=')[1] ?? '3');
+const confirmMode = args.includes('--confirm');
 const outputPath = join(PKG_ROOT, 'data', 'discovered-shapes.jsonl');
 
 function main() {
-  console.log('=== Stage 8: DISCOVER ===');
+  console.log(`=== Stage 8: DISCOVER${confirmMode ? ' + CONFIRM' : ''} ===`);
   console.log(`Ledger: ${ledgerPath}`);
   console.log(`Threshold: ${threshold} occurrences`);
   console.log('');
@@ -315,7 +534,54 @@ function main() {
   writeFileSync(outputPath, existing + (existing && !existing.endsWith('\n') ? '\n' : '') + newLines + '\n');
 
   console.log(`\n  Written ${candidates.length} candidate shape(s) to ${outputPath}`);
-  console.log('  Operator: review and confirm with `status: confirmed` to add to taxonomy.');
+
+  // ─── Confirmation mode: dedup against taxonomy, append new shapes ───
+  if (!confirmMode) {
+    console.log('  Operator: review and confirm with `--confirm` to add to taxonomy.');
+    return;
+  }
+
+  console.log('\n  === CONFIRM: Checking candidates against taxonomy ===');
+  const { shapes: taxonomyShapes, maxIdPerPrefix } = parseTaxonomy();
+  console.log(`  Taxonomy has ${taxonomyShapes.length} existing shapes`);
+
+  const confirmed: CandidateShape[] = [];
+  const duplicates: Array<{ candidate: CandidateShape; matchedShape: TaxonomyShape }> = [];
+
+  for (const candidate of candidates) {
+    const match = isDuplicate(candidate, taxonomyShapes);
+    if (match) {
+      candidate.status = 'duplicate';
+      duplicates.push({ candidate, matchedShape: match });
+      console.log(`  SKIP (duplicate): ${candidate.proposedId} ≈ ${match.id} "${match.description.substring(0, 60)}"`);
+    } else {
+      candidate.status = 'confirmed';
+      candidate.confirmedAt = new Date().toISOString();
+      confirmed.push(candidate);
+      console.log(`  CONFIRMED: ${candidate.proposedId} [${candidate.domain}] — new shape`);
+    }
+  }
+
+  console.log(`\n  Result: ${confirmed.length} confirmed, ${duplicates.length} duplicates`);
+
+  if (confirmed.length === 0) {
+    console.log('  No new shapes to add to taxonomy.');
+    // Output for CI
+    console.log(`new_shapes=0`);
+    return;
+  }
+
+  // Append to taxonomy
+  const appended = appendToTaxonomy(confirmed, maxIdPerPrefix);
+  console.log(`  Appended ${appended} shape(s) to FAILURE-TAXONOMY.md`);
+
+  // Rewrite discovered-shapes.jsonl with updated statuses
+  const allCandidates = [...candidates];
+  const updatedLines = allCandidates.map(c => JSON.stringify(c)).join('\n') + '\n';
+  writeFileSync(outputPath, updatedLines);
+
+  // Output for CI
+  console.log(`new_shapes=${appended}`);
 }
 
 main();
