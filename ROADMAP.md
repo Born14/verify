@@ -1120,9 +1120,20 @@ scripts/
 
 ## The Bet
 
-Most AI governance gates what goes INTO the agent. Verify gates what comes OUT.
+**Your agent just got better.**
 
-**We're the only system where the agent gets smarter with each attempt AND the system that checks it gets smarter every night.**
+Most AI governance gates what goes INTO the agent. Verify gates what comes OUT. Every mistake makes the agent smarter. Every night, the system that checks it gets smarter too.
+
+### The Demo Sequence (Trust → Need → Awe → Vision)
+
+| Demo | Command / Format | What they feel | The line |
+|------|-----------------|----------------|----------|
+| **1. Prove it** | `npx @sovereign-labs/verify self-test` | Trust | "You don't have to believe us. Run it." |
+| **2. Watch it learn** | `npx @sovereign-labs/verify demo` | Need | "Your agent just got better." |
+| **3. It improved overnight** | Blog post / nightly report | Surprise | "It got smarter while you slept." |
+| **4. It found something new** | Paper / 90-day evidence | Wonder | "It found something nobody knew to look for." |
+
+Each demo unlocks the next. Nobody cares about Demo 4 until Demo 1 earned their trust.
 
 The engineering is done. The autonomous loop is running. This roadmap closes the gap to market:
 - P0-P1.5: operational fixes (done)

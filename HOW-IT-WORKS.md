@@ -1,6 +1,8 @@
 # How Verify Works
 
-**One sentence:** Before an AI agent's changes touch your system, verify gives them a fair trial.
+**Your agent just got better.**
+
+Every mistake makes it smarter. Every failure narrows the search. And the system checking your agent improves itself overnight.
 
 ---
 
