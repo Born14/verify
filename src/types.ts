@@ -7,6 +7,34 @@
  */
 
 // =============================================================================
+// MULTI-AGENT BATCH
+// =============================================================================
+
+/**
+ * One agent's submission — edits and predicates bundled with an agent name.
+ * Used by verifyBatch() for sequential multi-agent verification.
+ */
+export interface AgentSubmission {
+  /** Agent name — appears in attestation on failure */
+  agent: string;
+  edits: Edit[];
+  predicates: Predicate[];
+}
+
+/**
+ * Result of verifyBatch() — per-agent results in submission order.
+ */
+export interface BatchResult {
+  /** True only if every agent's edits passed all gates */
+  success: boolean;
+  /** Per-agent results in submission order */
+  agentResults: Array<{
+    agent: string;
+    result: VerifyResult;
+  }>;
+}
+
+// =============================================================================
 // INPUT: What the caller provides
 // =============================================================================
 

@@ -22,6 +22,7 @@ import { tmpdir } from 'os';
 import type {
   Edit, Predicate, Invariant, VerifyConfig, VerifyResult,
   GateResult, GateContext, Narrowing, PredicateResult,
+  AgentSubmission, BatchResult,
 } from './types.js';
 
 import { ConstraintStore, extractSignature, classifyChangeType, classifyActionClass, predicateFingerprint } from './store/constraint-store.js';
@@ -1019,5 +1020,42 @@ function loadInvariantsFile(appDir: string): Invariant[] {
   const empty: Invariant[] = [];
   _invariantsCache.set(appDir, { result: empty, cachedAt: Date.now() });
   return empty;
+}
+
+// =============================================================================
+// verifyBatch() — Sequential Multi-Agent Verification
+// =============================================================================
+
+/**
+ * Verify multiple agents' edits in sequence. Each agent's edits are verified
+ * against the filesystem the previous agent left behind. If agent A changes
+ * a file and agent B's search string references the old content, B fails at
+ * the syntax gate — exactly like a merge conflict.
+ *
+ * Usage:
+ *   const result = await verifyBatch([
+ *     { agent: 'planner', edits: [...], predicates: [...] },
+ *     { agent: 'coder', edits: [...], predicates: [...] },
+ *   ], { appDir: './my-app', stopOnFailure: true });
+ */
+export async function verifyBatch(
+  submissions: AgentSubmission[],
+  config: VerifyConfig & { stopOnFailure?: boolean },
+): Promise<BatchResult> {
+  const agentResults: BatchResult['agentResults'] = [];
+
+  for (const sub of submissions) {
+    const result = await verify(sub.edits, sub.predicates, {
+      ...config,
+      goal: config.goal ? `[${sub.agent}] ${config.goal}` : `[${sub.agent}]`,
+    });
+    agentResults.push({ agent: sub.agent, result });
+    if (!result.success && config.stopOnFailure) break;
+  }
+
+  return {
+    success: agentResults.every(r => r.result.success),
+    agentResults,
+  };
 }
 

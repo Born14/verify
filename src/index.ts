@@ -19,7 +19,7 @@
  */
 
 // The one function
-export { verify } from './verify.js';
+export { verify, verifyBatch } from './verify.js';
 
 // The governed loop — verify() in a convergence loop
 export { govern } from './govern.js';
@@ -42,6 +42,8 @@ export type {
   VerifyConfig,
   VerifyResult,
   Invariant,
+  AgentSubmission,
+  BatchResult,
 
   // Gate results
   GateResult,
