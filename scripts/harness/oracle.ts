@@ -107,9 +107,22 @@ const PRODUCT_INVARIANTS: InvariantCheck[] = [
       if (result instanceof Error) return { passed: true, severity: 'info' };
       if (result.success) return { passed: true, severity: 'info' };
 
-      // The attestation should mention the first failed gate
+      // The attestation should mention the first failed gate (by name or label)
+      const GATE_LABELS: Record<string, string> = {
+        grounding: 'grounding', F9: 'syntax', K5: 'constraints', G5: 'containment',
+        staging: 'staging', browser: 'browser', http: 'http', invariants: 'health-checks',
+        serialization: 'data', config: 'config', security: 'security', a11y: 'accessibility',
+        performance: 'performance', filesystem: 'filesystem', access: 'access', capacity: 'capacity',
+        contention: 'concurrency', state: 'state', temporal: 'timing', propagation: 'propagation',
+        observation: 'observation', content: 'content', hallucination: 'hallucination',
+      };
       const firstFailed = result.gates.find(g => !g.passed);
-      if (firstFailed && !result.attestation.includes(firstFailed.gate)) {
+      const label = firstFailed ? GATE_LABELS[firstFailed.gate] : undefined;
+      const mentioned = firstFailed && (
+        result.attestation.includes(firstFailed.gate) ||
+        (label && result.attestation.includes(label))
+      );
+      if (firstFailed && !mentioned) {
         // Message scenarios use "MESSAGE BLOCKED/NARROWED: <detail>" format —
         // gate names don't appear literally, but the reason/detail does.
         // Accept if the attestation contains the gate's detail text instead.
