@@ -579,7 +579,8 @@ async function runDemoCommand() {
     process.exit(1);
   }
 
-  await runDemo(scenario);
+  const slow = args.includes('--slow');
+  await runDemo(scenario, slow);
 }
 
 async function runCampaignCommand() {
