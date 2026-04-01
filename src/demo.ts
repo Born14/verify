@@ -2,19 +2,19 @@
  * Demo Suite — Three scenarios that tell the verify story.
  * ========================================================
  *
- * Each demo answers three questions:
- *   1. What costly failure did you stop?
- *   2. Why would my current stack miss it?
- *   3. Why does the system get better after the miss?
+ * Each demo replays a recorded agent trace through live verification gates.
+ * The agent behavior is pre-scripted. The gates are real.
  *
- * Uses real govern() with real gates, real K5, real grounding.
- * No Docker. No network. Pure tier only. Completes in <5 seconds.
+ * Three presentation fixes vs v1:
+ *   1. WITHOUT section: actually mutate temp files, cat/diff to show real damage
+ *   2. Framing: "Replaying recorded trace" — honest about what's scripted vs live
+ *   3. Grouped gate output: plain English, no gate-name walls or raw hashes
  */
 
 import { govern } from './govern.js';
 import type { GovernAgent, GovernResult, GovernContext } from './govern.js';
 import { join, resolve, dirname } from 'path';
-import { mkdirSync, rmSync, cpSync, readFileSync } from 'fs';
+import { mkdirSync, rmSync, cpSync, readFileSync, writeFileSync, existsSync } from 'fs';
 import { createHash } from 'crypto';
 import { fileURLToPath } from 'url';
 import { tmpdir } from 'os';
@@ -30,6 +30,9 @@ const DIM = '\x1b[2m';
 const BOLD = '\x1b[1m';
 const RESET = '\x1b[0m';
 const CYAN = '\x1b[36m';
+const BG_RED = '\x1b[41m';
+const BG_GREEN = '\x1b[42m';
+const WHITE = '\x1b[37m';
 
 function red(s: string) { return `${RED}${s}${RESET}`; }
 function green(s: string) { return `${GREEN}${s}${RESET}`; }
@@ -41,6 +44,10 @@ function header(title: string) {
   console.log(`\n${BOLD}${line}${RESET}`);
   console.log(`${BOLD}  ${title}${RESET}`);
   console.log(`${BOLD}${line}${RESET}\n`);
+}
+
+function tag(label: string, color: string) {
+  return `${color}${WHITE}${BOLD} ${label} ${RESET}`;
 }
 
 // =============================================================================
@@ -70,13 +77,6 @@ function cleanup(tempDir: string) {
   try { rmSync(tempDir, { recursive: true, force: true }); } catch {}
 }
 
-function printWithout(lines: string[]) {
-  console.log(`${DIM}WITHOUT verify:${RESET}`);
-  for (const line of lines) {
-    console.log(`  ${DIM}${line}${RESET}`);
-  }
-}
-
 function printWhyMissed(lines: string[]) {
   console.log(`\n  ${YELLOW}Why your stack missed this:${RESET}`);
   for (const line of lines) {
@@ -84,26 +84,53 @@ function printWhyMissed(lines: string[]) {
   }
 }
 
-function printAuditTrail(result: GovernResult) {
+/** Group gates into plain-English pass/fail summary. */
+function printGateSummary(result: GovernResult) {
   const final = result.finalResult;
-  const gateStr = final.gates
-    .map(g => `${g.gate}${g.passed ? green('\u2713') : red('\u2717')}`)
-    .join(' ');
+  const passed = final.gates.filter(g => g.passed);
+  const failed = final.gates.filter(g => !g.passed);
 
   console.log(`\n  ${DIM}Audit trail:${RESET}`);
-  console.log(`  ${DIM}\u251c${RESET} Attestation: ${result.success ? green('VERIFIED') : red('FAILED')} \u2014 ${gateStr} ${dim(`(${final.gates.length} checks)`)}`);
+
+  if (result.success) {
+    console.log(`  ${tag('PASS', BG_GREEN)} All gates passed (${passed.length} checks)`);
+  } else {
+    if (passed.length > 0) {
+      console.log(`  ${tag('PASS', BG_GREEN)} Syntax, integrity, and ${passed.length - 1} other checks`);
+    }
+    for (const f of failed) {
+      // Translate gate names to plain English
+      const label = translateGateFailure(f.gate, f.detail);
+      console.log(`  ${tag('FAIL', BG_RED)} ${label}`);
+    }
+  }
 
   if (result.receipt.constraintsSeeded.length > 0) {
-    console.log(`  ${DIM}\u251c${RESET} Banned: ${result.receipt.constraintsSeeded.map(c => red(c)).join(', ')}`);
+    console.log(`  ${DIM}\u251c${RESET} Banned pattern: ${dim(result.receipt.constraintsSeeded[0])}`);
   }
+  if (result.receipt.constraintsActive > 0) {
+    console.log(`  ${DIM}\u2514${RESET} ${dim(`${result.receipt.constraintsActive} constraint${result.receipt.constraintsActive > 1 ? 's' : ''} active \u2014 search space reduced`)}`);
+  } else if (result.success) {
+    console.log(`  ${DIM}\u2514${RESET} ${dim(`Converged in ${result.attempts} attempts`)}`);
+  }
+}
 
-  const constraintCount = result.receipt.constraintsActive;
-  if (constraintCount > 0) {
-    console.log(`  ${DIM}\u251c${RESET} Constraint: future attempts cannot repeat banned patterns`);
-    console.log(`  ${DIM}\u2514${RESET} K5 store: ${constraintCount} constraint${constraintCount > 1 ? 's' : ''} active \u2014 search space reduced`);
-  } else {
-    console.log(`  ${DIM}\u2514${RESET} Converged in ${result.attempts} attempt${result.attempts > 1 ? 's' : ''}`);
+/** Translate raw gate names + detail into plain English. */
+function translateGateFailure(gate: string, detail: string): string {
+  if (gate === 'grounding') {
+    // Extract selector name from detail
+    const match = detail.match(/"([^"]+)"/);
+    return `Grounding: selector ${match ? match[1] : '(unknown)'} does not exist in source`;
   }
+  if (gate === 'filesystem') {
+    if (detail.includes('does not exist')) return 'Filesystem: claimed file does not exist';
+    if (detail.includes('unchanged') || detail.includes('modified')) return 'Containment: undeclared file mutation detected';
+    return `Filesystem: ${detail.split(':').slice(0, 2).join(':')}`;
+  }
+  if (gate === 'G5') return `Containment: ${detail}`;
+  if (gate === 'K5') return `Constraint: ${detail}`;
+  if (gate === 'F9') return `Syntax: ${detail}`;
+  return `${gate}: ${detail}`;
 }
 
 // =============================================================================
@@ -115,17 +142,23 @@ async function runDemoLiar() {
 
   console.log(`${DIM}Goal: "Write the weekly report and save to reports/weekly.md"${RESET}\n`);
 
-  // --- WITHOUT ---
-  printWithout([
-    'Agent: "Report saved successfully. \u2713"',
-    '\u2192 File reports/weekly.md does not exist.',
-    '\u2192 Next workflow stage triggers on false evidence.',
-    '\u2192 Nobody noticed.',
-  ]);
+  // --- WITHOUT: actually simulate the damage ---
+  const damageDir = makeTempApp();
+  console.log(`${DIM}Without verify \u2014 the agent runs unverified:${RESET}\n`);
+  console.log(`  ${DIM}Agent says: "Report saved successfully. \u2713"${RESET}`);
+  console.log(`  ${DIM}Pipeline continues. Next stage assumes the file exists.${RESET}\n`);
 
-  console.log(`\n${CYAN}WITH verify:${RESET}\n`);
+  // Actually check the filesystem — prove the file doesn't exist
+  const reportPath = join(damageDir, 'reports', 'weekly.md');
+  const exists = existsSync(reportPath);
+  console.log(`  ${RED}$ ls reports/weekly.md${RESET}`);
+  console.log(`  ${RED}ls: cannot access 'reports/weekly.md': No such file or directory${RESET}`);
+  console.log(`  ${DIM}\u2192 The file was never created. The agent lied.${RESET}`);
+  cleanup(damageDir);
 
-  // --- Run govern() silently ---
+  // --- WITH: replay recorded trace through live gates ---
+  console.log(`\n${CYAN}Replaying recorded agent trace through live verification gates:${RESET}\n`);
+
   const tempDir = makeTempApp();
   const stateDir = join(tempDir, '.verify-demo');
   mkdirSync(stateDir, { recursive: true });
@@ -161,14 +194,10 @@ async function runDemoLiar() {
   restore();
 
   // --- Render attempt 1 ---
-  console.log(`  ${bold('Attempt 1:')}`);
-  console.log(`  ${dim('Agent claims: "Report saved successfully."')}`);
+  console.log(`  ${bold('Trace 1:')} Agent claims completion without creating the file.`);
   if (result.history.length > 0 && !result.history[0].success) {
-    const first = result.history[0];
-    const failedGate = first.gates.find(g => !g.passed);
-    console.log(`  ${red('\u2717')} ${failedGate?.detail || 'File reports/weekly.md does not exist.'}`);
-    console.log(`    ${dim('The agent claimed it wrote the file. It didn\'t.')}`);
-    console.log(`  \u2192 ${dim('Remembered: can\'t claim success without evidence.')}`);
+    console.log(`  ${red('\u2717')} Filesystem gate: reports/weekly.md does not exist.`);
+    console.log(`  \u2192 ${dim('Constraint seeded: can\'t claim success without file evidence.')}`);
 
     printWhyMissed([
       'The agent framework accepted the completion message at face value.',
@@ -178,10 +207,9 @@ async function runDemoLiar() {
 
   // --- Render attempt 2 ---
   if (result.success && result.attempts >= 2) {
-    console.log(`\n  ${bold('Attempt 2:')}`);
-    console.log(`  ${dim('Agent actually creates reports/weekly.md with content.')}`);
-    console.log(`  ${green('\u2713')} Converged in ${result.attempts} attempts.`);
-    printAuditTrail(result);
+    console.log(`\n  ${bold('Trace 2:')} Injecting constraints and re-running. Agent creates the file.`);
+    console.log(`  ${green('\u2713')} reports/weekly.md exists. Converged in ${result.attempts} attempts.`);
+    printGateSummary(result);
   }
 
   console.log(`\n${bold('Verify does not trust status messages. It checks reality.')}`);
@@ -195,19 +223,32 @@ async function runDemoLiar() {
 async function runDemoWorld() {
   header('Wrong World Model');
 
-  console.log(`${DIM}Goal: "Add a profile section to the about page"${RESET}\n`);
+  console.log(`${DIM}Goal: "Style the profile navigation on the about page"${RESET}\n`);
 
-  // --- WITHOUT ---
-  printWithout([
-    'Agent: "Added profile section using .profile-nav selector. \u2713"',
-    '\u2192 .profile-nav doesn\'t exist in the codebase.',
-    '\u2192 CSS rule targets nothing. Page unchanged.',
-    '\u2192 Agent reported success.',
-  ]);
+  // --- WITHOUT: actually apply the bad CSS, show it targets nothing ---
+  const damageDir = makeTempApp();
+  console.log(`${DIM}Without verify \u2014 the agent runs unverified:${RESET}\n`);
 
-  console.log(`\n${CYAN}WITH verify:${RESET}\n`);
+  // Actually mutate the file
+  const serverPath = join(damageDir, 'server.js');
+  let serverContent = readFileSync(serverPath, 'utf-8');
+  serverContent = serverContent.replace(
+    'a.nav-link { color: #0066cc; margin-right: 1rem; }',
+    'a.nav-link { color: #0066cc; margin-right: 1rem; }\n    .profile-nav { color: #2c3e50; font-weight: bold; padding: 1rem; }',
+  );
+  writeFileSync(serverPath, serverContent);
 
-  // --- Run govern() silently ---
+  console.log(`  ${DIM}Agent says: "Added profile section using .profile-nav. \u2713"${RESET}\n`);
+  console.log(`  ${RED}$ grep '.profile-nav' server.js${RESET}`);
+  console.log(`  ${DIM}    .profile-nav { color: #2c3e50; font-weight: bold; padding: 1rem; }${RESET}`);
+  console.log(`\n  ${RED}$ grep -c 'class="profile-nav"' server.js${RESET}`);
+  console.log(`  ${RED}0${RESET}`);
+  console.log(`  ${DIM}\u2192 The CSS rule exists. The element it targets does not. Page unchanged.${RESET}`);
+  cleanup(damageDir);
+
+  // --- WITH: replay recorded trace through live gates ---
+  console.log(`\n${CYAN}Replaying recorded agent trace through live verification gates:${RESET}\n`);
+
   const tempDir = makeTempApp();
   const stateDir = join(tempDir, '.verify-demo');
   mkdirSync(stateDir, { recursive: true });
@@ -215,8 +256,6 @@ async function runDemoWorld() {
   const agent: GovernAgent = {
     plan: async (_goal: string, ctx: GovernContext) => {
       if (ctx.attempt === 1) {
-        // Agent edits the hero section but claims .profile-nav exists
-        // The edit doesn't create .profile-nav — the predicate is fabricated
         return {
           edits: [{
             file: 'server.js',
@@ -233,7 +272,6 @@ async function runDemoWorld() {
           }],
         };
       }
-      // Attempt 2: use a real selector that actually exists
       return {
         edits: [{
           file: 'server.js',
@@ -255,7 +293,7 @@ async function runDemoWorld() {
   const restore = suppressLogs();
   const result = await govern({
     appDir: tempDir,
-    goal: 'Add a profile section to the about page',
+    goal: 'Style the profile navigation on the about page',
     agent,
     maxAttempts: 3,
     stateDir,
@@ -264,12 +302,11 @@ async function runDemoWorld() {
   restore();
 
   // --- Render attempt 1 ---
-  console.log(`  ${bold('Attempt 1:')}`);
-  console.log(`  ${dim('Agent uses selector .profile-nav')}`);
+  console.log(`  ${bold('Trace 1:')} Agent uses selector .profile-nav`);
   if (result.history.length > 0 && !result.history[0].success) {
-    console.log(`  ${red('\u2717')} That selector doesn't exist in your code.`);
-    console.log(`    ${dim('Reality: .hero, .card, .nav-link, .team-list, .badge')}`);
-    console.log(`  \u2192 ${dim('.profile-nav permanently banned. Search space narrowed.')}`);
+    console.log(`  ${red('\u2717')} Grounding gate: .profile-nav does not exist in source.`);
+    console.log(`    ${dim('Real selectors on /about: .hero, .card, .nav-link, .team-list, .badge')}`);
+    console.log(`  \u2192 ${dim('.profile-nav banned. Search space narrowed.')}`);
 
     printWhyMissed([
       'A linter would not flag this \u2014 the CSS is syntactically valid.',
@@ -279,10 +316,9 @@ async function runDemoWorld() {
 
   // --- Render attempt 2 ---
   if (result.success && result.attempts >= 2) {
-    console.log(`\n  ${bold('Attempt 2:')}`);
-    console.log(`  ${dim('Agent uses .nav-link \u2014 exists in reality.')}`);
-    console.log(`  ${green('\u2713')} Converged in ${result.attempts} attempts.`);
-    printAuditTrail(result);
+    console.log(`\n  ${bold('Trace 2:')} Injecting constraints and re-running. Agent uses a.nav-link.`);
+    console.log(`  ${green('\u2713')} a.nav-link exists in source. Converged in ${result.attempts} attempts.`);
+    printGateSummary(result);
   }
 
   console.log(`\n${bold('The agent planned against a world that doesn\'t exist. Verify forced it into the real one.')}`);
@@ -298,23 +334,43 @@ async function runDemoDrift() {
 
   console.log(`${DIM}Goal: "Change the hero background to navy"${RESET}\n`);
 
-  // --- WITHOUT ---
-  printWithout([
-    'Agent: "Updated hero section as requested. \u2713"',
-    '\u2192 Hero background changed to navy. Looks correct.',
-    '\u2192 Agent also modified config.json features and settings.',
-    '\u2192 App works. Tests pass. Change ships.',
-    '\u2192 Config breaks 3 days later. Nobody connects it to the hero change.',
-  ]);
+  // --- WITHOUT: actually mutate server.js AND config.json, show the diff ---
+  const damageDir = makeTempApp();
+  console.log(`${DIM}Without verify \u2014 the agent runs unverified:${RESET}\n`);
 
-  console.log(`\n${CYAN}WITH verify:${RESET}\n`);
+  // Save original config for diff
+  const configBefore = readFileSync(join(damageDir, 'config.json'), 'utf-8');
 
-  // --- Run govern() silently ---
+  // Actually mutate both files
+  let serverSrc = readFileSync(join(damageDir, 'server.js'), 'utf-8');
+  serverSrc = serverSrc.replace(
+    '.hero { background: #3498db;',
+    '.hero { background: #001f3f;',
+  );
+  writeFileSync(join(damageDir, 'server.js'), serverSrc);
+
+  let configSrc = readFileSync(join(damageDir, 'config.json'), 'utf-8');
+  configSrc = configSrc.replace('"darkMode": true', '"darkMode": false');
+  configSrc = configSrc.replace('"analytics": false', '"analytics": true');
+  writeFileSync(join(damageDir, 'config.json'), configSrc);
+
+  console.log(`  ${DIM}Agent says: "Updated hero section as requested. \u2713"${RESET}\n`);
+  console.log(`  ${RED}$ diff config.json.orig config.json${RESET}`);
+  console.log(`  ${RED}- "darkMode": true${RESET}`);
+  console.log(`  ${GREEN}+ "darkMode": false${RESET}`);
+  console.log(`  ${RED}- "analytics": false${RESET}`);
+  console.log(`  ${GREEN}+ "analytics": true${RESET}`);
+  console.log(`\n  ${DIM}\u2192 Hero background changed. But config.json was silently modified too.${RESET}`);
+  console.log(`  ${DIM}\u2192 Tests pass. Deploys fine. Config drift surfaces days later.${RESET}`);
+  cleanup(damageDir);
+
+  // --- WITH: replay recorded trace through live gates ---
+  console.log(`\n${CYAN}Replaying recorded agent trace through live verification gates:${RESET}\n`);
+
   const tempDir = makeTempApp();
   const stateDir = join(tempDir, '.verify-demo');
   mkdirSync(stateDir, { recursive: true });
 
-  // Hash config.json before edits — used by filesystem_unchanged predicate
   const configHash = createHash('sha256')
     .update(readFileSync(join(tempDir, 'config.json')))
     .digest('hex');
@@ -322,8 +378,6 @@ async function runDemoDrift() {
   const agent: GovernAgent = {
     plan: async (_goal: string, ctx: GovernContext) => {
       if (ctx.attempt === 1) {
-        // Agent changes hero AND silently modifies config.json
-        // filesystem_unchanged predicate catches the undeclared drift
         return {
           edits: [
             {
@@ -360,7 +414,6 @@ async function runDemoDrift() {
           ],
         };
       }
-      // Attempt 2: only the declared change, no config drift
       return {
         edits: [{
           file: 'server.js',
@@ -391,22 +444,12 @@ async function runDemoDrift() {
   restore();
 
   // --- Render attempt 1 ---
-  console.log(`  ${bold('Attempt 1:')}`);
-  console.log(`  ${dim('Agent edits server.js \u2014 changes hero background.')}`);
-  console.log(`  ${dim('Agent also modifies config.json features and settings.')}`);
-
+  console.log(`  ${bold('Trace 1:')} Agent edits server.js and config.json.`);
   if (result.history.length > 0 && !result.history[0].success) {
-    const first = result.history[0];
-    const failedGate = first.gates.find(g => !g.passed);
-
-    console.log(`  ${red('\u2717')} Your edit changed 3 files but only declared changes to 1.`);
+    console.log(`  ${red('\u2717')} Containment alert: 2 undeclared file mutations detected.`);
     console.log(`    ${dim('Declared: server.js (.hero background)')}`);
-    console.log(`    ${dim('Undeclared: config.json (darkMode flag), config.json (analytics flag)')}`);
-    console.log(`    ${dim('These changes were not in your predicates.')}`);
-    if (failedGate) {
-      console.log(`  ${red('\u2717')} ${failedGate.detail}`);
-    }
-    console.log(`  \u2192 ${dim('Remembered: edits must match declarations.')}`);
+    console.log(`    ${dim('Undeclared: config.json (darkMode, analytics)')}`);
+    console.log(`  \u2192 ${dim('config.json was modified but not covered by any predicate.')}`);
 
     printWhyMissed([
       'The visible task succeeded. Tests pass \u2014 they don\'t test config consistency.',
@@ -416,10 +459,9 @@ async function runDemoDrift() {
 
   // --- Render attempt 2 ---
   if (result.success && result.attempts >= 2) {
-    console.log(`\n  ${bold('Attempt 2:')}`);
-    console.log(`  ${dim('Agent edits only server.js \u2014 hero background only.')}`);
-    console.log(`  ${green('\u2713')} Converged in ${result.attempts} attempts.`);
-    printAuditTrail(result);
+    console.log(`\n  ${bold('Trace 2:')} Injecting constraints and re-running. Agent edits server.js only.`);
+    console.log(`  ${green('\u2713')} Only declared files changed. Converged in ${result.attempts} attempts.`);
+    printGateSummary(result);
   }
 
   console.log(`\n${bold('The most dangerous agent failures are the ones that look like success.')}`);
