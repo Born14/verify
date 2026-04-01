@@ -23,3 +23,4 @@ data/harvest-manifest.json
 
 # Keep the data directory itself
 !data/.gitkeep
+MARKETING-STRATEGY.md
