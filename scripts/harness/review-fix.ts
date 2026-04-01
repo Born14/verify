@@ -21,7 +21,7 @@
  *   bun scripts/harness/review-fix.ts --ledger=data/improvement-ledger.jsonl --dry-run
  */
 
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, resolve } from 'path';
 
 const PKG_ROOT = resolve(import.meta.dir, '..', '..');
@@ -45,10 +45,11 @@ interface ImprovementEntry {
   winner: string | null;
   diagnosis: string | null;
   candidates: Array<{
-    name: string;
+    candidateId: string;
+    strategy: string;
     score: number;
-    improvements: number;
-    regressions: number;
+    improvements: string[] | number;
+    regressions: string[] | number;
     edits: Array<{ file: string; search: string; replace: string }>;
   }>;
 }
@@ -110,7 +111,7 @@ function checkSafety(entry: ImprovementEntry): { safe: boolean; reason: string }
     return { safe: false, reason: 'No winning candidate' };
   }
 
-  const winner = entry.candidates.find(c => c.name === entry.winner);
+  const winner = entry.candidates.find(c => c.candidateId === entry.winner || c.strategy === entry.winner);
   if (!winner) {
     return { safe: false, reason: `Winner "${entry.winner}" not found in candidates` };
   }
@@ -129,8 +130,9 @@ function checkSafety(entry: ImprovementEntry): { safe: boolean; reason: string }
   if (winner.score <= 0) {
     return { safe: false, reason: `Score ${winner.score} is not positive` };
   }
-  if (winner.regressions > 0) {
-    return { safe: false, reason: `Winner has ${winner.regressions} regressions` };
+  const regCount = Array.isArray(winner.regressions) ? winner.regressions.length : winner.regressions;
+  if (regCount > 0) {
+    return { safe: false, reason: `Winner has ${regCount} regressions` };
   }
 
   return { safe: true, reason: 'All safety checks passed' };
@@ -141,7 +143,7 @@ function checkSafety(entry: ImprovementEntry): { safe: boolean; reason: string }
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function llmReview(entry: ImprovementEntry, provider: string): Promise<ReviewResult> {
-  const winner = entry.candidates.find(c => c.name === entry.winner);
+  const winner = entry.candidates.find(c => c.candidateId === entry.winner || c.strategy === entry.winner);
   if (!winner) {
     return { bundleId: entry.id, disposition: 'reject', reason: 'No winner', confidence: 'high' };
   }
@@ -172,7 +174,7 @@ Format: DECISION: one-sentence reason`;
 
   const userPrompt = `Diagnosis: ${entry.diagnosis ?? 'none'}
 
-Fix (score: ${winner.score}, improvements: ${winner.improvements}, regressions: ${winner.regressions}):
+Fix (score: ${winner.score}, improvements: ${Array.isArray(winner.improvements) ? winner.improvements.length : winner.improvements}, regressions: ${Array.isArray(winner.regressions) ? winner.regressions.length : winner.regressions}):
 ${diffSummary}
 
 This fix only touches gate files (verification checks). It cannot affect the core pipeline.
@@ -274,8 +276,13 @@ async function main() {
       timestamp: new Date().toISOString(),
       reviews,
     });
-    const existing = existsSync(REVIEW_LOG_PATH) ? readFileSync(REVIEW_LOG_PATH, 'utf-8') : '';
-    writeFileSync(REVIEW_LOG_PATH, existing + logLine + '\n');
+    try {
+      mkdirSync(join(PKG_ROOT, 'data'), { recursive: true });
+      const existing = existsSync(REVIEW_LOG_PATH) ? readFileSync(REVIEW_LOG_PATH, 'utf-8') : '';
+      writeFileSync(REVIEW_LOG_PATH, existing + logLine + '\n');
+    } catch (e) {
+      console.log(`Review log write error: ${e instanceof Error ? e.message : e}`);
+    }
   }
 
   // Final disposition: approve only if ALL reviews approve
