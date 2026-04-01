@@ -442,7 +442,39 @@ function refineTriage(bundle: EvidenceBundle): void {
         return;
       }
     }
-    // Pattern 4: "verify passed but should fail" — generic false_positive, target verify.ts pipeline
+    // Pattern 4: Extract gate from invariant name (e.g., "should_fail_at_grounding")
+    const invariantGate = v.invariant.match(/should_fail_at_(\w+)/);
+    if (invariantGate) {
+      const gate = invariantGate[1].toLowerCase();
+      const file = GATE_FILE_MAP[gate];
+      if (file) {
+        bundle.triage.targetFile = file;
+        bundle.triage.targetFunction = `run${gate.charAt(0).toUpperCase()}${gate.slice(1)}Gate()`;
+        return;
+      }
+    }
+    // Pattern 5: Extract gate from gatesFailed array on the violation
+    if (v.gatesFailed?.length) {
+      const gate = v.gatesFailed[0].toLowerCase();
+      const file = GATE_FILE_MAP[gate];
+      if (file) {
+        bundle.triage.targetFile = file;
+        bundle.triage.targetFunction = `run${gate.charAt(0).toUpperCase()}${gate.slice(1)}Gate()`;
+        return;
+      }
+    }
+    // Pattern 6: "Expected gate {gate} not found in results" — gate didn't run
+    const expectedGate = v.violation.match(/Expected gate (\w+) not found/);
+    if (expectedGate) {
+      const gate = expectedGate[1].toLowerCase();
+      const file = GATE_FILE_MAP[gate];
+      if (file) {
+        bundle.triage.targetFile = file;
+        bundle.triage.targetFunction = `run${gate.charAt(0).toUpperCase()}${gate.slice(1)}Gate()`;
+        return;
+      }
+    }
+    // Pattern 7 (last resort): "verify passed but should fail" — only if no gate identified above
     if (v.violation.includes('verify passed but should fail')) {
       bundle.triage.targetFile = 'src/verify.ts';
       bundle.triage.targetFunction = 'verify()';
