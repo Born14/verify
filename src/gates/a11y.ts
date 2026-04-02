@@ -96,13 +96,13 @@ function checkAltText(files: Array<{ relativePath: string; content: string }>): 
       } else {
         // Check for empty or whitespace-only alt
         const altMatch = tag.match(/alt\s*=\s*["']([^"']*)["']/i);
-        if (altMatch && altMatch[1].trim() === '') {
-          findings.push({
-            check: 'alt_text',
-            file: file.relativePath,
-            detail: 'Image has empty alt attribute',
-            severity: 'warning',
-          });
+        if (altMatch) {
+          const altText = altMatch[1].trim().toLowerCase();
+          if (altText === '') {
+            findings.push({ check: 'alt_text', file: file.relativePath, detail: 'Image has empty alt attribute', severity: 'warning' });
+          } else if (['image', 'picture', 'photo', 'logo'].includes(altText)) {
+            findings.push({ check: 'alt_text', file: file.relativePath, detail: `Image has generic alt text: "${altMatch[1]}"`, severity: 'warning' });
+          }
         }
       }
     }
