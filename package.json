@@ -1,7 +1,7 @@
 {
   "name": "@sovereign-labs/verify",
-  "version": "0.7.0",
-  "description": "Verification gate for AI agent actions. Deterministic predicates, browser-level visual checks, constraint learning from failures. Every edit gets a fair trial before it touches your users.",
+  "version": "0.7.1",
+  "description": "Know how your AI coding agent fails. Deterministic verification of agent edits against filesystem reality. Catches silent edit failures, fabricated selectors, undeclared mutations, security anti-patterns. Zero dependencies.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -52,6 +52,15 @@
     "scripts/harness/external-scenario-loader.ts"
   ],
   "license": "MIT",
+  "author": "Sovereign Labs <vibestarter26@outlook.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Born14/verify"
+  },
+  "bugs": {
+    "url": "https://github.com/Born14/verify/issues"
+  },
+  "homepage": "https://github.com/Born14/verify#readme",
   "keywords": [
     "ai-agents", "verification", "code-review", "ci-cd",
     "visual-testing", "browser-testing", "governance",

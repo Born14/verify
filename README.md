@@ -1,8 +1,16 @@
 # @sovereign-labs/verify
 
-**Your agent just got better.**
+**Your agent says "done." But do you know *how* it fails?**
 
-Your agent says "done." But did it actually work? Verify checks reality, not status messages.
+Not whether it fails. *How.*
+
+`verify()` runs your agent's edits against filesystem reality and tells you what the agent got wrong — the file, the line, the expected value, the actual value. No LLM in the verification path. The answer is not "probably."
+
+Over time, these measurements accumulate into a reliability profile: how *this* agent fails on *this* codebase. What it hallucinates. Where it drops edits. Which patterns it repeats.
+
+No other tool builds this model. Linters know your code has problems. Tests know your code produces wrong output. **Verify knows why the agent was wrong.**
+
+**Using verify? We'd love to hear what you're building.** [Join the discussion](https://github.com/Born14/verify/discussions/40)
 
 ## See it in action
 

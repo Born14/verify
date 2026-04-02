@@ -142,5 +142,9 @@ export type {
   TopicResolution,
 } from './gates/message.js';
 
+// Reliability profile — what verify KNOWS after it runs
+export { buildProfile, formatProfile } from './report.js';
+export type { SensorReading, ReliabilityProfile } from './report.js';
+
 // Parsers — convert external formats into Edit[]
 export { parseDiff } from './parsers/git-diff.js';
