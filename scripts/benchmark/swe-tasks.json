@@ -1,0 +1,309 @@
+[
+  {
+    "id": "swe_01",
+    "goal": "Change the hero background color on the about page from #3498db to #e74c3c",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "background: #e74c3c" }
+    ],
+    "category": "css",
+    "difficulty": "trivial"
+  },
+  {
+    "id": "swe_02",
+    "goal": "Add a new team member 'Dave' with role 'DevOps' to the team list on the about page",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "Dave" },
+      { "type": "content", "file": "server.js", "pattern": "DevOps" }
+    ],
+    "category": "html",
+    "difficulty": "trivial"
+  },
+  {
+    "id": "swe_03",
+    "goal": "Add a new API endpoint GET /api/status that returns { \"status\": \"running\", \"version\": \"1.1\" }",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "/api/status" },
+      { "type": "content", "file": "server.js", "pattern": "\"version\": \"1.1\"" }
+    ],
+    "category": "logic",
+    "difficulty": "moderate"
+  },
+  {
+    "id": "swe_04",
+    "goal": "Change the page title from 'Demo App' to 'Verify Demo' on the homepage (route '/')",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "<title>Verify Demo</title>" }
+    ],
+    "category": "html",
+    "difficulty": "trivial"
+  },
+  {
+    "id": "swe_05",
+    "goal": "Add input validation to the contact form: add a 'maxlength' attribute of 500 to the message textarea",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "maxlength=\"500\"" }
+    ],
+    "category": "html",
+    "difficulty": "trivial"
+  },
+  {
+    "id": "swe_06",
+    "goal": "Change the footer text on the homepage from 'Powered by Node.js' to 'Powered by Verify'",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "Powered by Verify" }
+    ],
+    "category": "html",
+    "difficulty": "trivial"
+  },
+  {
+    "id": "swe_07",
+    "goal": "Add rate limiting to the /api/echo endpoint: track request count in a global variable and return 429 status if more than 100 requests",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "429" }
+    ],
+    "category": "logic",
+    "difficulty": "moderate"
+  },
+  {
+    "id": "swe_08",
+    "goal": "Change the nav-link color from #0066cc to #2ecc71 on the about page",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "#2ecc71" }
+    ],
+    "category": "css",
+    "difficulty": "moderate"
+  },
+  {
+    "id": "swe_09",
+    "goal": "Add a 'Priority' dropdown to the contact form with options: Low, Medium, High",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "priority" },
+      { "type": "content", "file": "server.js", "pattern": "High" }
+    ],
+    "category": "html",
+    "difficulty": "moderate"
+  },
+  {
+    "id": "swe_10",
+    "goal": "Add CORS headers (Access-Control-Allow-Origin: *) to all API responses (routes starting with /api/)",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "Access-Control-Allow-Origin" }
+    ],
+    "category": "logic",
+    "difficulty": "hard"
+  },
+  {
+    "id": "swe_11",
+    "goal": "Change the badge version from 'v1.0' to 'v2.0' on the about page",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "v2.0" }
+    ],
+    "category": "html",
+    "difficulty": "trivial"
+  },
+  {
+    "id": "swe_12",
+    "goal": "Add a new item 'Gamma' with id 3 to the /api/items response",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "Gamma" }
+    ],
+    "category": "logic",
+    "difficulty": "trivial"
+  },
+  {
+    "id": "swe_13",
+    "goal": "Change the data-table header background from #ecf0f1 to #2c3e50 and text color to white on the about page",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "#2c3e50" }
+    ],
+    "category": "css",
+    "difficulty": "moderate"
+  },
+  {
+    "id": "swe_14",
+    "goal": "Add request logging: log the HTTP method and URL to console for every incoming request",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "req.method" },
+      { "type": "content", "file": "server.js", "pattern": "req.url" }
+    ],
+    "category": "logic",
+    "difficulty": "moderate"
+  },
+  {
+    "id": "swe_15",
+    "goal": "Change the card box-shadow on the about page from '0 2px 4px rgba(0,0,0,0.1)' to '0 4px 8px rgba(0,0,0,0.2)' for a more prominent shadow",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "0 4px 8px rgba(0,0,0,0.2)" }
+    ],
+    "category": "css",
+    "difficulty": "moderate"
+  },
+  {
+    "id": "swe_16",
+    "goal": "Change the submit button color on the contact form from #27ae60 to #e74c3c",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "background: #e74c3c" }
+    ],
+    "category": "css",
+    "difficulty": "moderate"
+  },
+  {
+    "id": "swe_17",
+    "goal": "Add a 'Content-Security-Policy' header with value \"default-src 'self'\" to the homepage response",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "Content-Security-Policy" }
+    ],
+    "category": "logic",
+    "difficulty": "hard"
+  },
+  {
+    "id": "swe_18",
+    "goal": "Add a third column 'Department' to the data-table on the about page, with values 'Engineering' and 'Engineering'",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "Department" },
+      { "type": "content", "file": "server.js", "pattern": "Engineering" }
+    ],
+    "category": "html",
+    "difficulty": "moderate"
+  },
+  {
+    "id": "swe_19",
+    "goal": "Add a /api/health/detailed endpoint that returns { \"status\": \"ok\", \"uptime\": process.uptime(), \"memory\": process.memoryUsage().heapUsed }",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "/api/health/detailed" },
+      { "type": "content", "file": "server.js", "pattern": "process.uptime()" }
+    ],
+    "category": "logic",
+    "difficulty": "moderate"
+  },
+  {
+    "id": "swe_20",
+    "goal": "Change the homepage body font-family from sans-serif to 'Inter, system-ui, sans-serif'",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "Inter, system-ui, sans-serif" }
+    ],
+    "category": "css",
+    "difficulty": "trivial"
+  },
+  {
+    "id": "swe_21",
+    "goal": "Change the PORT default from 3000 to 8080",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "8080" }
+    ],
+    "category": "config",
+    "difficulty": "trivial"
+  },
+  {
+    "id": "swe_22",
+    "goal": "Add a 'Back to Home' link at the bottom of the contact form page, before the closing </body> tag",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "Back to Home" }
+    ],
+    "category": "html",
+    "difficulty": "trivial"
+  },
+  {
+    "id": "swe_23",
+    "goal": "Add JSON body parsing to the /api/echo endpoint so it returns the parsed JSON object instead of the raw string",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "JSON.parse" }
+    ],
+    "category": "logic",
+    "difficulty": "moderate"
+  },
+  {
+    "id": "swe_24",
+    "goal": "Add an 'aria-label' attribute with value 'Main navigation' to the <nav> element on the homepage",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "aria-label=\"Main navigation\"" }
+    ],
+    "category": "html",
+    "difficulty": "trivial"
+  },
+  {
+    "id": "swe_25",
+    "goal": "Change the flex gap in .flex-container on the edge-cases page from 10px to 20px",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "gap: 20px" }
+    ],
+    "category": "css",
+    "difficulty": "moderate"
+  },
+  {
+    "id": "swe_26",
+    "goal": "Add a new 'Billing' option to the subject dropdown on the contact form",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "Billing" }
+    ],
+    "category": "html",
+    "difficulty": "trivial"
+  },
+  {
+    "id": "swe_27",
+    "goal": "Add a graceful shutdown handler that listens for SIGTERM and closes the server",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "SIGTERM" },
+      { "type": "content", "file": "server.js", "pattern": "server.close" }
+    ],
+    "category": "logic",
+    "difficulty": "moderate"
+  },
+  {
+    "id": "swe_28",
+    "goal": "Change the search input width from 200px to 300px on the about page",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "width: 300px" }
+    ],
+    "category": "css",
+    "difficulty": "moderate"
+  },
+  {
+    "id": "swe_29",
+    "goal": "Add a 404 page with an HTML response that includes an h1 saying 'Page Not Found' and a link back to the homepage",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "Page Not Found" }
+    ],
+    "category": "html",
+    "difficulty": "moderate"
+  },
+  {
+    "id": "swe_30",
+    "goal": "Rename the /api/items endpoint to /api/v2/items while keeping the same response",
+    "appDir": "fixtures/demo-app",
+    "predicates": [
+      { "type": "content", "file": "server.js", "pattern": "/api/v2/items" }
+    ],
+    "category": "logic",
+    "difficulty": "moderate"
+  }
+]
