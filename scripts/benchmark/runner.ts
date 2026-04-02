@@ -256,10 +256,10 @@ async function runGoverned(
         if (ctx.priorResult && !ctx.priorResult.success) {
           const failedGate = ctx.priorResult.gates.find(g => !g.passed);
           priorFailure = failedGate
-            ? `Gate "${failedGate.gate}" failed: ${failedGate.details?.reason ?? 'unknown'}`
+            ? `Gate "${failedGate.gate}" failed: ${failedGate.detail ?? 'unknown'}`
             : 'Unknown failure';
-          if (ctx.narrowing?.hint) {
-            priorFailure += `\nHint: ${ctx.narrowing.hint}`;
+          if (ctx.narrowing?.resolutionHint) {
+            priorFailure += `\nHint: ${ctx.narrowing.resolutionHint}`;
           }
           if (ctx.constraints.length > 0) {
             priorFailure += '\nConstraints: ' + ctx.constraints.map(c => c.reason).join('; ');
@@ -310,7 +310,7 @@ async function runGoverned(
     return {
       edits: lastEdits,
       predicates: lastPredicates,
-      attempts: result.attempts.length,
+      attempts: result.attempts,
       stopReason: result.convergence.stopReason ?? 'exhausted',
       verifyPassed: result.success,
       agentError: null,
