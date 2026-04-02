@@ -1,0 +1,24 @@
+=== Stage 7: REVIEW ===
+Ledger: artifacts/improve/data/improvement-ledger.jsonl
+Provider: gemini
+Dry run: false
+
+Reviewing 4 accepted improvement(s)...
+
+  Bundle: bundle_20
+    Safety: OK
+    LLM: APPROVE (high) — APPROVE: Changing the severity
+  Bundle: bundle_29
+    Safety: OK
+    LLM: APPROVE (high) — APPROVE
+DECISION: The fix safely
+  Bundle: bundle_33
+    Safety: OK
+    LLM: APPROVE (high) — APPROVE: The fix correctly updates the
+  Bundle: bundle_38
+    Safety: OK
+    LLM: APPROVE (high) — DECISION: APPROVE
+Changing the severity from error
+
+DISPOSITION: approve
+  Reviews: 4 approve, 0 reject, 0 route

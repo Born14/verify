@@ -1,0 +1,2 @@
+{"timestamp":"2026-04-02T04:56:48.625Z","source":"fuzzer","generated":50,"new":50,"byClass":{"edit_corrupt":9,"type_swap":16,"boundary":16,"pred_flip":4,"pred_drift":3,"compound":2}}
+{"timestamp":"2026-04-02T04:56:48.677Z","source":"harvester","generated":338,"new":266,"bySources":{"css_edge_cases":43,"http_edge_cases":16,"db_patterns":6,"wpt":48,"schemapile":79,"cve_owasp":19,"stylelint":38,"openapi":17,"edit_failures":20,"build_failures":21,"health_check_failures":15,"cascade_failures":16}}

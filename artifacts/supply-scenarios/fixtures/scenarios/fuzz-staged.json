@@ -1,0 +1,1612 @@
+[
+  {
+    "id": "fuzz-edit-corrupt-sm-migration-015-1",
+    "description": "[FUZZ:edit_corrupt] SM-03: Add ON DELETE CASCADE to posts FK, predicate checks config.json for cascade — search string corrupted",
+    "edits": [
+      {
+        "file": "init.sql",
+        "search": "user_id INTEGER NOT NUL_CORRUPTED_L REFERENCES users(id),",
+        "replace": "user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "config.json",
+        "pattern": "cascade"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "state_assumption",
+      "multistep",
+      "migration_output",
+      "SM-03",
+      "fuzz",
+      "edit_corrupt",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from sm-migration-015: search string corrupted to prevent edit application",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-type-swap-sm-migration-015-3",
+    "description": "[FUZZ:type_swap] SM-03: Add ON DELETE CASCADE to posts FK, predicate checks config.json for cascade — predicate type content→css",
+    "edits": [
+      {
+        "file": "init.sql",
+        "search": "user_id INTEGER NOT NULL REFERENCES users(id),",
+        "replace": "user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": ".fuzz-nonexistent",
+        "property": "color",
+        "expected": "red"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "state_assumption",
+      "multistep",
+      "migration_output",
+      "SM-03",
+      "fuzz",
+      "type_swap",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from sm-migration-015: predicate type swapped from content to css",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-boundary-sm-migration-015-4",
+    "description": "[FUZZ:boundary] SM-03: Add ON DELETE CASCADE to posts FK, predicate checks config.json for cascade — pattern set to boundary value",
+    "edits": [
+      {
+        "file": "init.sql",
+        "search": "user_id INTEGER NOT NULL REFERENCES users(id),",
+        "replace": "user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "config.json",
+        "pattern": "../../../etc/passwd"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "state_assumption",
+      "multistep",
+      "migration_output",
+      "SM-03",
+      "fuzz",
+      "boundary",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from sm-migration-015: pattern replaced with boundary value \"../../../etc/passwd\"",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-pred-flip-sb-class-005-6",
+    "description": "[FUZZ:pred_flip] SB-01 control: Rename .subtitle to .tagline in both CSS and HTML, predicate checks .tagline — expected flipped to orange",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "    .subtitle { color: #666; font-size: 1rem; }",
+        "replace": "    .tagline { color: #666; font-size: 1rem; }"
+      },
+      {
+        "file": "server.js",
+        "search": "<p class=\"subtitle\">",
+        "replace": "<p class=\"tagline\">"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": ".tagline",
+        "property": "color",
+        "expected": "orange"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "state_assumption",
+      "browser",
+      "class_renamed",
+      "SB-01",
+      "control",
+      "fuzz",
+      "pred_flip",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from sb-class-005: predicate expected value changed from #666 to orange",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-edit-corrupt-sb-class-005-7",
+    "description": "[FUZZ:edit_corrupt] SB-01 control: Rename .subtitle to .tagline in both CSS and HTML, predicate checks .tagline — search string corrupted",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "    .subtitle { color: _CORRUPTED_#666; font-size: 1rem; }",
+        "replace": "    .tagline { color: #666; font-size: 1rem; }"
+      },
+      {
+        "file": "server.js",
+        "search": "<p class=\"subtitle\">",
+        "replace": "<p class=\"tagline\">"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": ".tagline",
+        "property": "color",
+        "expected": "#666"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "state_assumption",
+      "browser",
+      "class_renamed",
+      "SB-01",
+      "control",
+      "fuzz",
+      "edit_corrupt",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from sb-class-005: search string corrupted to prevent edit application",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-pred-drift-sb-class-005-8",
+    "description": "[FUZZ:pred_drift] SB-01 control: Rename .subtitle to .tagline in both CSS and HTML, predicate checks .tagline — selector drifted to .tagline-nonexistent",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "    .subtitle { color: #666; font-size: 1rem; }",
+        "replace": "    .tagline { color: #666; font-size: 1rem; }"
+      },
+      {
+        "file": "server.js",
+        "search": "<p class=\"subtitle\">",
+        "replace": "<p class=\"tagline\">"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": ".tagline-nonexistent",
+        "property": "color",
+        "expected": "#666"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "state_assumption",
+      "browser",
+      "class_renamed",
+      "SB-01",
+      "control",
+      "fuzz",
+      "pred_drift",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from sb-class-005: CSS selector drifted from .tagline to .tagline-nonexistent",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-type-swap-sb-class-005-9",
+    "description": "[FUZZ:type_swap] SB-01 control: Rename .subtitle to .tagline in both CSS and HTML, predicate checks .tagline — predicate type css→html",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "    .subtitle { color: #666; font-size: 1rem; }",
+        "replace": "    .tagline { color: #666; font-size: 1rem; }"
+      },
+      {
+        "file": "server.js",
+        "search": "<p class=\"subtitle\">",
+        "replace": "<p class=\"tagline\">"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "html",
+        "element": ".tagline",
+        "content": "exists"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "state_assumption",
+      "browser",
+      "class_renamed",
+      "SB-01",
+      "control",
+      "fuzz",
+      "type_swap",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from sb-class-005: predicate type swapped from css to html",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-boundary-sb-class-005-10",
+    "description": "[FUZZ:boundary] SB-01 control: Rename .subtitle to .tagline in both CSS and HTML, predicate checks .tagline — expected set to boundary value",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "    .subtitle { color: #666; font-size: 1rem; }",
+        "replace": "    .tagline { color: #666; font-size: 1rem; }"
+      },
+      {
+        "file": "server.js",
+        "search": "<p class=\"subtitle\">",
+        "replace": "<p class=\"tagline\">"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": ".tagline",
+        "property": "color",
+        "expected": "\u0000\u0001\u0002"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "state_assumption",
+      "browser",
+      "class_renamed",
+      "SB-01",
+      "control",
+      "fuzz",
+      "boundary",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from sb-class-005: expected replaced with boundary value \"\u0000\u0001\u0002\"",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-compound-sb-class-005-11",
+    "description": "[FUZZ:compound] SB-01 control: Rename .subtitle to .tagline in both CSS and HTML, predicate checks .tagline — pred flipped + edit corrupted",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "    .subtitle { color: _CORRUPTED_#666; font-size: 1rem; }",
+        "replace": "    .tagline { color: #666; font-size: 1rem; }"
+      },
+      {
+        "file": "server.js",
+        "search": "<p class=\"subtitle\">",
+        "replace": "<p class=\"tagline\">"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": ".tagline",
+        "property": "color",
+        "expected": "transparent"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "state_assumption",
+      "browser",
+      "class_renamed",
+      "SB-01",
+      "control",
+      "fuzz",
+      "compound",
+      "false_positive"
+    ],
+    "rationale": "Compound fuzz from sb-class-005: predicate flipped AND edit corrupted",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-edit-corrupt-html-inject-1-13",
+    "description": "[FUZZ:edit_corrupt] HTML injection: edit creates <aside> on /edge-cases — search string corrupted",
+    "faultId": null,
+    "intent": "false_positive",
+    "expectedSuccess": false,
+    "edits": [
+      {
+        "file": "server.js",
+        "search": ".meta-test { co_CORRUPTED_ntent: 'meta'; }",
+        "replace": ".meta-test { content: 'meta'; }\n</style><aside class=\"injected-test\">Injected aside content</aside><style>"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "html",
+        "selector": "aside",
+        "expected": "Injected aside content",
+        "path": "/edge-cases"
+      }
+    ],
+    "gates": {
+      "staging": false,
+      "browser": false,
+      "http": false,
+      "invariants": false,
+      "vision": false
+    },
+    "requiresDocker": false,
+    "rationale": "Fuzzed from html-inject-1: search string corrupted to prevent edit application",
+    "tags": [
+      "html",
+      "injection",
+      "aside",
+      "/edge-cases",
+      "fuzz",
+      "edit_corrupt",
+      "false_positive"
+    ],
+    "transferability": "universal",
+    "category": "grounding",
+    "taxClass": "html_structure",
+    "taxFamily": "element_creation",
+    "taxType": "aside"
+  },
+  {
+    "id": "fuzz-type-swap-html-inject-1-15",
+    "description": "[FUZZ:type_swap] HTML injection: edit creates <aside> on /edge-cases — predicate type html→content",
+    "faultId": null,
+    "intent": "false_positive",
+    "expectedSuccess": false,
+    "edits": [
+      {
+        "file": "server.js",
+        "search": ".meta-test { content: 'meta'; }",
+        "replace": ".meta-test { content: 'meta'; }\n</style><aside class=\"injected-test\">Injected aside content</aside><style>"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "html"
+      }
+    ],
+    "gates": {
+      "staging": false,
+      "browser": false,
+      "http": false,
+      "invariants": false,
+      "vision": false
+    },
+    "requiresDocker": false,
+    "rationale": "Fuzzed from html-inject-1: predicate type swapped from html to content",
+    "tags": [
+      "html",
+      "injection",
+      "aside",
+      "/edge-cases",
+      "fuzz",
+      "type_swap",
+      "false_positive"
+    ],
+    "transferability": "universal",
+    "category": "grounding",
+    "taxClass": "html_structure",
+    "taxFamily": "element_creation",
+    "taxType": "aside"
+  },
+  {
+    "id": "fuzz-boundary-html-inject-1-16",
+    "description": "[FUZZ:boundary] HTML injection: edit creates <aside> on /edge-cases — expected set to boundary value",
+    "faultId": null,
+    "intent": "false_positive",
+    "expectedSuccess": false,
+    "edits": [
+      {
+        "file": "server.js",
+        "search": ".meta-test { content: 'meta'; }",
+        "replace": ".meta-test { content: 'meta'; }\n</style><aside class=\"injected-test\">Injected aside content</aside><style>"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "html",
+        "selector": "aside",
+        "expected": "\n\n\n",
+        "path": "/edge-cases"
+      }
+    ],
+    "gates": {
+      "staging": false,
+      "browser": false,
+      "http": false,
+      "invariants": false,
+      "vision": false
+    },
+    "requiresDocker": false,
+    "rationale": "Fuzzed from html-inject-1: expected replaced with boundary value \"\n\n\n\"",
+    "tags": [
+      "html",
+      "injection",
+      "aside",
+      "/edge-cases",
+      "fuzz",
+      "boundary",
+      "false_positive"
+    ],
+    "transferability": "universal",
+    "category": "grounding",
+    "taxClass": "html_structure",
+    "taxFamily": "element_creation",
+    "taxType": "aside"
+  },
+  {
+    "id": "fuzz-type-swap-st-bolster-202-21",
+    "description": "[FUZZ:type_swap] state-multistep: Assume .env has REDIS_URL — it doesnt — predicate type content→css",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": ".fuzz-nonexistent",
+        "property": "color",
+        "expected": "red"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "state",
+      "multistep",
+      "state_assumption",
+      "fuzz",
+      "type_swap",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from st-bolster-202: predicate type swapped from content to css",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-boundary-st-bolster-202-22",
+    "description": "[FUZZ:boundary] state-multistep: Assume .env has REDIS_URL — it doesnt — pattern set to boundary value",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "content",
+        "file": ".env",
+        "pattern": "undefined"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "state",
+      "multistep",
+      "state_assumption",
+      "fuzz",
+      "boundary",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from st-bolster-202: pattern replaced with boundary value \"undefined\"",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-type-swap-k-bolster-204-27",
+    "description": "[FUZZ:type_swap] Cross-file: server.js health endpoint vs docker-compose.yml — predicate type content→css",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": ".fuzz-nonexistent",
+        "property": "color",
+        "expected": "red"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "k5",
+      "general",
+      "cross_file",
+      "fuzz",
+      "type_swap",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from k-bolster-204: predicate type swapped from content to css",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-boundary-k-bolster-204-28",
+    "description": "[FUZZ:boundary] Cross-file: server.js health endpoint vs docker-compose.yml — pattern set to boundary value",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "docker-compose.yml",
+        "pattern": "[object Object]"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "k5",
+      "general",
+      "cross_file",
+      "fuzz",
+      "boundary",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from k-bolster-204: pattern replaced with boundary value \"[object Object]\"",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-type-swap-st-bolster-200-33",
+    "description": "[FUZZ:type_swap] state-multistep: Assume server.js has /api/users route — it doesnt — predicate type content→css",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": ".fuzz-nonexistent",
+        "property": "color",
+        "expected": "red"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "state",
+      "multistep",
+      "state_assumption",
+      "fuzz",
+      "type_swap",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from st-bolster-200: predicate type swapped from content to css",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-boundary-st-bolster-200-34",
+    "description": "[FUZZ:boundary] state-multistep: Assume server.js has /api/users route — it doesnt — pattern set to boundary value",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "\u0000\u0001\u0002"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "state",
+      "multistep",
+      "state_assumption",
+      "fuzz",
+      "boundary",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from st-bolster-200: pattern replaced with boundary value \"\u0000\u0001\u0002\"",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-pred-flip-mdn-027-36",
+    "description": "[FUZZ:pred_flip] MDN-02: padding-left from shorthand 4-value — expected flipped to inherit",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": ".shorthand-test",
+        "property": "padding-left",
+        "expected": "inherit"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "css_compat",
+      "shorthand",
+      "MDN-02",
+      "fuzz",
+      "pred_flip",
+      "false_positive"
+    ],
+    "intent": "false_positive",
+    "rationale": "Fuzzed from mdn-027: predicate expected value changed from 20px to inherit"
+  },
+  {
+    "id": "fuzz-pred-drift-mdn-027-38",
+    "description": "[FUZZ:pred_drift] MDN-02: padding-left from shorthand 4-value — selector drifted to .shorthand-test-nonexistent",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": ".shorthand-test-nonexistent",
+        "property": "padding-left",
+        "expected": "20px"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "css_compat",
+      "shorthand",
+      "MDN-02",
+      "fuzz",
+      "pred_drift",
+      "false_positive"
+    ],
+    "intent": "false_positive",
+    "rationale": "Fuzzed from mdn-027: CSS selector drifted from .shorthand-test to .shorthand-test-nonexistent"
+  },
+  {
+    "id": "fuzz-type-swap-mdn-027-39",
+    "description": "[FUZZ:type_swap] MDN-02: padding-left from shorthand 4-value — predicate type css→html",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "html",
+        "element": ".shorthand-test",
+        "content": "exists"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "css_compat",
+      "shorthand",
+      "MDN-02",
+      "fuzz",
+      "type_swap",
+      "false_positive"
+    ],
+    "intent": "false_positive",
+    "rationale": "Fuzzed from mdn-027: predicate type swapped from css to html"
+  },
+  {
+    "id": "fuzz-boundary-mdn-027-40",
+    "description": "[FUZZ:boundary] MDN-02: padding-left from shorthand 4-value — expected set to boundary value",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": ".shorthand-test",
+        "property": "padding-left",
+        "expected": "null"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "css_compat",
+      "shorthand",
+      "MDN-02",
+      "fuzz",
+      "boundary",
+      "false_positive"
+    ],
+    "intent": "false_positive",
+    "rationale": "Fuzzed from mdn-027: expected replaced with boundary value \"null\""
+  },
+  {
+    "id": "fuzz-pred-flip-mdn-027-41",
+    "description": "[FUZZ:pred_flip] MDN-02: padding-left from shorthand 4-value — expected flipped to red",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": ".shorthand-test",
+        "property": "padding-left",
+        "expected": "red"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "css_compat",
+      "shorthand",
+      "MDN-02",
+      "fuzz",
+      "pred_flip",
+      "false_positive"
+    ],
+    "intent": "false_positive",
+    "rationale": "Fuzzed from mdn-027: predicate expected value changed from 20px to red"
+  },
+  {
+    "id": "fuzz-type-swap-hd-conn-007-45",
+    "description": "[FUZZ:type_swap] HD-02: .env DATABASE_URL points to localhost but config.json database host is remote — predicate type content→css",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": ".fuzz-nonexistent",
+        "property": "color",
+        "expected": "red"
+      },
+      {
+        "type": "content",
+        "file": "config.json",
+        "pattern": "\"host\": \"localhost\""
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "access",
+      "database",
+      "connection_denied",
+      "HD-02",
+      "control",
+      "fuzz",
+      "type_swap",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from hd-conn-007: predicate type swapped from content to css",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-boundary-hd-conn-007-46",
+    "description": "[FUZZ:boundary] HD-02: .env DATABASE_URL points to localhost but config.json database host is remote — pattern set to boundary value",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "content",
+        "file": ".env",
+        "pattern": "undefined"
+      },
+      {
+        "type": "content",
+        "file": "config.json",
+        "pattern": "\"host\": \"localhost\""
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "access",
+      "database",
+      "connection_denied",
+      "HD-02",
+      "control",
+      "fuzz",
+      "boundary",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from hd-conn-007: pattern replaced with boundary value \"undefined\"",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-type-swap-html-wrong-text-13-51",
+    "description": "[FUZZ:type_swap] HTML wrong text: <td> on /about claims \"NONEXISTENT_TEXT_13\" but actual is \"Bob\" — predicate type html→content",
+    "faultId": null,
+    "intent": "false_positive",
+    "expectedSuccess": false,
+    "edits": [],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "html"
+      }
+    ],
+    "gates": {
+      "staging": false,
+      "browser": false,
+      "http": false,
+      "invariants": false,
+      "vision": false
+    },
+    "requiresDocker": false,
+    "rationale": "Fuzzed from html-wrong-text-13: predicate type swapped from html to content",
+    "tags": [
+      "html",
+      "wrong_text",
+      "false_positive",
+      "td",
+      "/about",
+      "fuzz",
+      "type_swap",
+      "false_positive"
+    ],
+    "transferability": "universal",
+    "category": "grounding",
+    "taxClass": "html_structure",
+    "taxFamily": "text_content",
+    "taxType": "td"
+  },
+  {
+    "id": "fuzz-boundary-html-wrong-text-13-52",
+    "description": "[FUZZ:boundary] HTML wrong text: <td> on /about claims \"NONEXISTENT_TEXT_13\" but actual is \"Bob\" — expected set to boundary value",
+    "faultId": null,
+    "intent": "false_positive",
+    "expectedSuccess": false,
+    "edits": [],
+    "predicates": [
+      {
+        "type": "html",
+        "selector": "td",
+        "expected": "../../../etc/passwd",
+        "path": "/about"
+      }
+    ],
+    "gates": {
+      "staging": false,
+      "browser": false,
+      "http": false,
+      "invariants": false,
+      "vision": false
+    },
+    "requiresDocker": false,
+    "rationale": "Fuzzed from html-wrong-text-13: expected replaced with boundary value \"../../../etc/passwd\"",
+    "tags": [
+      "html",
+      "wrong_text",
+      "false_positive",
+      "td",
+      "/about",
+      "fuzz",
+      "boundary",
+      "false_positive"
+    ],
+    "transferability": "universal",
+    "category": "grounding",
+    "taxClass": "html_structure",
+    "taxFamily": "text_content",
+    "taxType": "td"
+  },
+  {
+    "id": "fuzz-edit-corrupt-ib-bolster-103-55",
+    "description": "[FUZZ:edit_corrupt] IB-bolster: Dockerfile EXPOSE changed, .env unaware — search string corrupted",
+    "edits": [
+      {
+        "file": "Dockerfile",
+        "search": "EXPOS_CORRUPTED_E 3000",
+        "replace": "EXPOSE 9090"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": ".env",
+        "pattern": "9090"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "capacity",
+      "browser",
+      "ib-bolster",
+      "fuzz",
+      "edit_corrupt",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from ib-bolster-103: search string corrupted to prevent edit application",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-type-swap-ib-bolster-103-57",
+    "description": "[FUZZ:type_swap] IB-bolster: Dockerfile EXPOSE changed, .env unaware — predicate type content→css",
+    "edits": [
+      {
+        "file": "Dockerfile",
+        "search": "EXPOSE 3000",
+        "replace": "EXPOSE 9090"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": ".fuzz-nonexistent",
+        "property": "color",
+        "expected": "red"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "capacity",
+      "browser",
+      "ib-bolster",
+      "fuzz",
+      "type_swap",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from ib-bolster-103: predicate type swapped from content to css",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-boundary-ib-bolster-103-58",
+    "description": "[FUZZ:boundary] IB-bolster: Dockerfile EXPOSE changed, .env unaware — pattern set to boundary value",
+    "edits": [
+      {
+        "file": "Dockerfile",
+        "search": "EXPOSE 3000",
+        "replace": "EXPOSE 9090"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": ".env",
+        "pattern": "../../../etc/passwd"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "capacity",
+      "browser",
+      "ib-bolster",
+      "fuzz",
+      "boundary",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from ib-bolster-103: pattern replaced with boundary value \"../../../etc/passwd\"",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-edit-corrupt-jv-health-005-61",
+    "description": "[FUZZ:edit_corrupt] JV-01 control: Edit health response and update compose healthcheck in sync (no conflict) — search string corrupted",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "if (req.url ==_CORRUPTED_= '/health') {",
+        "replace": "if (req.url === '/healthz') {"
+      },
+      {
+        "file": "docker-compose.yml",
+        "search": "http://localhost:3000/health",
+        "replace": "http://localhost:3000/healthz"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "req.url === '/healthz'"
+      },
+      {
+        "type": "content",
+        "file": "docker-compose.yml",
+        "pattern": "http://localhost:3000/healthz"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "contention",
+      "verify",
+      "health_check",
+      "JV-01",
+      "control",
+      "fuzz",
+      "edit_corrupt",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from jv-health-005: search string corrupted to prevent edit application",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-type-swap-jv-health-005-63",
+    "description": "[FUZZ:type_swap] JV-01 control: Edit health response and update compose healthcheck in sync (no conflict) — predicate type content→css",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "if (req.url === '/health') {",
+        "replace": "if (req.url === '/healthz') {"
+      },
+      {
+        "file": "docker-compose.yml",
+        "search": "http://localhost:3000/health",
+        "replace": "http://localhost:3000/healthz"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": ".fuzz-nonexistent",
+        "property": "color",
+        "expected": "red"
+      },
+      {
+        "type": "content",
+        "file": "docker-compose.yml",
+        "pattern": "http://localhost:3000/healthz"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "contention",
+      "verify",
+      "health_check",
+      "JV-01",
+      "control",
+      "fuzz",
+      "type_swap",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from jv-health-005: predicate type swapped from content to css",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-boundary-jv-health-005-64",
+    "description": "[FUZZ:boundary] JV-01 control: Edit health response and update compose healthcheck in sync (no conflict) — pattern set to boundary value",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "if (req.url === '/health') {",
+        "replace": "if (req.url === '/healthz') {"
+      },
+      {
+        "file": "docker-compose.yml",
+        "search": "http://localhost:3000/health",
+        "replace": "http://localhost:3000/healthz"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "NaN"
+      },
+      {
+        "type": "content",
+        "file": "docker-compose.yml",
+        "pattern": "http://localhost:3000/healthz"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "contention",
+      "verify",
+      "health_check",
+      "JV-01",
+      "control",
+      "fuzz",
+      "boundary",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from jv-health-005: pattern replaced with boundary value \"NaN\"",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-type-swap-ac-bolster-211-75",
+    "description": "[FUZZ:type_swap] access-db: Compose has env_file, check compose — predicate type content→css",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": ".fuzz-nonexistent",
+        "property": "color",
+        "expected": "red"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "access",
+      "db",
+      "control",
+      "fuzz",
+      "type_swap",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from ac-bolster-211: predicate type swapped from content to css",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-boundary-ac-bolster-211-76",
+    "description": "[FUZZ:boundary] access-db: Compose has env_file, check compose — pattern set to boundary value",
+    "edits": [],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "docker-compose.yml",
+        "pattern": "\"; DROP TABLE users;--"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "access",
+      "db",
+      "control",
+      "fuzz",
+      "boundary",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from ac-bolster-211: pattern replaced with boundary value \"\"; DROP TABLE users;--\"",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-pred-flip-uv-019-78",
+    "description": "[FUZZ:pred_flip] Full pipeline: rgb edit value matches hex predicate through normalizer — expected flipped to green",
+    "faultId": null,
+    "intent": "false_positive",
+    "expectedSuccess": false,
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "color: #1a1a2e",
+        "replace": "color: rgb(255,0,0)"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": "h1",
+        "property": "color",
+        "expected": "green",
+        "path": "/"
+      }
+    ],
+    "requiresDocker": false,
+    "rationale": "Fuzzed from uv-019: predicate expected value changed from #ff0000 to green",
+    "tags": [
+      "css",
+      "full-pipeline",
+      "rgb-hex",
+      "normalizer",
+      "integration",
+      "fuzz",
+      "pred_flip",
+      "false_positive"
+    ],
+    "transferability": "universal",
+    "category": "integration"
+  },
+  {
+    "id": "fuzz-edit-corrupt-uv-019-79",
+    "description": "[FUZZ:edit_corrupt] Full pipeline: rgb edit value matches hex predicate through normalizer — search string corrupted",
+    "faultId": null,
+    "intent": "false_positive",
+    "expectedSuccess": false,
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "color: _CORRUPTED_#1a1a2e",
+        "replace": "color: rgb(255,0,0)"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": "h1",
+        "property": "color",
+        "expected": "#ff0000",
+        "path": "/"
+      }
+    ],
+    "requiresDocker": false,
+    "rationale": "Fuzzed from uv-019: search string corrupted to prevent edit application",
+    "tags": [
+      "css",
+      "full-pipeline",
+      "rgb-hex",
+      "normalizer",
+      "integration",
+      "fuzz",
+      "edit_corrupt",
+      "false_positive"
+    ],
+    "transferability": "universal",
+    "category": "integration"
+  },
+  {
+    "id": "fuzz-pred-drift-uv-019-80",
+    "description": "[FUZZ:pred_drift] Full pipeline: rgb edit value matches hex predicate through normalizer — selector drifted to h2",
+    "faultId": null,
+    "intent": "false_positive",
+    "expectedSuccess": false,
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "color: #1a1a2e",
+        "replace": "color: rgb(255,0,0)"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": "h2",
+        "property": "color",
+        "expected": "#ff0000",
+        "path": "/"
+      }
+    ],
+    "requiresDocker": false,
+    "rationale": "Fuzzed from uv-019: CSS selector drifted from h1 to h2",
+    "tags": [
+      "css",
+      "full-pipeline",
+      "rgb-hex",
+      "normalizer",
+      "integration",
+      "fuzz",
+      "pred_drift",
+      "false_positive"
+    ],
+    "transferability": "universal",
+    "category": "integration"
+  },
+  {
+    "id": "fuzz-type-swap-uv-019-81",
+    "description": "[FUZZ:type_swap] Full pipeline: rgb edit value matches hex predicate through normalizer — predicate type css→html",
+    "faultId": null,
+    "intent": "false_positive",
+    "expectedSuccess": false,
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "color: #1a1a2e",
+        "replace": "color: rgb(255,0,0)"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "html",
+        "element": "h1",
+        "content": "exists"
+      }
+    ],
+    "requiresDocker": false,
+    "rationale": "Fuzzed from uv-019: predicate type swapped from css to html",
+    "tags": [
+      "css",
+      "full-pipeline",
+      "rgb-hex",
+      "normalizer",
+      "integration",
+      "fuzz",
+      "type_swap",
+      "false_positive"
+    ],
+    "transferability": "universal",
+    "category": "integration"
+  },
+  {
+    "id": "fuzz-boundary-uv-019-82",
+    "description": "[FUZZ:boundary] Full pipeline: rgb edit value matches hex predicate through normalizer — expected set to boundary value",
+    "faultId": null,
+    "intent": "false_positive",
+    "expectedSuccess": false,
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "color: #1a1a2e",
+        "replace": "color: rgb(255,0,0)"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": "h1",
+        "property": "color",
+        "expected": "[object Object]",
+        "path": "/"
+      }
+    ],
+    "requiresDocker": false,
+    "rationale": "Fuzzed from uv-019: expected replaced with boundary value \"[object Object]\"",
+    "tags": [
+      "css",
+      "full-pipeline",
+      "rgb-hex",
+      "normalizer",
+      "integration",
+      "fuzz",
+      "boundary",
+      "false_positive"
+    ],
+    "transferability": "universal",
+    "category": "integration"
+  },
+  {
+    "id": "fuzz-compound-uv-019-83",
+    "description": "[FUZZ:compound] Full pipeline: rgb edit value matches hex predicate through normalizer — pred flipped + edit corrupted",
+    "faultId": null,
+    "intent": "false_positive",
+    "expectedSuccess": false,
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "color: _CORRUPTED_#1a1a2e",
+        "replace": "color: rgb(255,0,0)"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": "h1",
+        "property": "color",
+        "expected": "green",
+        "path": "/"
+      }
+    ],
+    "requiresDocker": false,
+    "rationale": "Compound fuzz from uv-019: predicate flipped AND edit corrupted",
+    "tags": [
+      "css",
+      "full-pipeline",
+      "rgb-hex",
+      "normalizer",
+      "integration",
+      "fuzz",
+      "compound",
+      "false_positive"
+    ],
+    "transferability": "universal",
+    "category": "integration"
+  },
+  {
+    "id": "fuzz-edit-corrupt-uv-025-85",
+    "description": "[FUZZ:edit_corrupt] HTML predicate: edit creates new element with text — verify accepts creation — search string corrupted",
+    "faultId": null,
+    "intent": "false_positive",
+    "expectedSuccess": false,
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "  <footer>Powered _CORRUPTED_by Node.js</footer>",
+        "replace": "  <h3>Recent Updates</h3>\n  <footer>Powered by Node.js</footer>"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "html",
+        "selector": "h3",
+        "expected": "Recent Updates",
+        "path": "/"
+      }
+    ],
+    "requiresDocker": false,
+    "rationale": "Fuzzed from uv-025: search string corrupted to prevent edit application",
+    "tags": [
+      "html",
+      "element-creation",
+      "grounding",
+      "creation-goal",
+      "fuzz",
+      "edit_corrupt",
+      "false_positive"
+    ],
+    "transferability": "universal",
+    "category": "html"
+  },
+  {
+    "id": "fuzz-type-swap-uv-025-87",
+    "description": "[FUZZ:type_swap] HTML predicate: edit creates new element with text — verify accepts creation — predicate type html→content",
+    "faultId": null,
+    "intent": "false_positive",
+    "expectedSuccess": false,
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "  <footer>Powered by Node.js</footer>",
+        "replace": "  <h3>Recent Updates</h3>\n  <footer>Powered by Node.js</footer>"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "html"
+      }
+    ],
+    "requiresDocker": false,
+    "rationale": "Fuzzed from uv-025: predicate type swapped from html to content",
+    "tags": [
+      "html",
+      "element-creation",
+      "grounding",
+      "creation-goal",
+      "fuzz",
+      "type_swap",
+      "false_positive"
+    ],
+    "transferability": "universal",
+    "category": "html"
+  },
+  {
+    "id": "fuzz-boundary-uv-025-88",
+    "description": "[FUZZ:boundary] HTML predicate: edit creates new element with text — verify accepts creation — expected set to boundary value",
+    "faultId": null,
+    "intent": "false_positive",
+    "expectedSuccess": false,
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "  <footer>Powered by Node.js</footer>",
+        "replace": "  <h3>Recent Updates</h3>\n  <footer>Powered by Node.js</footer>"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "html",
+        "selector": "h3",
+        "expected": "[object Object]",
+        "path": "/"
+      }
+    ],
+    "requiresDocker": false,
+    "rationale": "Fuzzed from uv-025: expected replaced with boundary value \"[object Object]\"",
+    "tags": [
+      "html",
+      "element-creation",
+      "grounding",
+      "creation-goal",
+      "fuzz",
+      "boundary",
+      "false_positive"
+    ],
+    "transferability": "universal",
+    "category": "html"
+  },
+  {
+    "id": "fuzz-edit-corrupt-sb-dom-008-91",
+    "description": "[FUZZ:edit_corrupt] SB-02: Wrap h1 in a <header> on homepage, predicate checks body > h1 — search string corrupted",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "  <h1>Dem_CORRUPTED_o App</h1>",
+        "replace": "  <header><h1>Demo App</h1></header>"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "html",
+        "selector": "body > h1",
+        "expected": "exists"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "state_assumption",
+      "browser",
+      "element_moved",
+      "SB-02",
+      "fuzz",
+      "edit_corrupt",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from sb-dom-008: search string corrupted to prevent edit application",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-type-swap-sb-dom-008-93",
+    "description": "[FUZZ:type_swap] SB-02: Wrap h1 in a <header> on homepage, predicate checks body > h1 — predicate type html→content",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "  <h1>Demo App</h1>",
+        "replace": "  <header><h1>Demo App</h1></header>"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": "server.js",
+        "pattern": "html"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "state_assumption",
+      "browser",
+      "element_moved",
+      "SB-02",
+      "fuzz",
+      "type_swap",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from sb-dom-008: predicate type swapped from html to content",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-boundary-sb-dom-008-94",
+    "description": "[FUZZ:boundary] SB-02: Wrap h1 in a <header> on homepage, predicate checks body > h1 — expected set to boundary value",
+    "edits": [
+      {
+        "file": "server.js",
+        "search": "  <h1>Demo App</h1>",
+        "replace": "  <header><h1>Demo App</h1></header>"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "html",
+        "selector": "body > h1",
+        "expected": "undefined"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "state_assumption",
+      "browser",
+      "element_moved",
+      "SB-02",
+      "fuzz",
+      "boundary",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from sb-dom-008: expected replaced with boundary value \"undefined\"",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-edit-corrupt-sm-migration-013-97",
+    "description": "[FUZZ:edit_corrupt] SM-03: Add index on posts.user_id in init.sql, predicate checks .env for index config — search string corrupted",
+    "edits": [
+      {
+        "file": "init.sql",
+        "search": "CREATE INDEX idx_sessions_exp_CORRUPTED_ires ON sessions(expires_at);",
+        "replace": "CREATE INDEX idx_sessions_expires ON sessions(expires_at);\nCREATE INDEX idx_posts_user ON posts(user_id);"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": ".env",
+        "pattern": "idx_posts"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "state_assumption",
+      "multistep",
+      "migration_output",
+      "SM-03",
+      "fuzz",
+      "edit_corrupt",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from sm-migration-013: search string corrupted to prevent edit application",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-type-swap-sm-migration-013-99",
+    "description": "[FUZZ:type_swap] SM-03: Add index on posts.user_id in init.sql, predicate checks .env for index config — predicate type content→css",
+    "edits": [
+      {
+        "file": "init.sql",
+        "search": "CREATE INDEX idx_sessions_expires ON sessions(expires_at);",
+        "replace": "CREATE INDEX idx_sessions_expires ON sessions(expires_at);\nCREATE INDEX idx_posts_user ON posts(user_id);"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "css",
+        "selector": ".fuzz-nonexistent",
+        "property": "color",
+        "expected": "red"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "state_assumption",
+      "multistep",
+      "migration_output",
+      "SM-03",
+      "fuzz",
+      "type_swap",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from sm-migration-013: predicate type swapped from content to css",
+    "intent": "false_positive"
+  },
+  {
+    "id": "fuzz-boundary-sm-migration-013-100",
+    "description": "[FUZZ:boundary] SM-03: Add index on posts.user_id in init.sql, predicate checks .env for index config — pattern set to boundary value",
+    "edits": [
+      {
+        "file": "init.sql",
+        "search": "CREATE INDEX idx_sessions_expires ON sessions(expires_at);",
+        "replace": "CREATE INDEX idx_sessions_expires ON sessions(expires_at);\nCREATE INDEX idx_posts_user ON posts(user_id);"
+      }
+    ],
+    "predicates": [
+      {
+        "type": "content",
+        "file": ".env",
+        "pattern": "\"; DROP TABLE users;--"
+      }
+    ],
+    "expectedSuccess": false,
+    "tags": [
+      "state_assumption",
+      "multistep",
+      "migration_output",
+      "SM-03",
+      "fuzz",
+      "boundary",
+      "false_positive"
+    ],
+    "rationale": "Fuzzed from sm-migration-013: pattern replaced with boundary value \"\"; DROP TABLE users;--\"",
+    "intent": "false_positive"
+  }
+]
