@@ -21,7 +21,8 @@
       "temporal",
       "multistep",
       "stale_build",
-      "TM-01"
+      "TM-01",
+      "aspirational"
     ],
     "rationale": "Server port changed but Dockerfile EXPOSE not updated — build step stale",
     "intent": "false_positive"
@@ -48,7 +49,8 @@
       "temporal",
       "multistep",
       "stale_build",
-      "TM-01"
+      "TM-01",
+      "aspirational"
     ],
     "rationale": "Health route renamed but Dockerfile HEALTHCHECK CMD still references /health",
     "intent": "false_positive"
@@ -75,7 +77,8 @@
       "temporal",
       "multistep",
       "stale_build",
-      "TM-01"
+      "TM-01",
+      "aspirational"
     ],
     "rationale": "Config port changed but docker-compose environment not updated — stale build config",
     "intent": "false_positive"
@@ -102,7 +105,8 @@
       "temporal",
       "multistep",
       "stale_build",
-      "TM-01"
+      "TM-01",
+      "aspirational"
     ],
     "rationale": ".env port changed but compose healthcheck URL still references port 3000",
     "intent": "false_positive"
@@ -129,7 +133,8 @@
       "temporal",
       "multistep",
       "stale_build",
-      "TM-01"
+      "TM-01",
+      "aspirational"
     ],
     "rationale": "COPY changed to app.js but CMD still runs server.js — multi-step Dockerfile inconsistency",
     "intent": "false_positive"
@@ -157,7 +162,8 @@
       "multistep",
       "stale_build",
       "TM-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Same-file edit and check — no cross-step dependency, should pass",
     "intent": "false_negative"
@@ -184,7 +190,8 @@
       "temporal",
       "multistep",
       "stale_seed",
-      "TM-02"
+      "TM-02",
+      "aspirational"
     ],
     "rationale": "Schema column added but app code not updated — migration→app ordering gap",
     "intent": "false_positive"
@@ -211,7 +218,8 @@
       "temporal",
       "multistep",
       "stale_seed",
-      "TM-02"
+      "TM-02",
+      "aspirational"
     ],
     "rationale": "Index added but app code has no email query path — migration step without app step",
     "intent": "false_positive"
@@ -238,7 +246,8 @@
       "temporal",
       "multistep",
       "stale_seed",
-      "TM-02"
+      "TM-02",
+      "aspirational"
     ],
     "rationale": "Table renamed in schema but app code never updated — seed step reads stale schema name",
     "intent": "false_positive"
@@ -265,7 +274,8 @@
       "temporal",
       "multistep",
       "stale_seed",
-      "TM-02"
+      "TM-02",
+      "aspirational"
     ],
     "rationale": "Schema constraint added but app config not updated — migration→config ordering gap",
     "intent": "false_positive"
@@ -293,7 +303,8 @@
       "multistep",
       "stale_seed",
       "TM-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Same-file edit and check — should pass",
     "intent": "false_negative"
@@ -320,7 +331,8 @@
       "temporal",
       "multistep",
       "cached_config",
-      "TM-03"
+      "TM-03",
+      "aspirational"
     ],
     "rationale": "Env changed to dev but config.json still has prod defaults — cached config pattern",
     "intent": "false_positive"
@@ -347,7 +359,8 @@
       "temporal",
       "multistep",
       "cached_config",
-      "TM-03"
+      "TM-03",
+      "aspirational"
     ],
     "rationale": "Config feature toggled but env var for override not added — process reads cached .env",
     "intent": "false_positive"
@@ -374,7 +387,8 @@
       "temporal",
       "multistep",
       "cached_config",
-      "TM-03"
+      "TM-03",
+      "aspirational"
     ],
     "rationale": "Database URL updated in .env but config.json still has localhost — cached config surface",
     "intent": "false_positive"
@@ -401,7 +415,8 @@
       "temporal",
       "multistep",
       "cached_config",
-      "TM-03"
+      "TM-03",
+      "aspirational"
     ],
     "rationale": "Secret rotated in .env but config.json has no awareness — cached process reads stale",
     "intent": "false_positive"
@@ -428,7 +443,8 @@
       "temporal",
       "multistep",
       "cached_config",
-      "TM-03"
+      "TM-03",
+      "aspirational"
     ],
     "rationale": "Debug flag enabled but server.js never reads it — config→runtime cache gap",
     "intent": "false_positive"
@@ -456,7 +472,8 @@
       "multistep",
       "cached_config",
       "TM-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Same-file edit and check — should pass",
     "intent": "false_negative"
@@ -482,7 +499,8 @@
     "tags": [
       "temporal",
       "multistep",
-      "temporal_gap"
+      "temporal_gap",
+      "aspirational"
     ],
     "rationale": "Edit server.js health, config.json has stale health config",
     "intent": "false_positive"
@@ -508,7 +526,8 @@
     "tags": [
       "temporal",
       "multistep",
-      "temporal_gap"
+      "temporal_gap",
+      "aspirational"
     ],
     "rationale": "Edit .env SECRET_KEY, server.js still uses old reference",
     "intent": "false_positive"
@@ -534,7 +553,8 @@
     "tags": [
       "temporal",
       "multistep",
-      "temporal_gap"
+      "temporal_gap",
+      "aspirational"
     ],
     "rationale": "Upgrade Dockerfile node version, .env unchanged",
     "intent": "false_positive"
@@ -560,7 +580,8 @@
     "tags": [
       "temporal",
       "multistep",
-      "temporal_gap"
+      "temporal_gap",
+      "aspirational"
     ],
     "rationale": "Change compose port mapping, server.js listen unchanged",
     "intent": "false_positive"
@@ -588,7 +609,8 @@
     "tags": [
       "temporal",
       "multistep",
-      "temporal_gap"
+      "temporal_gap",
+      "aspirational"
     ],
     "rationale": "Add column via migration, server.js has no query for it",
     "intent": "false_positive"
@@ -614,7 +636,8 @@
     "tags": [
       "temporal",
       "multistep",
-      "temporal_gap"
+      "temporal_gap",
+      "aspirational"
     ],
     "rationale": "Edit init.sql table, config.json has stale DB config",
     "intent": "false_positive"
@@ -640,7 +663,8 @@
     "tags": [
       "temporal",
       "multistep",
-      "temporal_gap"
+      "temporal_gap",
+      "aspirational"
     ],
     "rationale": "Compose env_file changed, .env filename unchanged",
     "intent": "false_positive"
@@ -666,7 +690,8 @@
     "tags": [
       "temporal",
       "multistep",
-      "temporal_gap"
+      "temporal_gap",
+      "aspirational"
     ],
     "rationale": "Add CORS header, config.json has no CORS config",
     "intent": "false_positive"
@@ -692,7 +717,8 @@
     "tags": [
       "temporal",
       "multistep",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: edit server.js, verify change",
     "intent": "false_negative"
@@ -718,7 +744,8 @@
     "tags": [
       "temporal",
       "multistep",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: edit .env, verify change",
     "intent": "false_negative"
@@ -738,7 +765,8 @@
     "tags": [
       "temporal",
       "multistep",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: Dockerfile has EXPOSE",
     "intent": "false_negative"
@@ -758,7 +786,8 @@
     "tags": [
       "temporal",
       "multistep",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: compose has healthcheck",
     "intent": "false_negative"
@@ -784,7 +813,8 @@
     "tags": [
       "temporal",
       "multistep",
-      "temporal_gap"
+      "temporal_gap",
+      "aspirational"
     ],
     "rationale": "Change healthcheck interval, server.js has no interval awareness",
     "intent": "false_positive"

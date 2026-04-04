@@ -32,7 +32,8 @@
       "access",
       "multistep",
       "auth_escalation",
-      "HM-01"
+      "HM-01",
+      "aspirational"
     ],
     "rationale": "GET is public but POST requires Authorization header — step 2 fails with 401",
     "intent": "false_positive"
@@ -69,7 +70,8 @@
       "access",
       "multistep",
       "auth_escalation",
-      "HM-01"
+      "HM-01",
+      "aspirational"
     ],
     "rationale": "Both edits succeed at file level but config.prod.json should be deployment-gated — implicit privilege escalation",
     "intent": "false_negative"
@@ -106,7 +108,8 @@
       "access",
       "multistep",
       "auth_escalation",
-      "HM-01"
+      "HM-01",
+      "aspirational"
     ],
     "rationale": "Dev .env is writable but .env.prod contains production secrets — should require elevated access",
     "intent": "false_negative"
@@ -144,7 +147,8 @@
       "access",
       "multistep",
       "auth_escalation",
-      "HM-01"
+      "HM-01",
+      "aspirational"
     ],
     "rationale": "GET /health succeeds but POST /health has no handler — 404 or method not allowed",
     "intent": "false_positive"
@@ -177,7 +181,8 @@
       "multistep",
       "auth_escalation",
       "HM-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Both predicates check the same writable file — no privilege escalation",
     "intent": "false_negative"
@@ -210,7 +215,8 @@
       "access",
       "multistep",
       "admin_required",
-      "HM-02"
+      "HM-02",
+      "aspirational"
     ],
     "rationale": "SELECT on users works with read role but ALTER TABLE requires admin — column never created",
     "intent": "false_positive"
@@ -242,7 +248,8 @@
       "access",
       "multistep",
       "admin_required",
-      "HM-02"
+      "HM-02",
+      "aspirational"
     ],
     "rationale": "Table query works but DROP INDEX requires schema-change privilege — index survives",
     "intent": "false_negative"
@@ -274,7 +281,8 @@
       "access",
       "multistep",
       "admin_required",
-      "HM-02"
+      "HM-02",
+      "aspirational"
     ],
     "rationale": "Reading posts is fine but CREATE TABLE requires DDL privilege — audit_log never created",
     "intent": "false_positive"
@@ -306,7 +314,8 @@
       "access",
       "multistep",
       "admin_required",
-      "HM-02"
+      "HM-02",
+      "aspirational"
     ],
     "rationale": "GRANT requires superuser — settings table readable but privilege escalation blocked",
     "intent": "false_negative"
@@ -333,7 +342,8 @@
       "multistep",
       "admin_required",
       "HM-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Both steps are read-only queries — no privilege escalation needed",
     "intent": "false_negative"
@@ -372,7 +382,8 @@
       "access",
       "multistep",
       "sudo_required",
-      "HM-03"
+      "HM-03",
+      "aspirational"
     ],
     "rationale": "Code deploys fine but binding to port 80 requires root — container fails to start",
     "intent": "false_positive"
@@ -404,7 +415,8 @@
       "access",
       "multistep",
       "sudo_required",
-      "HM-03"
+      "HM-03",
+      "aspirational"
     ],
     "rationale": "Compose file edited but /var/log/app mount requires root on host — runtime access denied",
     "intent": "false_negative"
@@ -436,7 +448,8 @@
       "access",
       "multistep",
       "sudo_required",
-      "HM-03"
+      "HM-03",
+      "aspirational"
     ],
     "rationale": "Config edit succeeds but applying it requires service restart with elevated privileges",
     "intent": "false_negative"
@@ -468,7 +481,8 @@
       "access",
       "multistep",
       "sudo_required",
-      "HM-03"
+      "HM-03",
+      "aspirational"
     ],
     "rationale": "Compose file valid but creating custom Docker network with IPAM requires daemon root",
     "intent": "false_negative"
@@ -501,7 +515,8 @@
       "multistep",
       "sudo_required",
       "HM-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Both steps operate within app-user permissions — no sudo needed",
     "intent": "false_negative"
@@ -527,7 +542,8 @@
     "tags": [
       "access",
       "multistep",
-      "hm-bolster"
+      "hm-bolster",
+      "aspirational"
     ],
     "rationale": "server.js port changed, config.json unaware",
     "intent": "false_positive"
@@ -553,7 +569,8 @@
     "tags": [
       "access",
       "multistep",
-      "hm-bolster"
+      "hm-bolster",
+      "aspirational"
     ],
     "rationale": "config.json port changed, server.js unaware",
     "intent": "false_positive"
@@ -579,7 +596,8 @@
     "tags": [
       "access",
       "multistep",
-      "hm-bolster"
+      "hm-bolster",
+      "aspirational"
     ],
     "rationale": ".env port changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -605,7 +623,8 @@
     "tags": [
       "access",
       "multistep",
-      "hm-bolster"
+      "hm-bolster",
+      "aspirational"
     ],
     "rationale": "Dockerfile EXPOSE changed, .env unaware",
     "intent": "false_positive"
@@ -631,7 +650,8 @@
     "tags": [
       "access",
       "multistep",
-      "hm-bolster"
+      "hm-bolster",
+      "aspirational"
     ],
     "rationale": "health response changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -657,7 +677,8 @@
     "tags": [
       "access",
       "multistep",
-      "hm-bolster"
+      "hm-bolster",
+      "aspirational"
     ],
     "rationale": "app name changed in config, server.js unaware",
     "intent": "false_positive"
@@ -683,7 +704,8 @@
     "tags": [
       "access",
       "multistep",
-      "hm-bolster"
+      "hm-bolster",
+      "aspirational"
     ],
     "rationale": "NODE_ENV changed, server.js unaware",
     "intent": "false_positive"
@@ -709,7 +731,8 @@
     "tags": [
       "access",
       "multistep",
-      "hm-bolster"
+      "hm-bolster",
+      "aspirational"
     ],
     "rationale": "SECRET_KEY changed, config.json unaware",
     "intent": "false_positive"
@@ -736,7 +759,8 @@
       "access",
       "multistep",
       "hm-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js port changed, verify in server.js",
     "intent": "false_negative"
@@ -763,7 +787,8 @@
       "access",
       "multistep",
       "hm-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: config.json port changed, config gate reads it",
     "intent": "false_negative"
@@ -790,7 +815,8 @@
       "access",
       "multistep",
       "hm-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: .env PORT changed, config gate reads it",
     "intent": "false_negative"
@@ -816,7 +842,8 @@
       "access",
       "multistep",
       "hm-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js still exists after edit",
     "intent": "false_negative"
@@ -835,7 +862,8 @@
     "tags": [
       "access",
       "multistep",
-      "hm-bolster"
+      "hm-bolster",
+      "aspirational"
     ],
     "rationale": "fabricated: package.json does not exist",
     "intent": "false_positive"
@@ -855,7 +883,8 @@
       "access",
       "multistep",
       "hm-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js exists without edits",
     "intent": "false_negative"
@@ -876,7 +905,8 @@
       "access",
       "multistep",
       "hm-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js has createServer",
     "intent": "false_negative"

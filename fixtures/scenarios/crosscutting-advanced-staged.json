@@ -18,7 +18,8 @@
     "tags": [
       "fingerprint",
       "serialization",
-      "X-05"
+      "X-05",
+      "aspirational"
     ],
     "rationale": "Nested expect object must produce identical fingerprint after JSON.parse(JSON.stringify())",
     "intent": "false_negative"
@@ -46,7 +47,8 @@
       "fingerprint",
       "serialization",
       "dedup",
-      "X-05"
+      "X-05",
+      "aspirational"
     ],
     "rationale": "Two predicates differing only by undefined vs absent field should deduplicate; different fingerprints means dedup fails",
     "intent": "false_positive"
@@ -70,7 +72,8 @@
       "fingerprint",
       "serialization",
       "field-order",
-      "X-05"
+      "X-05",
+      "aspirational"
     ],
     "rationale": "Field ordering in predicate object (path before method) must not change the fingerprint vs canonical order",
     "intent": "false_negative"
@@ -97,7 +100,8 @@
     "tags": [
       "fingerprint",
       "unicode",
-      "X-06"
+      "X-06",
+      "aspirational"
     ],
     "rationale": "CJK class name must produce stable fingerprint without encoding corruption",
     "intent": "false_negative"
@@ -124,7 +128,8 @@
       "fingerprint",
       "unicode",
       "emoji",
-      "X-06"
+      "X-06",
+      "aspirational"
     ],
     "rationale": "Emoji in content pattern must not break fingerprint hashing or pattern matching",
     "intent": "false_negative"
@@ -152,7 +157,8 @@
       "fingerprint",
       "unicode",
       "diacritical",
-      "X-06"
+      "X-06",
+      "aspirational"
     ],
     "rationale": "Accented characters in selectors must produce consistent fingerprints under NFC vs NFD normalization",
     "intent": "false_negative"
@@ -172,7 +178,8 @@
     "tags": [
       "gate-sequencing",
       "skip-vs-absent",
-      "X-22"
+      "X-22",
+      "aspirational"
     ],
     "rationale": "When no CSS predicates exist, the CSS gate should be SKIPPED (not absent or pass). Gate result must reflect skip.",
     "intent": "false_negative"
@@ -198,7 +205,8 @@
     "tags": [
       "gate-sequencing",
       "disabled-vs-pass",
-      "X-22"
+      "X-22",
+      "aspirational"
     ],
     "rationale": "If DB validation is deferred (no live DB), it should be marked deferred, not silently passed",
     "intent": "false_negative"
@@ -230,7 +238,8 @@
     "tags": [
       "gate-sequencing",
       "filtered-skip",
-      "X-22"
+      "X-22",
+      "aspirational"
     ],
     "rationale": "When all CSS predicates are rejected by grounding, the CSS gate result should be skip (not pass)",
     "intent": "false_positive"
@@ -256,7 +265,8 @@
     "tags": [
       "gate-sequencing",
       "side-effects",
-      "X-57"
+      "X-57",
+      "aspirational"
     ],
     "rationale": "F9 validation must not mutate the edit content or file state that later gates (G5 containment) rely on",
     "intent": "false_negative"
@@ -283,7 +293,8 @@
     "tags": [
       "gate-sequencing",
       "shared-cache",
-      "X-57"
+      "X-57",
+      "aspirational"
     ],
     "rationale": "If grounding gate caches CSS parse results, verification must see post-edit state, not pre-edit cached state",
     "intent": "false_negative"
@@ -315,7 +326,8 @@
     "tags": [
       "gate-sequencing",
       "constraint-leak",
-      "X-57"
+      "X-57",
+      "aspirational"
     ],
     "rationale": "If a gate seeds a K5 constraint mid-pipeline, later gates in the same run must not be affected by it",
     "intent": "false_negative"
@@ -342,7 +354,8 @@
     "tags": [
       "gate-sequencing",
       "idempotent",
-      "X-58"
+      "X-58",
+      "aspirational"
     ],
     "rationale": "Running the CSS validation gate twice on the same content must produce the same result",
     "intent": "false_negative"
@@ -368,7 +381,8 @@
     "tags": [
       "gate-sequencing",
       "idempotent",
-      "X-58"
+      "X-58",
+      "aspirational"
     ],
     "rationale": "Two consecutive reads of config.json during gate evaluation must return identical content",
     "intent": "false_negative"
@@ -393,7 +407,8 @@
       "gate-sequencing",
       "idempotent",
       "non-deterministic",
-      "X-58"
+      "X-58",
+      "aspirational"
     ],
     "rationale": "HTTP response may include timestamps; gate must match on stable content (Alpha), not volatile fields",
     "intent": "false_negative"
@@ -419,7 +434,8 @@
     "tags": [
       "gate-sequencing",
       "partial-failure",
-      "X-59"
+      "X-59",
+      "aspirational"
     ],
     "rationale": "A passing content predicate must not overwrite or mask the failing CSS predicate result",
     "intent": "false_positive"
@@ -452,7 +468,8 @@
       "gate-sequencing",
       "partial-failure",
       "grounding",
-      "X-59"
+      "X-59",
+      "aspirational"
     ],
     "rationale": "Grounding rejection of .ghost-class must persist even if the other predicates pass all later gates",
     "intent": "false_positive"
@@ -482,7 +499,8 @@
       "gate-sequencing",
       "partial-failure",
       "db-http",
-      "X-59"
+      "X-59",
+      "aspirational"
     ],
     "rationale": "DB column does not exist (fail) but HTTP passes — DB failure must survive in final result",
     "intent": "false_positive"
@@ -503,7 +521,8 @@
     "tags": [
       "gate-sequencing",
       "absent-gate",
-      "X-60"
+      "X-60",
+      "aspirational"
     ],
     "rationale": "Absent DB gate must not be reported as passed in gate results — it should be absent or N/A",
     "intent": "false_negative"
@@ -524,7 +543,8 @@
       "gate-sequencing",
       "absent-gate",
       "no-edits",
-      "X-60"
+      "X-60",
+      "aspirational"
     ],
     "rationale": "When no edits are submitted, the F9 syntax gate is vacuously satisfied — should be marked skip, not pass",
     "intent": "false_negative"
@@ -552,7 +572,8 @@
       "gate-sequencing",
       "absent-gate",
       "browser",
-      "X-60"
+      "X-60",
+      "aspirational"
     ],
     "rationale": "If browser gate is not available (no Playwright), its absence must not count as a pass in attestation",
     "intent": "false_negative"
@@ -585,7 +606,8 @@
       "containment",
       "multi-file",
       "unexplained",
-      "X-28"
+      "X-28",
+      "aspirational"
     ],
     "rationale": "config.json edit has no predicate justification — G5 should flag as unexplained",
     "intent": "false_negative"
@@ -634,7 +656,8 @@
       "containment",
       "multi-file",
       "full-attribution",
-      "X-28"
+      "X-28",
+      "aspirational"
     ],
     "rationale": "All three edits have corresponding predicates — G5 should attribute all as direct",
     "intent": "false_negative"
@@ -666,7 +689,8 @@
       "containment",
       "multi-file",
       "env-unexplained",
-      "X-28"
+      "X-28",
+      "aspirational"
     ],
     "rationale": ".env edit is unexplained by any predicate — config change without justification",
     "intent": "false_negative"
@@ -693,7 +717,8 @@
     "tags": [
       "containment",
       "sql-attribution",
-      "X-29"
+      "X-29",
+      "aspirational"
     ],
     "rationale": "SQL mutation adding display_name should be attributed directly to the DB predicate",
     "intent": "false_negative"
@@ -721,7 +746,8 @@
       "containment",
       "sql-attribution",
       "unrelated-predicate",
-      "X-29"
+      "X-29",
+      "aspirational"
     ],
     "rationale": "Edit to email constraint is unexplained by a predicate targeting username column",
     "intent": "false_negative"
@@ -748,7 +774,8 @@
       "containment",
       "sql-attribution",
       "destructive",
-      "X-29"
+      "X-29",
+      "aspirational"
     ],
     "rationale": "Commenting out a table creation is destructive SQL mutation with no predicate justification",
     "intent": "false_positive"
@@ -771,7 +798,8 @@
     "tags": [
       "grounding",
       "route-discovery",
-      "X-35"
+      "X-35",
+      "aspirational"
     ],
     "rationale": "The /health route is statically visible in server.js — grounding must discover it",
     "intent": "false_negative"
@@ -801,7 +829,8 @@
       "grounding",
       "route-discovery",
       "dynamic-path",
-      "X-35"
+      "X-35",
+      "aspirational"
     ],
     "rationale": "Route path built via string concatenation is invisible to static route discovery",
     "intent": "false_negative"
@@ -831,7 +860,8 @@
       "grounding",
       "route-discovery",
       "commented-out",
-      "X-35"
+      "X-35",
+      "aspirational"
     ],
     "rationale": "Commented-out route should not be discovered as valid by grounding",
     "intent": "false_positive"
@@ -861,7 +891,8 @@
       "grounding",
       "dynamic-routes",
       "parameterized",
-      "X-36"
+      "X-36",
+      "aspirational"
     ],
     "rationale": "Parameterized route /api/users/:id must be recognized when predicate uses concrete /api/users/1",
     "intent": "false_positive"
@@ -891,7 +922,8 @@
       "grounding",
       "dynamic-routes",
       "wildcard",
-      "X-36"
+      "X-36",
+      "aspirational"
     ],
     "rationale": "startsWith-based route matching creates an implicit wildcard that grounding may miss",
     "intent": "false_negative"
@@ -921,7 +953,8 @@
       "grounding",
       "dynamic-routes",
       "regex",
-      "X-36"
+      "X-36",
+      "aspirational"
     ],
     "rationale": "Regex-based route is beyond static analysis — grounding under-approximates",
     "intent": "false_positive"
@@ -949,7 +982,8 @@
     "tags": [
       "grounding",
       "stale-snapshot",
-      "X-61"
+      "X-61",
+      "aspirational"
     ],
     "rationale": "Grounding runs against pre-edit files, so .new-section does not exist yet — rejected as fabricated",
     "intent": "false_positive"
@@ -977,7 +1011,8 @@
       "grounding",
       "stale-snapshot",
       "removed-selector",
-      "X-61"
+      "X-61",
+      "aspirational"
     ],
     "rationale": "Grounding passes (selector exists pre-edit) but verification fails (selector removed by edit)",
     "intent": "false_positive"
@@ -1005,7 +1040,8 @@
       "grounding",
       "stale-snapshot",
       "value-drift",
-      "X-61"
+      "X-61",
+      "aspirational"
     ],
     "rationale": "Predicate expects pre-edit value; grounding passes but post-edit verification fails",
     "intent": "false_positive"
@@ -1027,7 +1063,8 @@
       "grounding",
       "over-approximation",
       "css-in-js",
-      "X-62"
+      "X-62",
+      "aspirational"
     ],
     "rationale": ".fake-selector exists in a JS string literal on edge-cases page, not in a <style> block",
     "intent": "false_positive"
@@ -1049,7 +1086,8 @@
       "grounding",
       "over-approximation",
       "media-query",
-      "X-62"
+      "X-62",
+      "aspirational"
     ],
     "rationale": ".responsive-only only exists inside @media (max-width:768px) — unreachable on desktop viewport",
     "intent": "false_positive"
@@ -1076,7 +1114,8 @@
       "grounding",
       "over-approximation",
       "commented-html",
-      "X-62"
+      "X-62",
+      "aspirational"
     ],
     "rationale": "HTML element inside a comment is not part of the DOM — grounding should not consider it reachable",
     "intent": "false_positive"
@@ -1103,7 +1142,8 @@
       "grounding",
       "under-approximation",
       "js-classlist",
-      "X-63"
+      "X-63",
+      "aspirational"
     ],
     "rationale": "JS-applied class is invisible to static HTML analysis — grounding cannot see runtime DOM modifications",
     "intent": "false_positive"
@@ -1131,7 +1171,8 @@
       "grounding",
       "under-approximation",
       "external-css",
-      "X-63"
+      "X-63",
+      "aspirational"
     ],
     "rationale": "Grounding only parses inline <style> blocks — external CSS files are not followed",
     "intent": "false_positive"
@@ -1153,7 +1194,8 @@
       "grounding",
       "under-approximation",
       "template-conditional",
-      "X-63"
+      "X-63",
+      "aspirational"
     ],
     "rationale": "Dynamic class status-active is computed from Date.now() — grounding cannot predict runtime value",
     "intent": "false_positive"
@@ -1188,7 +1230,8 @@
       "grounding",
       "cross-file",
       "config-server",
-      "X-64"
+      "X-64",
+      "aspirational"
     ],
     "rationale": "Config port change does not affect server.js behavior in static analysis — cross-file composition invisible",
     "intent": "false_negative"
@@ -1226,7 +1269,8 @@
       "grounding",
       "cross-file",
       "sql-server",
-      "X-64"
+      "X-64",
+      "aspirational"
     ],
     "rationale": "Schema change in init.sql and code referencing it in server.js are grounded independently",
     "intent": "false_negative"
@@ -1258,7 +1302,8 @@
       "grounding",
       "cross-file",
       "env-server",
-      "X-64"
+      "X-64",
+      "aspirational"
     ],
     "rationale": ".env PORT and server.js process.env.PORT are semantically linked but grounded as separate files",
     "intent": "false_negative"
@@ -1288,7 +1333,8 @@
       "grounding",
       "env-dependent",
       "feature-flag",
-      "X-65"
+      "X-65",
+      "aspirational"
     ],
     "rationale": "Route gated behind DEBUG env var — grounding cannot evaluate runtime environment conditions",
     "intent": "false_positive"
@@ -1318,7 +1364,8 @@
       "grounding",
       "env-dependent",
       "config-flag",
-      "X-65"
+      "X-65",
+      "aspirational"
     ],
     "rationale": "Analytics route depends on features.analytics flag (false in config.json)",
     "intent": "false_positive"
@@ -1353,7 +1400,8 @@
       "grounding",
       "env-dependent",
       "node-env",
-      "X-65"
+      "X-65",
+      "aspirational"
     ],
     "rationale": "NODE_ENV=production means /dev-tools is unreachable — env-dependent routing",
     "intent": "false_positive"
@@ -1379,7 +1427,8 @@
     "tags": [
       "syntax",
       "unicode-grapheme",
-      "X-69"
+      "X-69",
+      "aspirational"
     ],
     "rationale": "Em dash (U+2014) is 3 bytes in UTF-8 — search/replace must handle multi-byte boundaries correctly",
     "intent": "false_negative"
@@ -1406,7 +1455,8 @@
       "syntax",
       "unicode-grapheme",
       "zwj",
-      "X-69"
+      "X-69",
+      "aspirational"
     ],
     "rationale": "ZWJ character is invisible but changes byte count — search must not break on it",
     "intent": "false_negative"
@@ -1433,7 +1483,8 @@
       "syntax",
       "unicode-grapheme",
       "combining",
-      "X-69"
+      "X-69",
+      "aspirational"
     ],
     "rationale": "Precomposed Á vs decomposed A + combining acute — search must handle both NFC/NFD forms",
     "intent": "false_negative"
@@ -1459,7 +1510,8 @@
     "tags": [
       "syntax",
       "toctou",
-      "X-70"
+      "X-70",
+      "aspirational"
     ],
     "rationale": "If another process modifies config.json between read and apply, the edit may fail to match",
     "intent": "false_negative"
@@ -1491,7 +1543,8 @@
       "syntax",
       "toctou",
       "sequential-edits",
-      "X-70"
+      "X-70",
+      "aspirational"
     ],
     "rationale": "Second edit depends on first having been applied — tests edit ordering guarantees",
     "intent": "false_negative"
@@ -1518,7 +1571,8 @@
       "syntax",
       "toctou",
       "env-mutation",
-      "X-70"
+      "X-70",
+      "aspirational"
     ],
     "rationale": "Secret rotation between read and apply could change the search target",
     "intent": "false_negative"
@@ -1545,7 +1599,8 @@
       "syntax",
       "ambiguous-search",
       "boilerplate",
-      "X-71"
+      "X-71",
+      "aspirational"
     ],
     "rationale": "\"color: red;\" appears in multiple CSS rules — search hits first occurrence which may be boilerplate, not the intended target",
     "intent": "false_positive"
@@ -1572,7 +1627,8 @@
       "syntax",
       "ambiguous-search",
       "multi-match",
-      "X-71"
+      "X-71",
+      "aspirational"
     ],
     "rationale": "\"padding: 0.5rem;\" appears in multiple CSS rules across routes — ambiguous target",
     "intent": "false_positive"
@@ -1599,7 +1655,8 @@
       "syntax",
       "ambiguous-search",
       "unique-match",
-      "X-71"
+      "X-71",
+      "aspirational"
     ],
     "rationale": "This search string is actually unique despite looking like a common pattern — uniqueness validation should pass",
     "intent": "false_negative"
@@ -1627,7 +1684,8 @@
       "narrowing",
       "locally-correct",
       "globally-harmful",
-      "X-72"
+      "X-72",
+      "aspirational"
     ],
     "rationale": "!important fixes the immediate issue but makes future CSS changes unpredictable globally",
     "intent": "false_negative"
@@ -1655,7 +1713,8 @@
       "narrowing",
       "locally-correct",
       "inline-style",
-      "X-72"
+      "X-72",
+      "aspirational"
     ],
     "rationale": "Inline style technically satisfies color=red but CSS gate checks <style> blocks, not inline attrs",
     "intent": "false_positive"
@@ -1683,7 +1742,8 @@
       "narrowing",
       "locally-correct",
       "validation-removal",
-      "X-72"
+      "X-72",
+      "aspirational"
     ],
     "rationale": "Removing required attribute fixes a hypothetical submission issue but removes input validation",
     "intent": "false_negative"
@@ -1710,7 +1770,8 @@
     "tags": [
       "narrowing",
       "overfit-value",
-      "X-73"
+      "X-73",
+      "aspirational"
     ],
     "rationale": "Hint suggests #ff6347 specifically when any warm color would address the failure class — overfitting",
     "intent": "false_negative"
@@ -1738,7 +1799,8 @@
       "narrowing",
       "overfit-value",
       "font-size",
-      "X-73"
+      "X-73",
+      "aspirational"
     ],
     "rationale": "Hint overfits to 18px when the real issue is rem-to-px mismatch — different px value has same class of problem",
     "intent": "false_negative"
@@ -1763,7 +1825,8 @@
       "narrowing",
       "overfit-value",
       "json-format",
-      "X-73"
+      "X-73",
+      "aspirational"
     ],
     "rationale": "Hint matches exact JSON format \"id\":1 without space; response may have \"id\": 1 with space — overfitting to format",
     "intent": "false_negative"
@@ -1791,7 +1854,8 @@
     "tags": [
       "narrowing",
       "wrong-causal",
-      "X-74"
+      "X-74",
+      "aspirational"
     ],
     "rationale": "A narrowing hint about CSS specificity is misleading when the selector does not exist pre-edit",
     "intent": "false_positive"
@@ -1820,7 +1884,8 @@
       "narrowing",
       "wrong-causal",
       "db-type",
-      "X-74"
+      "X-74",
+      "aspirational"
     ],
     "rationale": "If hint says \"wrong column type\" but column was just created, the causal explanation is inaccurate",
     "intent": "false_negative"
@@ -1847,7 +1912,8 @@
       "narrowing",
       "wrong-causal",
       "missing-element",
-      "X-74"
+      "X-74",
+      "aspirational"
     ],
     "rationale": "Hint about route handler is wrong — the real issue is .welcome-banner class was never added to HTML",
     "intent": "false_positive"
@@ -1880,7 +1946,8 @@
       "narrowing",
       "wrong-target",
       "multi-failure",
-      "X-75"
+      "X-75",
+      "aspirational"
     ],
     "rationale": "Content was removed (root cause) but narrowing might focus on CSS color (symptom)",
     "intent": "false_positive"
@@ -1919,7 +1986,8 @@
       "narrowing",
       "wrong-target",
       "priority",
-      "X-75"
+      "X-75",
+      "aspirational"
     ],
     "rationale": "All three predicates affected by removing h1 content — narrowing should target content, not CSS",
     "intent": "false_positive"
@@ -1954,7 +2022,8 @@
       "narrowing",
       "wrong-target",
       "db-root-cause",
-      "X-75"
+      "X-75",
+      "aspirational"
     ],
     "rationale": "Settings table removal is root cause — HTTP failure is downstream but narrowing might pick HTTP",
     "intent": "false_positive"
@@ -1981,7 +2050,8 @@
     "tags": [
       "triangulation",
       "three-way-disagree",
-      "X-49"
+      "X-49",
+      "aspirational"
     ],
     "rationale": "File shows 3rem (deterministic pass), browser may compute differently, vision unclear — no majority",
     "intent": "false_negative"
@@ -2013,7 +2083,8 @@
     "tags": [
       "triangulation",
       "vision-outlier",
-      "X-49"
+      "X-49",
+      "aspirational"
     ],
     "rationale": "Deterministic and browser agree, vision disagrees — vision is the outlier authority",
     "intent": "false_negative"
@@ -2041,7 +2112,8 @@
       "triangulation",
       "unanimous-fail",
       "different-reasons",
-      "X-49"
+      "X-49",
+      "aspirational"
     ],
     "rationale": "Deterministic: transparent not #ff0000. Browser: computed differs. Vision: invisible. All fail with different evidence.",
     "intent": "false_positive"
@@ -2070,7 +2142,8 @@
       "triangulation",
       "render-settle",
       "animation",
-      "X-76"
+      "X-76",
+      "aspirational"
     ],
     "rationale": "Pulse animation changes opacity between 0.5 and 1.0 — screenshot timing determines captured value",
     "intent": "false_negative"
@@ -2097,7 +2170,8 @@
       "triangulation",
       "render-settle",
       "async-content",
-      "X-76"
+      "X-76",
+      "aspirational"
     ],
     "rationale": "Content loads after 2s delay — screenshot taken before settle window may miss it",
     "intent": "false_positive"
@@ -2125,7 +2199,8 @@
       "triangulation",
       "render-settle",
       "transition",
-      "X-76"
+      "X-76",
+      "aspirational"
     ],
     "rationale": "Transition on color means captured value depends on timing — mid-transition value is unpredictable",
     "intent": "false_negative"
@@ -2148,7 +2223,8 @@
       "triangulation",
       "viewport",
       "responsive",
-      "X-77"
+      "X-77",
+      "aspirational"
     ],
     "rationale": ".responsive-only rule inside @media (max-width:768px) — desktop viewport will not apply it",
     "intent": "false_positive"
@@ -2176,7 +2252,8 @@
       "triangulation",
       "viewport",
       "font-rendering",
-      "X-77"
+      "X-77",
+      "aspirational"
     ],
     "rationale": "Headless browser may not have Helvetica Neue — computed font-family differs from declared",
     "intent": "false_negative"
@@ -2204,7 +2281,8 @@
       "triangulation",
       "viewport",
       "container-query",
-      "X-77"
+      "X-77",
+      "aspirational"
     ],
     "rationale": "Container query depends on parent width at runtime — deterministic check of source cannot predict",
     "intent": "false_positive"
@@ -2233,7 +2311,8 @@
       "triangulation",
       "off-screen",
       "display-none",
-      "X-78"
+      "X-78",
+      "aspirational"
     ],
     "rationale": "Element exists in DOM (HTML pass) and display:none (CSS pass) but vision sees nothing — false failure risk",
     "intent": "false_negative"
@@ -2255,7 +2334,8 @@
       "triangulation",
       "off-screen",
       "below-fold",
-      "X-78"
+      "X-78",
+      "aspirational"
     ],
     "rationale": "Footer at bottom of long page may be cropped in screenshot — vision reports missing when it exists",
     "intent": "false_negative"
@@ -2277,7 +2357,8 @@
       "triangulation",
       "off-screen",
       "overflow-clip",
-      "X-78"
+      "X-78",
+      "aspirational"
     ],
     "rationale": "overflow:hidden clips content that extends beyond 200x100px box — vision may not see clipped text",
     "intent": "false_negative"
@@ -2313,7 +2394,8 @@
       "triangulation",
       "visual-mask",
       "status-code",
-      "X-79"
+      "X-79",
+      "aspirational"
     ],
     "rationale": "Page renders correctly (visual pass) but returns 503 — semantic failure masked by appearance",
     "intent": "false_positive"
@@ -2346,7 +2428,8 @@
       "triangulation",
       "visual-mask",
       "hidden-field",
-      "X-79"
+      "X-79",
+      "aspirational"
     ],
     "rationale": "Hidden input exists and has empty value — visually invisible but semantically broken (missing CSRF)",
     "intent": "false_negative"
@@ -2374,7 +2457,8 @@
       "triangulation",
       "visual-mask",
       "wrong-element",
-      "X-79"
+      "X-79",
+      "aspirational"
     ],
     "rationale": "Visually identical (div renders same as p) but structural HTML predicate correctly fails — p.subtitle no longer exists",
     "intent": "false_positive"
@@ -2402,7 +2486,8 @@
       "triangulation",
       "semantic-mask",
       "important-override",
-      "X-80"
+      "X-80",
+      "aspirational"
     ],
     "rationale": "Source-level predicate finds #1a1a2e in first h1 rule, but browser renders white due to !important",
     "intent": "false_positive"
@@ -2434,7 +2519,8 @@
       "triangulation",
       "semantic-mask",
       "js-removal",
-      "X-80"
+      "X-80",
+      "aspirational"
     ],
     "rationale": "Content exists in source (semantic pass) but JS removes it at runtime (visual failure)",
     "intent": "false_positive"
@@ -2467,7 +2553,8 @@
       "triangulation",
       "semantic-mask",
       "zero-height",
-      "X-80"
+      "X-80",
+      "aspirational"
     ],
     "rationale": "Content exists in file and element exists in DOM (semantic pass) but zero height makes it invisible (visual fail)",
     "intent": "false_negative"
@@ -2495,7 +2582,8 @@
       "triangulation",
       "weighting-bug",
       "deterministic-bias",
-      "X-81"
+      "X-81",
+      "aspirational"
     ],
     "rationale": "Duplicate body rules — deterministic must pick the cascade winner (#555), not first occurrence (#333)",
     "intent": "false_negative"
@@ -2523,7 +2611,8 @@
       "triangulation",
       "weighting-bug",
       "whitespace",
-      "X-81"
+      "X-81",
+      "aspirational"
     ],
     "rationale": "Double space renders as single — deterministic fails (content mismatch), browser/vision pass (identical render)",
     "intent": "false_negative"
@@ -2551,7 +2640,8 @@
       "triangulation",
       "weighting-bug",
       "absent-authority",
-      "X-81"
+      "X-81",
+      "aspirational"
     ],
     "rationale": "If vision authority is absent (no screenshot) and weighted as 0.5, it incorrectly biases final verdict",
     "intent": "false_negative"
@@ -2578,7 +2668,8 @@
     "tags": [
       "receipt",
       "attestation-detail",
-      "X-82"
+      "X-82",
+      "aspirational"
     ],
     "rationale": "Attestation must identify that h1 color predicate failed, not just \"CSS gate failed\"",
     "intent": "false_positive"
@@ -2611,7 +2702,8 @@
       "receipt",
       "attestation-detail",
       "multi-gate-fail",
-      "X-82"
+      "X-82",
+      "aspirational"
     ],
     "rationale": "Both grounding (fabricated selector) and content (syntax error in code) fail — attestation must report both",
     "intent": "false_positive"
@@ -2633,7 +2725,8 @@
       "receipt",
       "attestation-detail",
       "actual-vs-expected",
-      "X-82"
+      "X-82",
+      "aspirational"
     ],
     "rationale": "Attestation should include \"actual: 2rem, expected: 3rem\" not just \"font-size failed\"",
     "intent": "false_positive"
@@ -2660,7 +2753,8 @@
       "receipt",
       "telemetry-timing",
       "io-wait",
-      "X-83"
+      "X-83",
+      "aspirational"
     ],
     "rationale": "Gate durationMs should measure validation logic only, not include file read latency or queue wait",
     "intent": "false_negative"
@@ -2687,7 +2781,8 @@
       "receipt",
       "telemetry-timing",
       "double-count",
-      "X-83"
+      "X-83",
+      "aspirational"
     ],
     "rationale": "If gates overlap, totalDurationMs should be wall-clock time, not sum of individual gate durations",
     "intent": "false_negative"
@@ -2724,7 +2819,8 @@
       "receipt",
       "telemetry-timing",
       "edit-application",
-      "X-83"
+      "X-83",
+      "aspirational"
     ],
     "rationale": "Multi-file edit application time should not be counted as part of F9 gate duration",
     "intent": "false_negative"
@@ -2751,7 +2847,8 @@
       "receipt",
       "hash-chain",
       "ordering",
-      "X-84"
+      "X-84",
+      "aspirational"
     ],
     "rationale": "If two submissions complete simultaneously, receipt append order must match hash chain order",
     "intent": "false_negative"
@@ -2773,7 +2870,8 @@
       "receipt",
       "hash-chain",
       "failure-interleave",
-      "X-84"
+      "X-84",
+      "aspirational"
     ],
     "rationale": "Failed submission receipt must not break hash chain — previousHash must reference last appended receipt",
     "intent": "false_positive"
@@ -2801,7 +2899,8 @@
       "receipt",
       "hash-chain",
       "rollback-append",
-      "X-84"
+      "X-84",
+      "aspirational"
     ],
     "rationale": "Rollback generates a receipt after verification failure — must chain correctly after the failure receipt",
     "intent": "false_positive"
@@ -2823,7 +2922,8 @@
       "receipt",
       "checkpoint-leak",
       "grounding-fail",
-      "X-85"
+      "X-85",
+      "aspirational"
     ],
     "rationale": "No checkpoint should exist when grounding rejects all predicates — gate failure prevents checkpoint",
     "intent": "false_positive"
@@ -2850,7 +2950,8 @@
       "receipt",
       "checkpoint-leak",
       "edit-fail",
-      "X-85"
+      "X-85",
+      "aspirational"
     ],
     "rationale": "Edit application fails (search not found) — no checkpoint should be created for unapplied changes",
     "intent": "false_positive"
@@ -2878,7 +2979,8 @@
       "receipt",
       "checkpoint-leak",
       "verification-fail",
-      "X-85"
+      "X-85",
+      "aspirational"
     ],
     "rationale": "Verification fails (color is #999 not #ff0000) — checkpoint must not be created before rollback completes",
     "intent": "false_positive"
@@ -2905,7 +3007,8 @@
     "tags": [
       "predicate-lifecycle",
       "stale-at-verification",
-      "X-86"
+      "X-86",
+      "aspirational"
     ],
     "rationale": "Predicate was valid when extracted (selector existed) but edit removed it — stale by verification time",
     "intent": "false_positive"
@@ -2935,7 +3038,8 @@
       "predicate-lifecycle",
       "stale-at-verification",
       "route-moved",
-      "X-86"
+      "X-86",
+      "aspirational"
     ],
     "rationale": "Predicate targets /api/items but edit moved route to /api/v2/items — predicate is stale",
     "intent": "false_positive"
@@ -2963,7 +3067,8 @@
       "predicate-lifecycle",
       "stale-at-verification",
       "html-removed",
-      "X-86"
+      "X-86",
+      "aspirational"
     ],
     "rationale": "Element .subtitle existed at extraction time but edit replaced it with comment — stale predicate",
     "intent": "false_positive"
@@ -2990,7 +3095,8 @@
     "tags": [
       "predicate-lifecycle",
       "wrong-property",
-      "X-87"
+      "X-87",
+      "aspirational"
     ],
     "rationale": "Color predicate passes (unchanged) but real change was font-size — vacuously correct but misaligned",
     "intent": "false_negative"
@@ -3016,7 +3122,8 @@
     "tags": [
       "predicate-lifecycle",
       "wrong-target",
-      "X-87"
+      "X-87",
+      "aspirational"
     ],
     "rationale": "Predicate matches boilerplate \"const http\" which was never the change target — passes but describes nothing",
     "intent": "false_negative"
@@ -3043,7 +3150,8 @@
     "tags": [
       "predicate-lifecycle",
       "wrong-table",
-      "X-87"
+      "X-87",
+      "aspirational"
     ],
     "rationale": "Predicate checks users.email (untouched) while edit adds posts.likes — correct but irrelevant",
     "intent": "false_negative"
@@ -3064,7 +3172,8 @@
     "tags": [
       "predicate-lifecycle",
       "deferred-never-validated",
-      "X-88"
+      "X-88",
+      "aspirational"
     ],
     "rationale": "DB predicate is deferred (no live DB) — if post-deploy validation is skipped, predicate is never checked",
     "intent": "false_negative"
@@ -3095,7 +3204,8 @@
       "predicate-lifecycle",
       "deferred-never-validated",
       "http-advisory",
-      "X-88"
+      "X-88",
+      "aspirational"
     ],
     "rationale": "HTTP predicate is advisory in staging and deferred to O.5b — if O.5b skipped, predicate never enforced",
     "intent": "false_negative"
@@ -3117,7 +3227,8 @@
       "predicate-lifecycle",
       "deferred-never-validated",
       "no-validator",
-      "X-88"
+      "X-88",
+      "aspirational"
     ],
     "rationale": "Security predicate type has no gate validator — deferred indefinitely and never actually validated",
     "intent": "false_positive"
@@ -3139,7 +3250,8 @@
       "predicate-lifecycle",
       "fingerprint-drift",
       "enrichment",
-      "X-89"
+      "X-89",
+      "aspirational"
     ],
     "rationale": "If pipeline adds a path field, fingerprint changes from extraction to K5 check — constraint matching breaks",
     "intent": "false_negative"
@@ -3167,7 +3279,8 @@
       "predicate-lifecycle",
       "fingerprint-drift",
       "current-value",
-      "X-89"
+      "X-89",
+      "aspirational"
     ],
     "rationale": "Grounding adds currentValue=\"#1a1a2e\" — if fingerprint includes currentValue, it drifts from original",
     "intent": "false_negative"
@@ -3200,7 +3313,8 @@
       "predicate-lifecycle",
       "fingerprint-drift",
       "id-reindex",
-      "X-89"
+      "X-89",
+      "aspirational"
     ],
     "rationale": "After bounding removes .nonexistent-x89, remaining predicates get new IDs — K5 ban matching breaks if fingerprint uses ID",
     "intent": "false_positive"
@@ -3224,7 +3338,8 @@
       "fingerprint",
       "serialization",
       "numeric-coercion",
-      "X-05"
+      "X-05",
+      "aspirational"
     ],
     "rationale": "Status 200 as number vs \"200\" as string may produce different fingerprints after round-trip",
     "intent": "false_negative"
@@ -3252,7 +3367,8 @@
       "fingerprint",
       "unicode",
       "rtl",
-      "X-06"
+      "X-06",
+      "aspirational"
     ],
     "rationale": "RTL Arabic script in class names must not break fingerprint hashing or directional assumptions",
     "intent": "false_negative"
@@ -3277,7 +3393,8 @@
     "tags": [
       "gate-sequencing",
       "no-validator",
-      "X-22"
+      "X-22",
+      "aspirational"
     ],
     "rationale": "Performance predicate has no validator — is the gate absent, disabled, or skipped? Three states confused",
     "intent": "false_positive"
@@ -3305,7 +3422,8 @@
       "gate-sequencing",
       "edit-order",
       "cascade",
-      "X-57"
+      "X-57",
+      "aspirational"
     ],
     "rationale": "If edits are applied in non-deterministic order, the CSS cascade winner may differ from expectation",
     "intent": "false_negative"
@@ -3341,7 +3459,8 @@
       "gate-sequencing",
       "partial-failure",
       "mixed-types",
-      "X-59"
+      "X-59",
+      "aspirational"
     ],
     "rationale": "HTTP predicate on non-existent route fails while CSS+HTML pass — HTTP failure must survive in result",
     "intent": "false_positive"
@@ -3389,7 +3508,8 @@
       "containment",
       "multi-file",
       "partial-attribution",
-      "X-28"
+      "X-28",
+      "aspirational"
     ],
     "rationale": "server.js and config.json edits explained; init.sql and .env edits unexplained — G5 flags two",
     "intent": "false_negative"
@@ -3417,7 +3537,8 @@
       "grounding",
       "stale-snapshot",
       "new-property",
-      "X-61"
+      "X-61",
+      "aspirational"
     ],
     "rationale": "text-shadow property did not exist pre-edit — grounding has no baseline, but verification should find it post-edit",
     "intent": "false_negative"
@@ -3444,7 +3565,8 @@
       "grounding",
       "over-approximation",
       "noscript",
-      "X-62"
+      "X-62",
+      "aspirational"
     ],
     "rationale": "Element inside <noscript> only renders with JS disabled — grounding may over-approximate its reachability",
     "intent": "false_positive"
@@ -3475,7 +3597,8 @@
       "narrowing",
       "locally-correct",
       "hardcoded-data",
-      "X-72"
+      "X-72",
+      "aspirational"
     ],
     "rationale": "Hardcoded JSON string fixes the test but prevents future dynamic data from ever being served",
     "intent": "false_negative"
@@ -3523,7 +3646,8 @@
       "narrowing",
       "wrong-target",
       "ordering",
-      "X-75"
+      "X-75",
+      "aspirational"
     ],
     "rationale": "display:none is the root cause affecting everything — narrowing should identify it, not the downstream HTML/HTTP failures",
     "intent": "false_positive"
@@ -3551,7 +3675,8 @@
       "triangulation",
       "render-settle",
       "font-loading",
-      "X-76"
+      "X-76",
+      "aspirational"
     ],
     "rationale": "Custom font may not be loaded at screenshot time — FOUT means fallback font appears instead",
     "intent": "false_negative"
@@ -3584,7 +3709,8 @@
       "receipt",
       "attestation-detail",
       "deferred-warning",
-      "X-82"
+      "X-82",
+      "aspirational"
     ],
     "rationale": "CSS passes, DB is deferred — attestation should note the deferred DB predicate, not silently omit it",
     "intent": "false_negative"
@@ -3617,7 +3743,8 @@
       "receipt",
       "checkpoint-leak",
       "partial-edit",
-      "X-85"
+      "X-85",
+      "aspirational"
     ],
     "rationale": "First edit applied but second fails — no checkpoint should capture the partial/inconsistent state",
     "intent": "false_positive"
@@ -3649,7 +3776,8 @@
       "predicate-lifecycle",
       "deferred-never-validated",
       "all-deferred",
-      "X-88"
+      "X-88",
+      "aspirational"
     ],
     "rationale": "When all predicates are deferred (no live DB), the entire verification is vacuous — passes with zero actual checks",
     "intent": "false_negative"
@@ -3677,7 +3805,8 @@
       "predicate-lifecycle",
       "fingerprint-drift",
       "hex-normalization",
-      "X-89"
+      "X-89",
+      "aspirational"
     ],
     "rationale": "Source has #FF0000 (uppercase), predicate has #ff0000 (lowercase) — normalization during pipeline changes fingerprint",
     "intent": "false_negative"

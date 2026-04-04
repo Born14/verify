@@ -20,7 +20,8 @@
       "observation",
       "cli",
       "probe_overhead",
-      "FC-01"
+      "FC-01",
+      "aspirational"
     ],
     "rationale": "Assumed: healthcheck is free. Actual: 5s interval means 12 HTTP requests/minute of overhead. server.js has no interval awareness.",
     "intent": "false_positive"
@@ -52,7 +53,8 @@
       "observation",
       "cli",
       "probe_overhead",
-      "FC-01"
+      "FC-01",
+      "aspirational"
     ],
     "rationale": "Assumed: probes are lightweight. Actual: 128M limit means each `docker stats` query consumes part of the budget. config.json has no memory awareness.",
     "intent": "false_positive"
@@ -78,7 +80,8 @@
       "observation",
       "cli",
       "probe_overhead",
-      "FC-01"
+      "FC-01",
+      "aspirational"
     ],
     "rationale": "Assumed: retry count is neutral. Actual: 3 retries × 5s interval = potential 15 probes/minute under failure. .env has no retry config.",
     "intent": "false_positive"
@@ -104,7 +107,8 @@
       "observation",
       "cli",
       "probe_overhead",
-      "FC-01"
+      "FC-01",
+      "aspirational"
     ],
     "rationale": "Assumed: timeout just limits wait time. Actual: 3s timeout holds a TCP connection — under load, probes overlap with app traffic. Dockerfile timeout is different.",
     "intent": "false_positive"
@@ -126,7 +130,8 @@
       "cli",
       "probe_overhead",
       "FC-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Static file check — reading docker-compose.yml doesn't run any probes.",
     "intent": "false_negative"
@@ -158,7 +163,8 @@
       "observation",
       "cli",
       "log_inflation",
-      "FC-02"
+      "FC-02",
+      "aspirational"
     ],
     "rationale": "Assumed: health probes are silent. Actual: request logging means 12 log lines/minute from healthchecks alone. .env has no LOG_LEVEL.",
     "intent": "false_positive"
@@ -184,7 +190,8 @@
       "observation",
       "cli",
       "log_inflation",
-      "FC-02"
+      "FC-02",
+      "aspirational"
     ],
     "rationale": "Assumed: HEALTHCHECK is transparent. Actual: wget creates HTTP request → server access log. config.json has no log config.",
     "intent": "false_positive"
@@ -216,7 +223,8 @@
       "observation",
       "cli",
       "log_inflation",
-      "FC-02"
+      "FC-02",
+      "aspirational"
     ],
     "rationale": "Assumed: verbose health is just more data. Actual: each 5s probe now returns ~200 bytes instead of ~15. Log volume grows 13x. No env toggle.",
     "intent": "false_positive"
@@ -248,7 +256,8 @@
       "observation",
       "cli",
       "log_inflation",
-      "FC-02"
+      "FC-02",
+      "aspirational"
     ],
     "rationale": "Assumed: error counting is stateless. Actual: reading error count resets it (read-and-clear pattern). Observation destroys the data. config.json unaware.",
     "intent": "false_positive"
@@ -270,7 +279,8 @@
       "cli",
       "log_inflation",
       "FC-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Static file check — reading Dockerfile doesn't execute the healthcheck.",
     "intent": "false_negative"
@@ -302,7 +312,8 @@
       "observation",
       "cli",
       "disk_consumption",
-      "FC-03"
+      "FC-03",
+      "aspirational"
     ],
     "rationale": "Assumed: disk probe is read-only. Actual: writes /tmp/disk-check on every call. Observation creates artifacts. Dockerfile unaware.",
     "intent": "false_positive"
@@ -334,7 +345,8 @@
       "observation",
       "cli",
       "disk_consumption",
-      "FC-03"
+      "FC-03",
+      "aspirational"
     ],
     "rationale": "Assumed: debug endpoint is lightweight. Actual: appends to debug-dumps.log on every call — unbounded growth. config.json has no debug config.",
     "intent": "false_positive"
@@ -355,7 +367,8 @@
       "observation",
       "cli",
       "disk_consumption",
-      "FC-03"
+      "FC-03",
+      "aspirational"
     ],
     "rationale": "Assumed: healthcheck output is discarded. Actual: no logging config means default json-file driver — all output goes to disk. No rotation.",
     "intent": "false_positive"
@@ -387,7 +400,8 @@
       "observation",
       "cli",
       "disk_consumption",
-      "FC-03"
+      "FC-03",
+      "aspirational"
     ],
     "rationale": "Assumed: wget -O /tmp is harmless. Actual: creates file on every 5s interval. On full disk, the probe itself fails. server.js unaware.",
     "intent": "false_positive"
@@ -409,7 +423,8 @@
       "cli",
       "disk_consumption",
       "FC-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "wget -O- sends output to stdout, not disk. Observation doesn't consume disk (modulo docker log driver).",
     "intent": "false_negative"
@@ -435,7 +450,8 @@
     "tags": [
       "observation",
       "cli",
-      "fc-bolster"
+      "fc-bolster",
+      "aspirational"
     ],
     "rationale": "server.js port changed, config.json unaware",
     "intent": "false_positive"
@@ -461,7 +477,8 @@
     "tags": [
       "observation",
       "cli",
-      "fc-bolster"
+      "fc-bolster",
+      "aspirational"
     ],
     "rationale": "config.json port changed, server.js unaware",
     "intent": "false_positive"
@@ -487,7 +504,8 @@
     "tags": [
       "observation",
       "cli",
-      "fc-bolster"
+      "fc-bolster",
+      "aspirational"
     ],
     "rationale": ".env port changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -513,7 +531,8 @@
     "tags": [
       "observation",
       "cli",
-      "fc-bolster"
+      "fc-bolster",
+      "aspirational"
     ],
     "rationale": "Dockerfile EXPOSE changed, .env unaware",
     "intent": "false_positive"
@@ -539,7 +558,8 @@
     "tags": [
       "observation",
       "cli",
-      "fc-bolster"
+      "fc-bolster",
+      "aspirational"
     ],
     "rationale": "health response changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -565,7 +585,8 @@
     "tags": [
       "observation",
       "cli",
-      "fc-bolster"
+      "fc-bolster",
+      "aspirational"
     ],
     "rationale": "app name changed in config, server.js unaware",
     "intent": "false_positive"
@@ -591,7 +612,8 @@
     "tags": [
       "observation",
       "cli",
-      "fc-bolster"
+      "fc-bolster",
+      "aspirational"
     ],
     "rationale": "NODE_ENV changed, server.js unaware",
     "intent": "false_positive"
@@ -617,7 +639,8 @@
     "tags": [
       "observation",
       "cli",
-      "fc-bolster"
+      "fc-bolster",
+      "aspirational"
     ],
     "rationale": "SECRET_KEY changed, config.json unaware",
     "intent": "false_positive"
@@ -644,7 +667,8 @@
       "observation",
       "cli",
       "fc-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js port changed, verify in server.js",
     "intent": "false_negative"
@@ -671,7 +695,8 @@
       "observation",
       "cli",
       "fc-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: config.json port changed, config gate reads it",
     "intent": "false_negative"
@@ -698,7 +723,8 @@
       "observation",
       "cli",
       "fc-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: .env PORT changed, config gate reads it",
     "intent": "false_negative"
@@ -724,7 +750,8 @@
       "observation",
       "cli",
       "fc-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js still exists after edit",
     "intent": "false_negative"
@@ -743,7 +770,8 @@
     "tags": [
       "observation",
       "cli",
-      "fc-bolster"
+      "fc-bolster",
+      "aspirational"
     ],
     "rationale": "fabricated: package.json does not exist",
     "intent": "false_positive"
@@ -763,7 +791,8 @@
       "observation",
       "cli",
       "fc-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js exists without edits",
     "intent": "false_negative"
@@ -784,7 +813,8 @@
       "observation",
       "cli",
       "fc-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js has createServer",
     "intent": "false_negative"

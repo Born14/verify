@@ -26,7 +26,8 @@
       "access",
       "browser",
       "csp_blocked",
-      "HB-01"
+      "HB-01",
+      "aspirational"
     ],
     "rationale": "Edit adds onclick but CSP script-src none blocks all inline scripts — content exists but behaviour is dead",
     "intent": "false_negative"
@@ -58,7 +59,8 @@
       "access",
       "browser",
       "csp_blocked",
-      "HB-01"
+      "HB-01",
+      "aspirational"
     ],
     "rationale": "Script tag exists in source but CSP requires nonce — browser will refuse to execute it",
     "intent": "false_negative"
@@ -91,7 +93,8 @@
       "access",
       "browser",
       "csp_blocked",
-      "HB-01"
+      "HB-01",
+      "aspirational"
     ],
     "rationale": "Edit uses eval() for styling but default CSP blocks unsafe-eval — background never changes",
     "intent": "false_positive"
@@ -124,7 +127,8 @@
       "access",
       "browser",
       "csp_blocked",
-      "HB-01"
+      "HB-01",
+      "aspirational"
     ],
     "rationale": "Inline <style> added but CSP style-src self blocks inline styles — rule never applies",
     "intent": "false_positive"
@@ -157,7 +161,8 @@
       "access",
       "browser",
       "csp_blocked",
-      "HB-01"
+      "HB-01",
+      "aspirational"
     ],
     "rationale": "HTML attribute present but CSP img-src self blocks external URL — image will not load",
     "intent": "false_negative"
@@ -185,7 +190,8 @@
       "browser",
       "csp_blocked",
       "HB-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "No CSP restriction — inline script is present and would execute normally",
     "intent": "false_negative"
@@ -212,7 +218,8 @@
       "access",
       "browser",
       "cors_rejected",
-      "HB-02"
+      "HB-02",
+      "aspirational"
     ],
     "rationale": "CORS header set to specific origin — other origins cannot access the API response",
     "intent": "false_negative"
@@ -239,7 +246,8 @@
       "access",
       "browser",
       "cors_rejected",
-      "HB-02"
+      "HB-02",
+      "aspirational"
     ],
     "rationale": "Fetch to third-party API will be CORS-blocked — #details content unchanged from default",
     "intent": "false_negative"
@@ -274,7 +282,8 @@
       "access",
       "browser",
       "cors_rejected",
-      "HB-02"
+      "HB-02",
+      "aspirational"
     ],
     "rationale": "Client-side POST without proper CORS preflight handling — browser blocks the request",
     "intent": "false_positive"
@@ -306,7 +315,8 @@
       "access",
       "browser",
       "cors_rejected",
-      "HB-02"
+      "HB-02",
+      "aspirational"
     ],
     "rationale": "CORS wildcard * with credentials:include is explicitly forbidden by the spec — browser rejects",
     "intent": "false_negative"
@@ -334,7 +344,8 @@
       "browser",
       "cors_rejected",
       "HB-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Same-origin fetch — no CORS restriction, request succeeds",
     "intent": "false_negative"
@@ -362,7 +373,8 @@
       "access",
       "browser",
       "iframe_sandbox",
-      "HB-03"
+      "HB-03",
+      "aspirational"
     ],
     "rationale": "iframe sandbox=\"\" blocks all capabilities — form inside cannot be submitted",
     "intent": "false_negative"
@@ -389,7 +401,8 @@
       "access",
       "browser",
       "iframe_sandbox",
-      "HB-03"
+      "HB-03",
+      "aspirational"
     ],
     "rationale": "iframe sandbox=\"\" prevents script execution inside the embedded page",
     "intent": "false_negative"
@@ -421,7 +434,8 @@
       "access",
       "browser",
       "iframe_sandbox",
-      "HB-03"
+      "HB-03",
+      "aspirational"
     ],
     "rationale": "sandbox allows scripts but not navigation — nav-links inside iframe cannot escape to parent",
     "intent": "false_negative"
@@ -448,7 +462,8 @@
       "access",
       "browser",
       "iframe_sandbox",
-      "HB-03"
+      "HB-03",
+      "aspirational"
     ],
     "rationale": "Without allow-same-origin the iframe is treated as cross-origin — no cookie or localStorage access",
     "intent": "false_negative"
@@ -476,7 +491,8 @@
       "browser",
       "iframe_sandbox",
       "HB-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Full sandbox permissions — form submission, scripts, and cookies all work",
     "intent": "false_negative"
@@ -502,7 +518,8 @@
     "tags": [
       "access",
       "browser",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Admin route in server.js, no admin role in config.json",
     "intent": "false_positive"
@@ -528,7 +545,8 @@
     "tags": [
       "access",
       "browser",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Auth token check in server.js, no token in .env",
     "intent": "false_positive"
@@ -554,7 +572,8 @@
     "tags": [
       "access",
       "browser",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Rate limit function added, no limit in config.json",
     "intent": "false_positive"
@@ -574,7 +593,8 @@
     "tags": [
       "access",
       "browser",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Session table in init.sql, no session config in .env",
     "intent": "false_positive"
@@ -600,7 +620,8 @@
     "tags": [
       "access",
       "browser",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "CORS header added, no CORS config in .env",
     "intent": "false_positive"
@@ -626,7 +647,8 @@
     "tags": [
       "access",
       "browser",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "CSP header added, not in config.json",
     "intent": "false_positive"
@@ -646,7 +668,8 @@
     "tags": [
       "access",
       "browser",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Password hash in init.sql, no hash algo in config",
     "intent": "false_positive"
@@ -666,7 +689,8 @@
     "tags": [
       "access",
       "browser",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: server.js has /health, check it exists",
     "intent": "false_negative"
@@ -686,7 +710,8 @@
     "tags": [
       "access",
       "browser",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: init.sql has sessions table",
     "intent": "false_negative"
@@ -706,7 +731,8 @@
     "tags": [
       "access",
       "browser",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: .env has SECRET_KEY",
     "intent": "false_negative"
@@ -726,7 +752,8 @@
     "tags": [
       "access",
       "browser",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Dockerfile exposes port, check Dockerfile",
     "intent": "false_negative"
@@ -746,7 +773,8 @@
     "tags": [
       "access",
       "browser",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Compose has env_file, check compose",
     "intent": "false_negative"
@@ -766,7 +794,8 @@
     "tags": [
       "access",
       "browser",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "User table has password_hash, server.js has no bcrypt",
     "intent": "false_positive"
@@ -786,7 +815,8 @@
     "tags": [
       "access",
       "browser",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Sessions table has expires_at, server.js has no expiry check",
     "intent": "false_positive"

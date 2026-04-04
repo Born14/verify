@@ -369,11 +369,16 @@ async function runSelfTestCommand() {
   const sourceArg = args.find(a => a.startsWith('--source='))?.split('=')[1];
   const source = (sourceArg === 'real-world' || sourceArg === 'all') ? sourceArg : 'synthetic' as const;
 
+  // Tag exclusion: --exclude-tags=aspirational,experimental
+  const excludeTagsArg = args.find(a => a.startsWith('--exclude-tags='))?.split('=')[1];
+  const excludeTags = excludeTagsArg ? excludeTagsArg.split(',').map(t => t.trim()) : undefined;
+
   const tierLabel = liveTier === 'pure' ? 'pure' : liveTier === 'live' ? 'live (Docker)' : 'full (Docker + Playwright)';
   console.log(`\nRunning self-test from ${appDir}`);
   if (families.length > 0) console.log(`  Families: ${families.join(', ')}`);
   console.log(`  Tier: ${tierLabel}${includeWPT ? ' + WPT corpus' : ''}`);
   console.log(`  Source: ${source}`);
+  if (excludeTags) console.log(`  Excluding tags: ${excludeTags.join(', ')}`);
   console.log(`  Fail on bug: ${failOnBug}\n`);
 
   const result = await runSelfTest({
@@ -384,6 +389,7 @@ async function runSelfTestCommand() {
     liveTier,
     includeWPT,
     source,
+    excludeTags,
   });
 
   process.exit(result.exitCode);

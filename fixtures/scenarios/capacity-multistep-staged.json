@@ -32,7 +32,8 @@
       "capacity",
       "multistep",
       "timeout_budget",
-      "IM-01"
+      "IM-01",
+      "aspirational"
     ],
     "rationale": "API endpoint has 10s artificial delay — cumulative calls exceed verification timeout",
     "intent": "false_positive"
@@ -64,7 +65,8 @@
       "capacity",
       "multistep",
       "timeout_budget",
-      "IM-01"
+      "IM-01",
+      "aspirational"
     ],
     "rationale": "Each table creation delayed by 5s sleep — 4 tables = 20s migration, exceeds timeout",
     "intent": "false_positive"
@@ -99,7 +101,8 @@
       "capacity",
       "multistep",
       "timeout_budget",
-      "IM-01"
+      "IM-01",
+      "aspirational"
     ],
     "rationale": "Health endpoint responds in 4s but healthcheck timeout is 3s — all retries fail",
     "intent": "false_positive"
@@ -145,7 +148,8 @@
       "capacity",
       "multistep",
       "timeout_budget",
-      "IM-01"
+      "IM-01",
+      "aspirational"
     ],
     "rationale": "Each request adds 8s delay — 3 sequential probes = 24s, exceeds typical 10s per-request timeout",
     "intent": "false_positive"
@@ -175,7 +179,8 @@
       "multistep",
       "timeout_budget",
       "IM-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "No artificial delays — all responses immediate",
     "intent": "false_negative"
@@ -207,7 +212,8 @@
       "capacity",
       "multistep",
       "connection_leak",
-      "IM-02"
+      "IM-02",
+      "aspirational"
     ],
     "rationale": "Connection array grows unbounded — each request leaks, eventual pool exhaustion",
     "intent": "false_negative"
@@ -244,7 +250,8 @@
       "capacity",
       "multistep",
       "connection_leak",
-      "IM-02"
+      "IM-02",
+      "aspirational"
     ],
     "rationale": "File descriptors leaked per request — EMFILE after enough requests",
     "intent": "false_negative"
@@ -276,7 +283,8 @@
       "capacity",
       "multistep",
       "connection_leak",
-      "IM-02"
+      "IM-02",
+      "aspirational"
     ],
     "rationale": "Keep-alive with 300s timeout — connections accumulate during verification sequence",
     "intent": "false_negative"
@@ -311,7 +319,8 @@
       "capacity",
       "multistep",
       "connection_leak",
-      "IM-02"
+      "IM-02",
+      "aspirational"
     ],
     "rationale": "Listener added per request — MaxListenersExceededWarning then eventual OOM",
     "intent": "false_positive"
@@ -341,7 +350,8 @@
       "multistep",
       "connection_leak",
       "IM-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Standard http.createServer — connections handled and released properly by Node.js",
     "intent": "false_negative"
@@ -378,7 +388,8 @@
       "capacity",
       "multistep",
       "temp_accumulation",
-      "IM-03"
+      "IM-03",
+      "aspirational"
     ],
     "rationale": "Temp files written per request with no cleanup — /tmp fills during long verification",
     "intent": "false_negative"
@@ -420,7 +431,8 @@
       "capacity",
       "multistep",
       "temp_accumulation",
-      "IM-03"
+      "IM-03",
+      "aspirational"
     ],
     "rationale": "100KB per request into 1MB tmpfs — 10 requests fills it, subsequent writes fail",
     "intent": "false_negative"
@@ -452,7 +464,8 @@
       "capacity",
       "multistep",
       "temp_accumulation",
-      "IM-03"
+      "IM-03",
+      "aspirational"
     ],
     "rationale": "Uploads saved to /tmp with no size limit or rotation — disk fills across step sequence",
     "intent": "false_negative"
@@ -484,7 +497,8 @@
       "capacity",
       "multistep",
       "temp_accumulation",
-      "IM-03"
+      "IM-03",
+      "aspirational"
     ],
     "rationale": "Each rebuild creates new layer — without docker system prune, disk fills with stale layers",
     "intent": "false_negative"
@@ -514,7 +528,8 @@
       "multistep",
       "temp_accumulation",
       "IM-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Standard request handler — no temp files written, no accumulation",
     "intent": "false_negative"
@@ -540,7 +555,8 @@
     "tags": [
       "capacity",
       "multistep",
-      "im-bolster"
+      "im-bolster",
+      "aspirational"
     ],
     "rationale": "server.js port changed, config.json unaware",
     "intent": "false_positive"
@@ -566,7 +582,8 @@
     "tags": [
       "capacity",
       "multistep",
-      "im-bolster"
+      "im-bolster",
+      "aspirational"
     ],
     "rationale": "config.json port changed, server.js unaware",
     "intent": "false_positive"
@@ -592,7 +609,8 @@
     "tags": [
       "capacity",
       "multistep",
-      "im-bolster"
+      "im-bolster",
+      "aspirational"
     ],
     "rationale": ".env port changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -618,7 +636,8 @@
     "tags": [
       "capacity",
       "multistep",
-      "im-bolster"
+      "im-bolster",
+      "aspirational"
     ],
     "rationale": "Dockerfile EXPOSE changed, .env unaware",
     "intent": "false_positive"
@@ -644,7 +663,8 @@
     "tags": [
       "capacity",
       "multistep",
-      "im-bolster"
+      "im-bolster",
+      "aspirational"
     ],
     "rationale": "health response changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -670,7 +690,8 @@
     "tags": [
       "capacity",
       "multistep",
-      "im-bolster"
+      "im-bolster",
+      "aspirational"
     ],
     "rationale": "app name changed in config, server.js unaware",
     "intent": "false_positive"
@@ -696,7 +717,8 @@
     "tags": [
       "capacity",
       "multistep",
-      "im-bolster"
+      "im-bolster",
+      "aspirational"
     ],
     "rationale": "NODE_ENV changed, server.js unaware",
     "intent": "false_positive"
@@ -722,7 +744,8 @@
     "tags": [
       "capacity",
       "multistep",
-      "im-bolster"
+      "im-bolster",
+      "aspirational"
     ],
     "rationale": "SECRET_KEY changed, config.json unaware",
     "intent": "false_positive"
@@ -749,7 +772,8 @@
       "capacity",
       "multistep",
       "im-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js port changed, verify in server.js",
     "intent": "false_negative"
@@ -776,7 +800,8 @@
       "capacity",
       "multistep",
       "im-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: config.json port changed, config gate reads it",
     "intent": "false_negative"
@@ -803,7 +828,8 @@
       "capacity",
       "multistep",
       "im-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: .env PORT changed, config gate reads it",
     "intent": "false_negative"
@@ -829,7 +855,8 @@
       "capacity",
       "multistep",
       "im-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js still exists after edit",
     "intent": "false_negative"
@@ -848,7 +875,8 @@
     "tags": [
       "capacity",
       "multistep",
-      "im-bolster"
+      "im-bolster",
+      "aspirational"
     ],
     "rationale": "fabricated: package.json does not exist",
     "intent": "false_positive"
@@ -868,7 +896,8 @@
       "capacity",
       "multistep",
       "im-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js exists without edits",
     "intent": "false_negative"
@@ -889,7 +918,8 @@
       "capacity",
       "multistep",
       "im-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js has createServer",
     "intent": "false_negative"

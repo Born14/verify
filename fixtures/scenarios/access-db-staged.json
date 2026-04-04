@@ -26,7 +26,8 @@
       "access",
       "database",
       "missing_grant",
-      "HD-01"
+      "HD-01",
+      "aspirational"
     ],
     "rationale": "Role app_user created but no GRANT statement exists — SELECT/INSERT will fail",
     "intent": "false_positive"
@@ -63,7 +64,8 @@
       "access",
       "database",
       "missing_grant",
-      "HD-01"
+      "HD-01",
+      "aspirational"
     ],
     "rationale": "Server does INSERT but init.sql only GRANTs SELECT — INSERT permission denied",
     "intent": "false_positive"
@@ -95,7 +97,8 @@
       "access",
       "database",
       "missing_grant",
-      "HD-01"
+      "HD-01",
+      "aspirational"
     ],
     "rationale": "audit_log table created but no GRANT — no role can access it",
     "intent": "false_positive"
@@ -132,7 +135,8 @@
       "access",
       "database",
       "missing_grant",
-      "HD-01"
+      "HD-01",
+      "aspirational"
     ],
     "rationale": "Server runs ALTER but only SELECT/INSERT granted — ALTER requires table ownership or explicit grant",
     "intent": "false_positive"
@@ -169,7 +173,8 @@
       "access",
       "database",
       "missing_grant",
-      "HD-01"
+      "HD-01",
+      "aspirational"
     ],
     "rationale": "Server deletes expired sessions but only SELECT granted — DELETE permission denied",
     "intent": "false_positive"
@@ -202,7 +207,8 @@
       "database",
       "missing_grant",
       "HD-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Proper GRANT ALL on both tables — no permission issues",
     "intent": "false_negative"
@@ -229,7 +235,8 @@
       "database",
       "connection_denied",
       "HD-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Both point to localhost — connection config is consistent",
     "intent": "false_negative"
@@ -255,7 +262,8 @@
       "access",
       "database",
       "connection_denied",
-      "HD-02"
+      "HD-02",
+      "aspirational"
     ],
     "rationale": "Both patterns exist in their files — but db names mismatch means prod connection will fail",
     "intent": "false_negative"
@@ -287,7 +295,8 @@
       "access",
       "database",
       "connection_denied",
-      "HD-02"
+      "HD-02",
+      "aspirational"
     ],
     "rationale": "Config points to remote host but .env DATABASE_URL still has localhost — connection will use wrong host",
     "intent": "false_positive"
@@ -319,7 +328,8 @@
       "access",
       "database",
       "connection_denied",
-      "HD-02"
+      "HD-02",
+      "aspirational"
     ],
     "rationale": ".env port is 5433, config says 5432 — which source wins depends on app, both values present in files",
     "intent": "false_negative"
@@ -356,7 +366,8 @@
       "access",
       "database",
       "connection_denied",
-      "HD-02"
+      "HD-02",
+      "aspirational"
     ],
     "rationale": "Both passwords exist but differ — app uses DB_PASSWORD, Postgres uses POSTGRES_PASSWORD — auth will fail",
     "intent": "false_negative"
@@ -388,7 +399,8 @@
       "access",
       "database",
       "schema_restriction",
-      "HD-03"
+      "HD-03",
+      "aspirational"
     ],
     "rationale": "Table in restricted schema but config has no search_path — queries to \"users\" will fail",
     "intent": "false_positive"
@@ -425,7 +437,8 @@
       "access",
       "database",
       "schema_restriction",
-      "HD-03"
+      "HD-03",
+      "aspirational"
     ],
     "rationale": "init.sql creates in app_private, server queries unqualified \"users\" — schema resolution will fail at runtime but both content patterns exist",
     "intent": "false_negative"
@@ -457,7 +470,8 @@
       "access",
       "database",
       "schema_restriction",
-      "HD-03"
+      "HD-03",
+      "aspirational"
     ],
     "rationale": "GRANT covers public schema but audit_log is in audit schema — grant does not apply",
     "intent": "false_negative"
@@ -494,7 +508,8 @@
       "access",
       "database",
       "schema_restriction",
-      "HD-03"
+      "HD-03",
+      "aspirational"
     ],
     "rationale": "search_path is \"public\" but table is in \"custom\" — unqualified queries will not find it",
     "intent": "false_negative"
@@ -527,7 +542,8 @@
       "database",
       "schema_restriction",
       "HD-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Tables in public schema with GRANT ALL — no schema restriction",
     "intent": "false_negative"
@@ -553,7 +569,8 @@
     "tags": [
       "access",
       "db",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Admin route in server.js, no admin role in config.json",
     "intent": "false_positive"
@@ -579,7 +596,8 @@
     "tags": [
       "access",
       "db",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Auth token check in server.js, no token in .env",
     "intent": "false_positive"
@@ -605,7 +623,8 @@
     "tags": [
       "access",
       "db",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Rate limit function added, no limit in config.json",
     "intent": "false_positive"
@@ -625,7 +644,8 @@
     "tags": [
       "access",
       "db",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Session table in init.sql, no session config in .env",
     "intent": "false_positive"
@@ -651,7 +671,8 @@
     "tags": [
       "access",
       "db",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "CORS header added, no CORS config in .env",
     "intent": "false_positive"
@@ -677,7 +698,8 @@
     "tags": [
       "access",
       "db",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "CSP header added, not in config.json",
     "intent": "false_positive"
@@ -697,7 +719,8 @@
     "tags": [
       "access",
       "db",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Password hash in init.sql, no hash algo in config",
     "intent": "false_positive"
@@ -717,7 +740,8 @@
     "tags": [
       "access",
       "db",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: server.js has /health, check it exists",
     "intent": "false_negative"
@@ -737,7 +761,8 @@
     "tags": [
       "access",
       "db",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: init.sql has sessions table",
     "intent": "false_negative"
@@ -757,7 +782,8 @@
     "tags": [
       "access",
       "db",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: .env has SECRET_KEY",
     "intent": "false_negative"
@@ -777,7 +803,8 @@
     "tags": [
       "access",
       "db",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Dockerfile exposes port, check Dockerfile",
     "intent": "false_negative"
@@ -797,7 +824,8 @@
     "tags": [
       "access",
       "db",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Compose has env_file, check compose",
     "intent": "false_negative"
@@ -817,7 +845,8 @@
     "tags": [
       "access",
       "db",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "User table has password_hash, server.js has no bcrypt",
     "intent": "false_positive"
@@ -837,7 +866,8 @@
     "tags": [
       "access",
       "db",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Sessions table has expires_at, server.js has no expiry check",
     "intent": "false_positive"

@@ -26,7 +26,8 @@
       "contention",
       "cli",
       "port_conflict",
-      "JC-01"
+      "JC-01",
+      "aspirational"
     ],
     "rationale": "Edit applies and content matches — but creates runtime port conflict (two services on 3000)",
     "intent": "false_negative"
@@ -58,7 +59,8 @@
       "contention",
       "cli",
       "port_conflict",
-      "JC-01"
+      "JC-01",
+      "aspirational"
     ],
     "rationale": "App port set to 5432 which is also the database port — port contention across services",
     "intent": "false_negative"
@@ -90,7 +92,8 @@
       "contention",
       "cli",
       "port_conflict",
-      "JC-01"
+      "JC-01",
+      "aspirational"
     ],
     "rationale": "Server defaults to 5432 which is the DB port — structural port collision detectable",
     "intent": "false_negative"
@@ -122,7 +125,8 @@
       "contention",
       "cli",
       "port_conflict",
-      "JC-01"
+      "JC-01",
+      "aspirational"
     ],
     "rationale": "Dockerfile exposes 8080 but docker-compose env still PORT=3000 — port mismatch contention",
     "intent": "false_positive"
@@ -154,7 +158,8 @@
       "contention",
       "cli",
       "port_conflict",
-      "JC-01"
+      "JC-01",
+      "aspirational"
     ],
     "rationale": "Two mappings using host port 3000 — Docker will fail at runtime with port conflict",
     "intent": "false_negative"
@@ -187,7 +192,8 @@
       "cli",
       "port_conflict",
       "JC-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Worker on 4000, app on 3000 — different ports, no contention",
     "intent": "false_negative"
@@ -219,7 +225,8 @@
       "contention",
       "cli",
       "stale_pid",
-      "JC-02"
+      "JC-02",
+      "aspirational"
     ],
     "rationale": "Config declares pidFile but server.js has no PID management code — stale PID would block startup",
     "intent": "false_positive"
@@ -251,7 +258,8 @@
       "contention",
       "cli",
       "stale_pid",
-      "JC-02"
+      "JC-02",
+      "aspirational"
     ],
     "rationale": "Config references lockDir but .env has no LOCK_DIR — process lock contention at startup",
     "intent": "false_positive"
@@ -283,7 +291,8 @@
       "contention",
       "cli",
       "stale_pid",
-      "JC-02"
+      "JC-02",
+      "aspirational"
     ],
     "rationale": "Restart policy added but server.js has no signal handler — zombie process on restart",
     "intent": "false_positive"
@@ -315,7 +324,8 @@
       "contention",
       "cli",
       "stale_pid",
-      "JC-02"
+      "JC-02",
+      "aspirational"
     ],
     "rationale": "Grace period set but no explicit stop_signal — process may not respond to default signal",
     "intent": "false_positive"
@@ -343,7 +353,8 @@
       "cli",
       "stale_pid",
       "JC-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Single file edit, same file check — no PID/lock contention",
     "intent": "false_negative"
@@ -380,7 +391,8 @@
       "contention",
       "cli",
       "container_name",
-      "JC-03"
+      "JC-03",
+      "aspirational"
     ],
     "rationale": "Two services with same container_name — Docker will fail with name conflict at runtime",
     "intent": "false_negative"
@@ -412,7 +424,8 @@
       "contention",
       "cli",
       "container_name",
-      "JC-03"
+      "JC-03",
+      "aspirational"
     ],
     "rationale": "App hostname \"db\" collides with db service in test compose — DNS resolution contention",
     "intent": "false_negative"
@@ -444,7 +457,8 @@
       "contention",
       "cli",
       "container_name",
-      "JC-03"
+      "JC-03",
+      "aspirational"
     ],
     "rationale": "Worker network alias \"app\" conflicts with app service name — Docker DNS contention",
     "intent": "false_negative"
@@ -471,7 +485,8 @@
       "contention",
       "cli",
       "container_name",
-      "JC-03"
+      "JC-03",
+      "aspirational"
     ],
     "rationale": "Two Dockerfile stages named \"builder\" — later stage overwrites first, creating ambiguity",
     "intent": "false_negative"
@@ -503,7 +518,8 @@
       "contention",
       "cli",
       "container_name",
-      "JC-03"
+      "JC-03",
+      "aspirational"
     ],
     "rationale": "Volume named \"app\" same as service name — namespace contention in Docker",
     "intent": "false_negative"
@@ -541,7 +557,8 @@
       "cli",
       "container_name",
       "JC-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Unique container names — no naming contention",
     "intent": "false_negative"
@@ -572,7 +589,8 @@
     "tags": [
       "contention",
       "cli",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Two edits to server.js, second overwrites first",
     "intent": "false_positive"
@@ -603,7 +621,8 @@
     "tags": [
       "contention",
       "cli",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Edit server.js and config.json with conflicting ports",
     "intent": "false_positive"
@@ -634,7 +653,8 @@
     "tags": [
       "contention",
       "cli",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Edit .env and compose with different ports",
     "intent": "false_positive"
@@ -666,7 +686,8 @@
     "tags": [
       "contention",
       "cli",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Two migrations on same table",
     "intent": "false_positive"
@@ -692,7 +713,8 @@
     "tags": [
       "contention",
       "cli",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Edit init.sql and server.js with mismatched column names",
     "intent": "false_positive"
@@ -718,7 +740,8 @@
     "tags": [
       "contention",
       "cli",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Compose restart policy conflicts with Dockerfile CMD",
     "intent": "false_positive"
@@ -744,7 +767,8 @@
     "tags": [
       "contention",
       "cli",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Edit both health endpoint and healthcheck with different paths",
     "intent": "false_positive"
@@ -775,7 +799,8 @@
     "tags": [
       "contention",
       "cli",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Config.json and .env disagree on debug",
     "intent": "false_positive"
@@ -801,7 +826,8 @@
     "tags": [
       "contention",
       "cli",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: single edit, consistent check",
     "intent": "false_negative"
@@ -827,7 +853,8 @@
     "tags": [
       "contention",
       "cli",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: edit .env, check .env",
     "intent": "false_negative"
@@ -853,7 +880,8 @@
     "tags": [
       "contention",
       "cli",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: edit config.json, check config.json",
     "intent": "false_negative"
@@ -884,7 +912,8 @@
     "tags": [
       "contention",
       "cli",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Two edits to different routes, check both present",
     "intent": "false_negative"
@@ -912,7 +941,8 @@
     "tags": [
       "contention",
       "cli",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Migration adds column that server.js doesnt reference",
     "intent": "false_positive"

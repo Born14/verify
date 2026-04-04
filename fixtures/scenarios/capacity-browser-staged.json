@@ -21,7 +21,8 @@
       "capacity",
       "browser",
       "dom_limit",
-      "IB-01"
+      "IB-01",
+      "aspirational"
     ],
     "rationale": "Content present but 500 DOM nodes in a single list degrades render performance",
     "intent": "false_negative"
@@ -48,7 +49,8 @@
       "capacity",
       "browser",
       "dom_limit",
-      "IB-01"
+      "IB-01",
+      "aspirational"
     ],
     "rationale": "200-level nesting exceeds browser DOM depth recommendations — layout and style recalc blows up",
     "intent": "false_negative"
@@ -75,7 +77,8 @@
       "capacity",
       "browser",
       "dom_limit",
-      "IB-01"
+      "IB-01",
+      "aspirational"
     ],
     "rationale": "1000 table rows — content exists but table rendering becomes a performance bottleneck",
     "intent": "false_negative"
@@ -102,7 +105,8 @@
       "capacity",
       "browser",
       "dom_limit",
-      "IB-01"
+      "IB-01",
+      "aspirational"
     ],
     "rationale": "SVG with 300 elements — valid markup but headless browser render budget exceeded",
     "intent": "false_negative"
@@ -130,7 +134,8 @@
       "browser",
       "dom_limit",
       "IB-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Single new item — well within DOM limits",
     "intent": "false_negative"
@@ -157,7 +162,8 @@
       "capacity",
       "browser",
       "storage_quota",
-      "IB-02"
+      "IB-02",
+      "aspirational"
     ],
     "rationale": "Script exists but 10MB exceeds typical 5MB localStorage quota — QuotaExceededError at runtime",
     "intent": "false_negative"
@@ -184,7 +190,8 @@
       "capacity",
       "browser",
       "storage_quota",
-      "IB-02"
+      "IB-02",
+      "aspirational"
     ],
     "rationale": "10000 keys x 300 bytes each = ~3MB before overhead — nears quota limit",
     "intent": "false_negative"
@@ -216,7 +223,8 @@
       "capacity",
       "browser",
       "storage_quota",
-      "IB-02"
+      "IB-02",
+      "aspirational"
     ],
     "rationale": "Both storage APIs hit at 5MB each — combined quota likely exceeded",
     "intent": "false_negative"
@@ -243,7 +251,8 @@
       "capacity",
       "browser",
       "storage_quota",
-      "IB-02"
+      "IB-02",
+      "aspirational"
     ],
     "rationale": "50MB Blob to IndexedDB — exceeds typical ephemeral storage quota in headless browsers",
     "intent": "false_negative"
@@ -271,7 +280,8 @@
       "browser",
       "storage_quota",
       "IB-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Tiny localStorage write — well within any quota",
     "intent": "false_negative"
@@ -298,7 +308,8 @@
       "capacity",
       "browser",
       "css_limit",
-      "IB-03"
+      "IB-03",
+      "aspirational"
     ],
     "rationale": "5000 CSS rules — content exists but browsers may hit stylesheet parsing limits",
     "intent": "false_negative"
@@ -325,7 +336,8 @@
       "capacity",
       "browser",
       "css_limit",
-      "IB-03"
+      "IB-03",
+      "aspirational"
     ],
     "rationale": "30-level nested selector — browsers may refuse to match due to selector complexity limits",
     "intent": "false_negative"
@@ -352,7 +364,8 @@
       "capacity",
       "browser",
       "css_limit",
-      "IB-03"
+      "IB-03",
+      "aspirational"
     ],
     "rationale": "40 @import rules — browsers limit stylesheet depth and @import chains",
     "intent": "false_negative"
@@ -379,7 +392,8 @@
       "capacity",
       "browser",
       "css_limit",
-      "IB-03"
+      "IB-03",
+      "aspirational"
     ],
     "rationale": "2000 custom properties on :root — parsing overhead, possible CSSOM limit",
     "intent": "false_negative"
@@ -407,7 +421,8 @@
       "browser",
       "css_limit",
       "IB-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "3 new CSS rules — far below any browser limit",
     "intent": "false_negative"
@@ -433,7 +448,8 @@
     "tags": [
       "capacity",
       "browser",
-      "ib-bolster"
+      "ib-bolster",
+      "aspirational"
     ],
     "rationale": "server.js port changed, config.json unaware",
     "intent": "false_positive"
@@ -459,7 +475,8 @@
     "tags": [
       "capacity",
       "browser",
-      "ib-bolster"
+      "ib-bolster",
+      "aspirational"
     ],
     "rationale": "config.json port changed, server.js unaware",
     "intent": "false_positive"
@@ -485,7 +502,8 @@
     "tags": [
       "capacity",
       "browser",
-      "ib-bolster"
+      "ib-bolster",
+      "aspirational"
     ],
     "rationale": ".env port changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -511,7 +529,8 @@
     "tags": [
       "capacity",
       "browser",
-      "ib-bolster"
+      "ib-bolster",
+      "aspirational"
     ],
     "rationale": "Dockerfile EXPOSE changed, .env unaware",
     "intent": "false_positive"
@@ -537,7 +556,8 @@
     "tags": [
       "capacity",
       "browser",
-      "ib-bolster"
+      "ib-bolster",
+      "aspirational"
     ],
     "rationale": "health response changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -563,7 +583,8 @@
     "tags": [
       "capacity",
       "browser",
-      "ib-bolster"
+      "ib-bolster",
+      "aspirational"
     ],
     "rationale": "app name changed in config, server.js unaware",
     "intent": "false_positive"
@@ -589,7 +610,8 @@
     "tags": [
       "capacity",
       "browser",
-      "ib-bolster"
+      "ib-bolster",
+      "aspirational"
     ],
     "rationale": "NODE_ENV changed, server.js unaware",
     "intent": "false_positive"
@@ -615,7 +637,8 @@
     "tags": [
       "capacity",
       "browser",
-      "ib-bolster"
+      "ib-bolster",
+      "aspirational"
     ],
     "rationale": "SECRET_KEY changed, config.json unaware",
     "intent": "false_positive"
@@ -642,7 +665,8 @@
       "capacity",
       "browser",
       "ib-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js port changed, verify in server.js",
     "intent": "false_negative"
@@ -669,7 +693,8 @@
       "capacity",
       "browser",
       "ib-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: config.json port changed, config gate reads it",
     "intent": "false_negative"
@@ -696,7 +721,8 @@
       "capacity",
       "browser",
       "ib-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: .env PORT changed, config gate reads it",
     "intent": "false_negative"
@@ -722,7 +748,8 @@
       "capacity",
       "browser",
       "ib-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js still exists after edit",
     "intent": "false_negative"
@@ -741,7 +768,8 @@
     "tags": [
       "capacity",
       "browser",
-      "ib-bolster"
+      "ib-bolster",
+      "aspirational"
     ],
     "rationale": "fabricated: package.json does not exist",
     "intent": "false_positive"
@@ -761,7 +789,8 @@
       "capacity",
       "browser",
       "ib-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js exists without edits",
     "intent": "false_negative"
@@ -782,7 +811,8 @@
       "capacity",
       "browser",
       "ib-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js has createServer",
     "intent": "false_negative"

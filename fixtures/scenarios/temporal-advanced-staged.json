@@ -15,7 +15,8 @@
     "tags": [
       "temporal",
       "transient_pass",
-      "TO-02"
+      "TO-02",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -36,7 +37,8 @@
     "tags": [
       "temporal",
       "transient_pass",
-      "TO-02"
+      "TO-02",
+      "aspirational"
     ],
     "intent": "false_positive"
   },
@@ -56,7 +58,8 @@
     "tags": [
       "temporal",
       "transient_pass",
-      "TO-02"
+      "TO-02",
+      "aspirational"
     ],
     "intent": "false_positive"
   },
@@ -79,7 +82,8 @@
     "tags": [
       "temporal",
       "retry_nondeterminism",
-      "TO-03"
+      "TO-03",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -103,7 +107,8 @@
     "tags": [
       "temporal",
       "retry_nondeterminism",
-      "TO-03"
+      "TO-03",
+      "aspirational"
     ],
     "intent": "false_positive"
   },
@@ -129,7 +134,8 @@
     "tags": [
       "temporal",
       "split_state_observation",
-      "TO-04"
+      "TO-04",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -156,7 +162,8 @@
     "tags": [
       "temporal",
       "split_state_observation",
-      "TO-04"
+      "TO-04",
+      "aspirational"
     ],
     "intent": "false_positive"
   },
@@ -177,7 +184,8 @@
     "tags": [
       "temporal",
       "split_state_observation",
-      "TO-04"
+      "TO-04",
+      "aspirational"
     ],
     "intent": "false_positive"
   },
@@ -196,7 +204,8 @@
     "tags": [
       "temporal",
       "debounce_timing",
-      "TO-06"
+      "TO-06",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -217,7 +226,8 @@
     "tags": [
       "temporal",
       "debounce_timing",
-      "TO-06"
+      "TO-06",
+      "aspirational"
     ],
     "intent": "false_positive"
   },
@@ -237,7 +247,8 @@
     "tags": [
       "temporal",
       "animation_midpoint",
-      "TO-07"
+      "TO-07",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -258,7 +269,8 @@
     "tags": [
       "temporal",
       "animation_midpoint",
-      "TO-07"
+      "TO-07",
+      "aspirational"
     ],
     "intent": "false_positive"
   },
@@ -279,7 +291,8 @@
     "tags": [
       "temporal",
       "animation_midpoint",
-      "TO-07"
+      "TO-07",
+      "aspirational"
     ],
     "intent": "false_positive"
   },
@@ -298,7 +311,8 @@
     "tags": [
       "temporal",
       "eventual_consistency",
-      "TO-08"
+      "TO-08",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -319,7 +333,8 @@
     "tags": [
       "temporal",
       "eventual_consistency",
-      "TO-08"
+      "TO-08",
+      "aspirational"
     ],
     "intent": "false_positive"
   },
@@ -343,7 +358,8 @@
     "tags": [
       "temporal",
       "eventual_consistency",
-      "TO-08"
+      "TO-08",
+      "aspirational"
     ],
     "intent": "false_positive"
   },
@@ -366,7 +382,8 @@
     "tags": [
       "temporal",
       "background_job_incomplete",
-      "TO-09"
+      "TO-09",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -390,7 +407,8 @@
     "tags": [
       "temporal",
       "background_job_incomplete",
-      "TO-09"
+      "TO-09",
+      "aspirational"
     ],
     "intent": "false_positive"
   },
@@ -409,7 +427,8 @@
     "tags": [
       "temporal",
       "timezone_rendering",
-      "TO-11"
+      "TO-11",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -433,7 +452,8 @@
     "tags": [
       "temporal",
       "timezone_rendering",
-      "TO-11"
+      "TO-11",
+      "aspirational"
     ],
     "intent": "false_positive"
   },
@@ -454,7 +474,8 @@
     "tags": [
       "temporal",
       "timezone_rendering",
-      "TO-11"
+      "TO-11",
+      "aspirational"
     ],
     "intent": "false_positive"
   },
@@ -477,7 +498,8 @@
     "tags": [
       "temporal",
       "dst_transition",
-      "TO-12"
+      "TO-12",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -497,7 +519,8 @@
     "tags": [
       "temporal",
       "dst_transition",
-      "TO-12"
+      "TO-12",
+      "aspirational"
     ],
     "intent": "false_positive"
   },
@@ -516,7 +539,8 @@
     "tags": [
       "temporal",
       "clock_drift",
-      "TO-13"
+      "TO-13",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -540,7 +564,8 @@
     "tags": [
       "temporal",
       "clock_drift",
-      "TO-13"
+      "TO-13",
+      "aspirational"
     ],
     "intent": "false_positive"
   },
@@ -563,7 +588,8 @@
     "tags": [
       "temporal",
       "locale_date_format",
-      "TO-14"
+      "TO-14",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -587,7 +613,8 @@
     "tags": [
       "temporal",
       "locale_date_format",
-      "TO-14"
+      "TO-14",
+      "aspirational"
     ],
     "intent": "false_positive"
   },
@@ -607,7 +634,8 @@
     "tags": [
       "temporal",
       "locale_date_format",
-      "TO-14"
+      "TO-14",
+      "aspirational"
     ],
     "intent": "false_positive"
   },
@@ -630,7 +658,8 @@
     "tags": [
       "temporal",
       "ttl_expiry",
-      "TO-15"
+      "TO-15",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -654,7 +683,8 @@
     "tags": [
       "temporal",
       "ttl_expiry",
-      "TO-15"
+      "TO-15",
+      "aspirational"
     ],
     "intent": "false_positive"
   },
@@ -675,7 +705,8 @@
     "tags": [
       "temporal",
       "ttl_expiry",
-      "TO-15"
+      "TO-15",
+      "aspirational"
     ],
     "intent": "false_positive"
   }

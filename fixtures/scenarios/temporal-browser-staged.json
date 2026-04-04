@@ -24,7 +24,8 @@
       "temporal",
       "browser",
       "dom_settle",
-      "TB-01"
+      "TB-01",
+      "aspirational"
     ],
     "rationale": "100ms delay is within 300ms settle window — browser gate should capture final state",
     "intent": "false_negative"
@@ -54,7 +55,8 @@
       "temporal",
       "browser",
       "dom_settle",
-      "TB-01"
+      "TB-01",
+      "aspirational"
     ],
     "rationale": "50ms class toggle — settle window should capture the applied class",
     "intent": "false_negative"
@@ -80,7 +82,8 @@
       "browser",
       "dom_settle",
       "TB-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Static CSS — no timing issue, should pass immediately",
     "intent": "false_negative"
@@ -109,7 +112,8 @@
       "temporal",
       "browser",
       "async_content",
-      "TB-02"
+      "TB-02",
+      "aspirational"
     ],
     "rationale": "Async content at 100ms — settle window should wait for mutation before checking",
     "intent": "false_negative"
@@ -138,7 +142,8 @@
       "temporal",
       "browser",
       "async_content",
-      "TB-02"
+      "TB-02",
+      "aspirational"
     ],
     "rationale": "Text set after 150ms — DOM container exists immediately, content arrives within settle",
     "intent": "false_negative"
@@ -161,7 +166,8 @@
       "temporal",
       "browser",
       "async_content",
-      "TB-02"
+      "TB-02",
+      "aspirational"
     ],
     "rationale": "Element never created — should fail regardless of settle window",
     "intent": "false_positive"
@@ -192,7 +198,8 @@
       "temporal",
       "browser",
       "transition_midpoint",
-      "TB-03"
+      "TB-03",
+      "aspirational"
     ],
     "rationale": "Transition exists but animations disabled — gate captures CSS-declared final value",
     "intent": "false_negative"
@@ -218,7 +225,8 @@
       "browser",
       "transition_midpoint",
       "TB-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Animated element has color #9b59b6 — with animations disabled, should get exact value",
     "intent": "false_negative"
@@ -249,7 +257,8 @@
       "temporal",
       "browser",
       "transition_midpoint",
-      "TB-03"
+      "TB-03",
+      "aspirational"
     ],
     "rationale": "Transition added but not triggered — color should be the authored #0066cc",
     "intent": "false_negative"
@@ -277,7 +286,8 @@
       "browser",
       "dom_settle",
       "TB-01",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "CSS edited in source — content gate should find new value",
     "intent": "false_negative"
@@ -305,7 +315,8 @@
       "browser",
       "dom_settle",
       "TB-01",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "CSS change in server.js but config.json has no CSS — cross-file temporal gap",
     "intent": "false_positive"
@@ -333,7 +344,8 @@
       "browser",
       "async_content",
       "TB-02",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "CSS edited — old value should no longer be present",
     "intent": "false_positive"
@@ -362,7 +374,8 @@
       "temporal",
       "browser",
       "media_query",
-      "TB-04"
+      "TB-04",
+      "aspirational"
     ],
     "rationale": "Media query not applied at default viewport — temporal viewport mismatch",
     "intent": "false_positive"
@@ -391,7 +404,8 @@
       "temporal",
       "browser",
       "media_query",
-      "TB-04"
+      "TB-04",
+      "aspirational"
     ],
     "rationale": "Media query not applied at default viewport — temporal viewport mismatch",
     "intent": "false_positive"
@@ -419,7 +433,8 @@
       "browser",
       "media_query",
       "TB-04",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Media query not applied at default viewport — temporal viewport mismatch",
     "intent": "false_negative"
@@ -446,7 +461,8 @@
       "temporal",
       "browser",
       "stale_css",
-      "TB-05"
+      "TB-05",
+      "aspirational"
     ],
     "rationale": "CSS edited but predicate checks for old value — stale rendering",
     "intent": "false_positive"
@@ -473,7 +489,8 @@
       "temporal",
       "browser",
       "stale_css",
-      "TB-05"
+      "TB-05",
+      "aspirational"
     ],
     "rationale": "CSS edited but predicate checks for old value — stale rendering",
     "intent": "false_positive"
@@ -500,7 +517,8 @@
       "temporal",
       "browser",
       "stale_css",
-      "TB-05"
+      "TB-05",
+      "aspirational"
     ],
     "rationale": "CSS edited but predicate checks for old value — stale rendering",
     "intent": "false_positive"
@@ -528,7 +546,8 @@
       "browser",
       "stale_css",
       "TB-05",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "CSS edited but predicate checks for old value — stale rendering",
     "intent": "false_negative"
@@ -555,7 +574,8 @@
       "temporal",
       "browser",
       "stale_css",
-      "TB-05"
+      "TB-05",
+      "aspirational"
     ],
     "rationale": "CSS edited but predicate checks for old value — stale rendering",
     "intent": "false_positive"
@@ -583,7 +603,8 @@
       "browser",
       "cross_route_bleed",
       "TB-06",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "CSS edit on one route checked on another — cross-route temporal relationship",
     "intent": "false_negative"
@@ -611,7 +632,8 @@
       "browser",
       "cross_route_bleed",
       "TB-06",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "CSS edit on one route checked on another — cross-route temporal relationship",
     "intent": "false_negative"
@@ -638,7 +660,8 @@
       "temporal",
       "browser",
       "cross_route_bleed",
-      "TB-06"
+      "TB-06",
+      "aspirational"
     ],
     "rationale": "CSS edit on one route checked on another — cross-route temporal relationship",
     "intent": "false_positive"
@@ -665,7 +688,8 @@
       "temporal",
       "browser",
       "cross_route_bleed",
-      "TB-06"
+      "TB-06",
+      "aspirational"
     ],
     "rationale": "CSS edit on one route checked on another — cross-route temporal relationship",
     "intent": "false_positive"
@@ -693,7 +717,8 @@
       "browser",
       "cross_route_bleed",
       "TB-06",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "CSS edit on one route checked on another — cross-route temporal relationship",
     "intent": "false_negative"
@@ -721,7 +746,8 @@
       "browser",
       "specificity_override",
       "TB-07",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "CSS specificity determines which rule wins — temporal ordering + specificity interaction",
     "intent": "false_negative"
@@ -749,7 +775,8 @@
       "browser",
       "specificity_override",
       "TB-07",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "CSS specificity determines which rule wins — temporal ordering + specificity interaction",
     "intent": "false_negative"
@@ -777,7 +804,8 @@
       "browser",
       "specificity_override",
       "TB-07",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "CSS specificity determines which rule wins — temporal ordering + specificity interaction",
     "intent": "false_negative"
@@ -805,7 +833,8 @@
       "browser",
       "specificity_override",
       "TB-07",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "CSS specificity determines which rule wins — temporal ordering + specificity interaction",
     "intent": "false_negative"
@@ -833,7 +862,8 @@
       "browser",
       "specificity_override",
       "TB-07",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "CSS specificity determines which rule wins — temporal ordering + specificity interaction",
     "intent": "false_negative"

@@ -21,7 +21,8 @@
       "propagation",
       "config",
       "cached_process",
-      "PE-01"
+      "PE-01",
+      "aspirational"
     ],
     "rationale": "Env var changed but config.json (which app may read at startup) still has old port — cached process",
     "intent": "false_positive"
@@ -48,7 +49,8 @@
       "propagation",
       "config",
       "cached_process",
-      "PE-01"
+      "PE-01",
+      "aspirational"
     ],
     "rationale": "Database URL changed in .env but config.json host is stale — env→config propagation gap",
     "intent": "false_positive"
@@ -75,7 +77,8 @@
       "propagation",
       "config",
       "cached_process",
-      "PE-01"
+      "PE-01",
+      "aspirational"
     ],
     "rationale": "NODE_ENV changed but server.js has no env-dependent behavior — config→process gap",
     "intent": "false_positive"
@@ -102,7 +105,8 @@
       "propagation",
       "config",
       "cached_process",
-      "PE-01"
+      "PE-01",
+      "aspirational"
     ],
     "rationale": "Secret rotated in .env but compose doesnt forward it to container — env→deploy cache gap",
     "intent": "false_positive"
@@ -129,7 +133,8 @@
       "propagation",
       "config",
       "cached_process",
-      "PE-01"
+      "PE-01",
+      "aspirational"
     ],
     "rationale": "Debug flag toggled but process code never reads it — env var→runtime propagation gap",
     "intent": "false_positive"
@@ -157,7 +162,8 @@
       "config",
       "cached_process",
       "PE-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Same-file check — env var is present",
     "intent": "false_negative"
@@ -184,7 +190,8 @@
       "propagation",
       "config",
       "wrong_source",
-      "PE-02"
+      "PE-02",
+      "aspirational"
     ],
     "rationale": "Config port changed but app reads PORT from .env — wrong config source updated",
     "intent": "false_positive"
@@ -211,7 +218,8 @@
       "propagation",
       "config",
       "wrong_source",
-      "PE-02"
+      "PE-02",
+      "aspirational"
     ],
     "rationale": "DB name changed in config.json but .env DATABASE_URL still has old name — source mismatch",
     "intent": "false_positive"
@@ -238,7 +246,8 @@
       "propagation",
       "config",
       "wrong_source",
-      "PE-02"
+      "PE-02",
+      "aspirational"
     ],
     "rationale": "Config host changed but prod .env DATABASE_URL still points to old host — cross-source gap",
     "intent": "false_positive"
@@ -265,7 +274,8 @@
       "propagation",
       "config",
       "wrong_source",
-      "PE-02"
+      "PE-02",
+      "aspirational"
     ],
     "rationale": "Config name changed but server.js reads title from hardcoded HTML — config→code source mismatch",
     "intent": "false_positive"
@@ -292,7 +302,8 @@
       "propagation",
       "config",
       "wrong_source",
-      "PE-02"
+      "PE-02",
+      "aspirational"
     ],
     "rationale": "Staging config host changed but staging .env still has localhost — parallel config source gap",
     "intent": "false_positive"
@@ -320,7 +331,8 @@
       "config",
       "wrong_source",
       "PE-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Same-file check — value is present",
     "intent": "false_negative"
@@ -347,7 +359,8 @@
       "propagation",
       "config",
       "flag_behavior",
-      "PE-03"
+      "PE-03",
+      "aspirational"
     ],
     "rationale": "Analytics flag toggled but server has no analytics implementation — flag→behavior propagation gap",
     "intent": "false_positive"
@@ -374,7 +387,8 @@
       "propagation",
       "config",
       "flag_behavior",
-      "PE-03"
+      "PE-03",
+      "aspirational"
     ],
     "rationale": "Dark mode flag toggled but server.js has no CSS conditional for it — flag without behavior",
     "intent": "false_positive"
@@ -401,7 +415,8 @@
       "propagation",
       "config",
       "flag_behavior",
-      "PE-03"
+      "PE-03",
+      "aspirational"
     ],
     "rationale": "Beta signup flag exists but server has no signup functionality — flag→route gap",
     "intent": "false_positive"
@@ -428,7 +443,8 @@
       "propagation",
       "config",
       "flag_behavior",
-      "PE-03"
+      "PE-03",
+      "aspirational"
     ],
     "rationale": "Config db port changed but server reads port from env only — config→process propagation gap",
     "intent": "false_positive"
@@ -455,7 +471,8 @@
       "propagation",
       "config",
       "flag_behavior",
-      "PE-03"
+      "PE-03",
+      "aspirational"
     ],
     "rationale": "Debug flag toggled but test compose has no DEBUG env — flag doesnt propagate to test runtime",
     "intent": "false_positive"
@@ -483,7 +500,8 @@
       "config",
       "flag_behavior",
       "PE-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Same-file check — flag value is present",
     "intent": "false_negative"
@@ -509,7 +527,8 @@
     "tags": [
       "propagation",
       "config",
-      "propagation_gap"
+      "propagation_gap",
+      "aspirational"
     ],
     "rationale": "Add column to init.sql, server.js unaware",
     "intent": "false_positive"
@@ -535,7 +554,8 @@
     "tags": [
       "propagation",
       "config",
-      "propagation_gap"
+      "propagation_gap",
+      "aspirational"
     ],
     "rationale": "Change .env port, compose not updated",
     "intent": "false_positive"
@@ -561,7 +581,8 @@
     "tags": [
       "propagation",
       "config",
-      "propagation_gap"
+      "propagation_gap",
+      "aspirational"
     ],
     "rationale": "Change config.json feature flag, server.js not updated",
     "intent": "false_positive"
@@ -587,7 +608,8 @@
     "tags": [
       "propagation",
       "config",
-      "propagation_gap"
+      "propagation_gap",
+      "aspirational"
     ],
     "rationale": "Rename column in init.sql, server.js uses old name",
     "intent": "false_positive"
@@ -613,7 +635,8 @@
     "tags": [
       "propagation",
       "config",
-      "propagation_gap"
+      "propagation_gap",
+      "aspirational"
     ],
     "rationale": "Add env var to .env, Dockerfile has no matching ENV",
     "intent": "false_positive"
@@ -639,7 +662,8 @@
     "tags": [
       "propagation",
       "config",
-      "propagation_gap"
+      "propagation_gap",
+      "aspirational"
     ],
     "rationale": "Change Dockerfile node version, compose image tag unchanged",
     "intent": "false_positive"
@@ -667,7 +691,8 @@
     "tags": [
       "propagation",
       "config",
-      "propagation_gap"
+      "propagation_gap",
+      "aspirational"
     ],
     "rationale": "Add migration column, config.json has no reference",
     "intent": "false_positive"
@@ -693,7 +718,8 @@
     "tags": [
       "propagation",
       "config",
-      "propagation_gap"
+      "propagation_gap",
+      "aspirational"
     ],
     "rationale": "Change health response, Dockerfile healthcheck unchanged",
     "intent": "false_positive"
@@ -719,7 +745,8 @@
     "tags": [
       "propagation",
       "config",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: edit server.js, check server.js",
     "intent": "false_negative"
@@ -745,7 +772,8 @@
     "tags": [
       "propagation",
       "config",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: edit .env, check .env",
     "intent": "false_negative"
@@ -765,7 +793,8 @@
     "tags": [
       "propagation",
       "config",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: init.sql has users table",
     "intent": "false_negative"
@@ -791,7 +820,8 @@
     "tags": [
       "propagation",
       "config",
-      "propagation_gap"
+      "propagation_gap",
+      "aspirational"
     ],
     "rationale": "Add table to init.sql, server.js has no API for it",
     "intent": "false_positive"

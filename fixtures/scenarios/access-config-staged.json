@@ -31,7 +31,8 @@
       "access",
       "config",
       "env_permissions",
-      "HG-01"
+      "HG-01",
+      "aspirational"
     ],
     "rationale": ".env edited but container runs as node user — if .env is root-owned, app cannot read it",
     "intent": "false_negative"
@@ -68,7 +69,8 @@
       "access",
       "config",
       "env_permissions",
-      "HG-01"
+      "HG-01",
+      "aspirational"
     ],
     "rationale": ".env.prod mounted as :ro — app can read but cannot write/update secrets at runtime",
     "intent": "false_negative"
@@ -105,7 +107,8 @@
       "access",
       "config",
       "env_permissions",
-      "HG-01"
+      "HG-01",
+      "aspirational"
     ],
     "rationale": "Local .env edited but compose reads from /run/secrets/.env — edit has no effect on running app",
     "intent": "false_negative"
@@ -142,7 +145,8 @@
       "access",
       "config",
       "env_permissions",
-      "HG-01"
+      "HG-01",
+      "aspirational"
     ],
     "rationale": "Staging .env is app-writable but prod .env should be vault-managed — permission mismatch",
     "intent": "false_negative"
@@ -170,7 +174,8 @@
       "config",
       "env_permissions",
       "HG-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": ".env is app-owned and writable — no permission issue",
     "intent": "false_negative"
@@ -202,7 +207,8 @@
       "access",
       "config",
       "missing_credentials",
-      "HG-02"
+      "HG-02",
+      "aspirational"
     ],
     "rationale": "Config points to vault but VAULT_TOKEN not in .env — secrets cannot be fetched",
     "intent": "false_positive"
@@ -234,7 +240,8 @@
       "access",
       "config",
       "missing_credentials",
-      "HG-02"
+      "HG-02",
+      "aspirational"
     ],
     "rationale": "SSM parameter path set but no AWS credentials — parameter store inaccessible",
     "intent": "false_positive"
@@ -266,7 +273,8 @@
       "access",
       "config",
       "missing_credentials",
-      "HG-02"
+      "HG-02",
+      "aspirational"
     ],
     "rationale": "GCP Secret Manager referenced but no service account credentials in environment",
     "intent": "false_positive"
@@ -298,7 +306,8 @@
       "access",
       "config",
       "missing_credentials",
-      "HG-02"
+      "HG-02",
+      "aspirational"
     ],
     "rationale": "Docker external secrets require Swarm mode — compose up fails without swarm init",
     "intent": "false_negative"
@@ -326,7 +335,8 @@
       "config",
       "missing_credentials",
       "HG-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Secret is inline — no external provider needed, edit succeeds",
     "intent": "false_negative"
@@ -358,7 +368,8 @@
       "access",
       "config",
       "env_mismatch",
-      "HG-03"
+      "HG-03",
+      "aspirational"
     ],
     "rationale": "Staging config updated but prod config has different DB name — cross-env assumption fails",
     "intent": "false_positive"
@@ -390,7 +401,8 @@
       "access",
       "config",
       "env_mismatch",
-      "HG-03"
+      "HG-03",
+      "aspirational"
     ],
     "rationale": "Both happen to have DEBUG=false but for different reasons — staging is editable, prod is policy",
     "intent": "false_negative"
@@ -422,7 +434,8 @@
       "access",
       "config",
       "env_mismatch",
-      "HG-03"
+      "HG-03",
+      "aspirational"
     ],
     "rationale": "Staging betaSignup changed but prod has it locked to false — cannot match across envs",
     "intent": "false_positive"
@@ -454,7 +467,8 @@
       "access",
       "config",
       "env_mismatch",
-      "HG-03"
+      "HG-03",
+      "aspirational"
     ],
     "rationale": "Staging port changed to 4000 but prod port is fixed at 3000 by load balancer policy",
     "intent": "false_positive"
@@ -482,7 +496,8 @@
       "config",
       "env_mismatch",
       "HG-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Edit and predicate both target staging config — same environment, no mismatch",
     "intent": "false_negative"
@@ -508,7 +523,8 @@
     "tags": [
       "access",
       "config",
-      "hg-bolster"
+      "hg-bolster",
+      "aspirational"
     ],
     "rationale": "server.js port changed, config.json unaware",
     "intent": "false_positive"
@@ -534,7 +550,8 @@
     "tags": [
       "access",
       "config",
-      "hg-bolster"
+      "hg-bolster",
+      "aspirational"
     ],
     "rationale": "config.json port changed, server.js unaware",
     "intent": "false_positive"
@@ -560,7 +577,8 @@
     "tags": [
       "access",
       "config",
-      "hg-bolster"
+      "hg-bolster",
+      "aspirational"
     ],
     "rationale": ".env port changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -586,7 +604,8 @@
     "tags": [
       "access",
       "config",
-      "hg-bolster"
+      "hg-bolster",
+      "aspirational"
     ],
     "rationale": "Dockerfile EXPOSE changed, .env unaware",
     "intent": "false_positive"
@@ -612,7 +631,8 @@
     "tags": [
       "access",
       "config",
-      "hg-bolster"
+      "hg-bolster",
+      "aspirational"
     ],
     "rationale": "health response changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -638,7 +658,8 @@
     "tags": [
       "access",
       "config",
-      "hg-bolster"
+      "hg-bolster",
+      "aspirational"
     ],
     "rationale": "app name changed in config, server.js unaware",
     "intent": "false_positive"
@@ -664,7 +685,8 @@
     "tags": [
       "access",
       "config",
-      "hg-bolster"
+      "hg-bolster",
+      "aspirational"
     ],
     "rationale": "NODE_ENV changed, server.js unaware",
     "intent": "false_positive"
@@ -690,7 +712,8 @@
     "tags": [
       "access",
       "config",
-      "hg-bolster"
+      "hg-bolster",
+      "aspirational"
     ],
     "rationale": "SECRET_KEY changed, config.json unaware",
     "intent": "false_positive"
@@ -717,7 +740,8 @@
       "access",
       "config",
       "hg-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js port changed, verify in server.js",
     "intent": "false_negative"
@@ -744,7 +768,8 @@
       "access",
       "config",
       "hg-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: config.json port changed, config gate reads it",
     "intent": "false_negative"
@@ -771,7 +796,8 @@
       "access",
       "config",
       "hg-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: .env PORT changed, config gate reads it",
     "intent": "false_negative"
@@ -797,7 +823,8 @@
       "access",
       "config",
       "hg-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js still exists after edit",
     "intent": "false_negative"
@@ -816,7 +843,8 @@
     "tags": [
       "access",
       "config",
-      "hg-bolster"
+      "hg-bolster",
+      "aspirational"
     ],
     "rationale": "fabricated: package.json does not exist",
     "intent": "false_positive"
@@ -836,7 +864,8 @@
       "access",
       "config",
       "hg-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js exists without edits",
     "intent": "false_negative"
@@ -857,7 +886,8 @@
       "access",
       "config",
       "hg-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js has createServer",
     "intent": "false_negative"

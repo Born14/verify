@@ -16,7 +16,8 @@
       "state_assumption",
       "config",
       "feature_flag_divergence",
-      "SA-01"
+      "SA-01",
+      "aspirational"
     ],
     "rationale": "Assumed: staging has darkMode=true. Actual: prod has darkMode=false. Agent inspected wrong environment.",
     "intent": "false_positive"
@@ -38,7 +39,8 @@
       "state_assumption",
       "config",
       "feature_flag_divergence",
-      "SA-01"
+      "SA-01",
+      "aspirational"
     ],
     "rationale": "Assumed: staging has analytics=true. Actual: prod has analytics=false. Feature verified against wrong env.",
     "intent": "false_positive"
@@ -60,7 +62,8 @@
       "state_assumption",
       "config",
       "feature_flag_divergence",
-      "SA-01"
+      "SA-01",
+      "aspirational"
     ],
     "rationale": "Assumed: staging has betaSignup. Actual: prod has betaSignup=false. Environment identity mismatch.",
     "intent": "false_positive"
@@ -82,7 +85,8 @@
       "state_assumption",
       "config",
       "feature_flag_divergence",
-      "SA-01"
+      "SA-01",
+      "aspirational"
     ],
     "rationale": "Assumed: staging env (DEBUG=true). Actual: prod env (DEBUG=false). Env file identity mismatch.",
     "intent": "false_positive"
@@ -104,7 +108,8 @@
       "state_assumption",
       "config",
       "feature_flag_divergence",
-      "SA-01"
+      "SA-01",
+      "aspirational"
     ],
     "rationale": "Assumed: staging DB (demo_staging). Actual: prod DB (demo_prod). Agent queried wrong database identity.",
     "intent": "false_positive"
@@ -126,7 +131,8 @@
       "state_assumption",
       "config",
       "feature_flag_divergence",
-      "SA-01"
+      "SA-01",
+      "aspirational"
     ],
     "rationale": "Assumed: staging DB host (localhost). Actual: prod host (db-primary.internal). Wrong host belief.",
     "intent": "false_positive"
@@ -148,7 +154,8 @@
       "state_assumption",
       "config",
       "feature_flag_divergence",
-      "SA-01"
+      "SA-01",
+      "aspirational"
     ],
     "rationale": "Assumed: staging override propagated to base. Actual: base config.json still has analytics=false.",
     "intent": "false_positive"
@@ -171,7 +178,8 @@
       "config",
       "feature_flag_divergence",
       "SA-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Same-environment check — staging config confirms its own value. No environment identity error.",
     "intent": "false_negative"
@@ -199,7 +207,8 @@
       "state_assumption",
       "config",
       "default_masks_missing",
-      "SA-02"
+      "SA-02",
+      "aspirational"
     ],
     "rationale": "Assumed: PORT=3000 is explicitly configured. Actual: PORT missing, || 3000 fallback creates silent degradation.",
     "intent": "false_positive"
@@ -227,7 +236,8 @@
       "state_assumption",
       "config",
       "default_masks_missing",
-      "SA-02"
+      "SA-02",
+      "aspirational"
     ],
     "rationale": "Assumed: DATABASE_URL is set. Actual: removed. config.json db settings create false sense of connectivity.",
     "intent": "false_positive"
@@ -254,7 +264,8 @@
       "state_assumption",
       "config",
       "default_masks_missing",
-      "SA-02"
+      "SA-02",
+      "aspirational"
     ],
     "rationale": "Assumed: SECRET_KEY exists. Actual: removed, no fallback. Auth/sessions silently broken.",
     "intent": "false_positive"
@@ -282,7 +293,8 @@
       "state_assumption",
       "config",
       "default_masks_missing",
-      "SA-02"
+      "SA-02",
+      "aspirational"
     ],
     "rationale": "Assumed: NODE_ENV=production. Actual: removed, Node defaults to undefined. Libraries change behavior silently.",
     "intent": "false_positive"
@@ -310,7 +322,8 @@
       "state_assumption",
       "config",
       "default_masks_missing",
-      "SA-02"
+      "SA-02",
+      "aspirational"
     ],
     "rationale": "Assumed: DEBUG=false explicitly. Actual: DEBUG absent. Libraries treat undefined !== \"false\".",
     "intent": "false_positive"
@@ -333,7 +346,8 @@
       "config",
       "default_masks_missing",
       "SA-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "PORT exists and matches — no missing config, no masking default.",
     "intent": "false_negative"
@@ -360,7 +374,8 @@
       "state_assumption",
       "config",
       "precedence_conflict",
-      "SA-03"
+      "SA-03",
+      "aspirational"
     ],
     "rationale": "Assumed: .env governs PORT. Actual: docker-compose hardcodes PORT=3000, overrides .env inside container.",
     "intent": "false_positive"
@@ -387,7 +402,8 @@
       "state_assumption",
       "config",
       "precedence_conflict",
-      "SA-03"
+      "SA-03",
+      "aspirational"
     ],
     "rationale": "Assumed: config.json is the DB name authority. Actual: .env DATABASE_URL has /demo — app reads .env at runtime.",
     "intent": "false_positive"
@@ -414,7 +430,8 @@
       "state_assumption",
       "config",
       "precedence_conflict",
-      "SA-03"
+      "SA-03",
+      "aspirational"
     ],
     "rationale": "Assumed: config.json port governs Docker networking. Actual: Dockerfile EXPOSE is a build-time declaration.",
     "intent": "false_positive"
@@ -441,7 +458,8 @@
       "state_assumption",
       "config",
       "precedence_conflict",
-      "SA-03"
+      "SA-03",
+      "aspirational"
     ],
     "rationale": "Assumed: config.json host is authoritative. Actual: .env DATABASE_URL has localhost — connection string wins.",
     "intent": "false_positive"
@@ -468,7 +486,8 @@
       "state_assumption",
       "config",
       "precedence_conflict",
-      "SA-03"
+      "SA-03",
+      "aspirational"
     ],
     "rationale": "Assumed: docker-compose PORT governs healthcheck. Actual: Dockerfile healthcheck has hardcoded :3000.",
     "intent": "false_positive"
@@ -495,7 +514,8 @@
       "state_assumption",
       "config",
       "precedence_conflict",
-      "SA-03"
+      "SA-03",
+      "aspirational"
     ],
     "rationale": "Assumed: config.json name is read by server.js. Actual: server.js hardcodes \"Demo App\" — config.json is unused.",
     "intent": "false_positive"
@@ -522,7 +542,8 @@
       "state_assumption",
       "config",
       "precedence_conflict",
-      "SA-03"
+      "SA-03",
+      "aspirational"
     ],
     "rationale": "Assumed: config.json port is authoritative. Actual: .env DATABASE_URL has :5432 — connection string wins.",
     "intent": "false_positive"
@@ -544,7 +565,8 @@
       "state_assumption",
       "config",
       "precedence_conflict",
-      "SA-03"
+      "SA-03",
+      "aspirational"
     ],
     "rationale": "Assumed: staging env governs prod. Actual: .env.prod overrides — DEBUG=false in production.",
     "intent": "false_positive"
@@ -573,7 +595,8 @@
       "config",
       "precedence_conflict",
       "SA-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Same-file edit + check — no cross-source assumption, no precedence ambiguity.",
     "intent": "false_negative"
@@ -593,7 +616,8 @@
     "tags": [
       "state",
       "config",
-      "state_assumption"
+      "state_assumption",
+      "aspirational"
     ],
     "rationale": "Assume server.js has /api/users route — it doesnt",
     "intent": "false_positive"
@@ -613,7 +637,8 @@
     "tags": [
       "state",
       "config",
-      "state_assumption"
+      "state_assumption",
+      "aspirational"
     ],
     "rationale": "Assume config.json has redis section — it doesnt",
     "intent": "false_positive"
@@ -633,7 +658,8 @@
     "tags": [
       "state",
       "config",
-      "state_assumption"
+      "state_assumption",
+      "aspirational"
     ],
     "rationale": "Assume .env has REDIS_URL — it doesnt",
     "intent": "false_positive"
@@ -653,7 +679,8 @@
     "tags": [
       "state",
       "config",
-      "state_assumption"
+      "state_assumption",
+      "aspirational"
     ],
     "rationale": "Assume init.sql has products table — it doesnt",
     "intent": "false_positive"
@@ -673,7 +700,8 @@
     "tags": [
       "state",
       "config",
-      "state_assumption"
+      "state_assumption",
+      "aspirational"
     ],
     "rationale": "Assume Dockerfile has multi-stage build — it doesnt",
     "intent": "false_positive"
@@ -693,7 +721,8 @@
     "tags": [
       "state",
       "config",
-      "state_assumption"
+      "state_assumption",
+      "aspirational"
     ],
     "rationale": "Assume compose has redis service — it doesnt",
     "intent": "false_positive"
@@ -713,7 +742,8 @@
     "tags": [
       "state",
       "config",
-      "state_assumption"
+      "state_assumption",
+      "aspirational"
     ],
     "rationale": "Assume server.js uses express — it uses http",
     "intent": "false_positive"

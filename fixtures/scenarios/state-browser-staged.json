@@ -22,7 +22,8 @@
       "state_assumption",
       "browser",
       "class_renamed",
-      "SB-01"
+      "SB-01",
+      "aspirational"
     ],
     "rationale": "Assumed: .nav-link class exists. Actual: renamed to .menu-link. Selector finds nothing.",
     "intent": "false_positive"
@@ -50,7 +51,8 @@
       "state_assumption",
       "browser",
       "class_renamed",
-      "SB-01"
+      "SB-01",
+      "aspirational"
     ],
     "rationale": "Assumed: .subtitle class exists with color. Actual: renamed to .tagline. Old selector is dead.",
     "intent": "false_positive"
@@ -78,7 +80,8 @@
       "state_assumption",
       "browser",
       "class_renamed",
-      "SB-01"
+      "SB-01",
+      "aspirational"
     ],
     "rationale": "Assumed: .hero class exists on about page. Actual: renamed to .banner. CSS rule orphaned.",
     "intent": "false_positive"
@@ -106,7 +109,8 @@
       "state_assumption",
       "browser",
       "class_renamed",
-      "SB-01"
+      "SB-01",
+      "aspirational"
     ],
     "rationale": "Assumed: .items class exists. Actual: renamed to .item-list. Agent's selector references a ghost class.",
     "intent": "false_positive"
@@ -140,7 +144,8 @@
       "browser",
       "class_renamed",
       "SB-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "CSS and HTML both renamed consistently — new selector matches. No state mismatch.",
     "intent": "false_negative"
@@ -167,7 +172,8 @@
       "state_assumption",
       "browser",
       "element_moved",
-      "SB-02"
+      "SB-02",
+      "aspirational"
     ],
     "rationale": "Assumed: footer has text content. Actual: footer emptied (content moved). Selector finds empty element.",
     "intent": "false_positive"
@@ -194,7 +200,8 @@
       "state_assumption",
       "browser",
       "element_moved",
-      "SB-02"
+      "SB-02",
+      "aspirational"
     ],
     "rationale": "Assumed: nav is direct child of body. Actual: moved inside .hero div. Selector body > nav finds nothing.",
     "intent": "false_positive"
@@ -221,7 +228,8 @@
       "state_assumption",
       "browser",
       "element_moved",
-      "SB-02"
+      "SB-02",
+      "aspirational"
     ],
     "rationale": "Assumed: h1 is direct child of body. Actual: wrapped in <header>. Direct-child selector fails.",
     "intent": "false_positive"
@@ -249,7 +257,8 @@
       "state_assumption",
       "browser",
       "element_moved",
-      "SB-02"
+      "SB-02",
+      "aspirational"
     ],
     "rationale": "Assumed: .badge is inside .card. Actual: moved outside. Descendant selector .card .badge finds nothing.",
     "intent": "false_positive"
@@ -272,7 +281,8 @@
       "browser",
       "element_moved",
       "SB-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": ".hero-title is still inside .hero — DOM structure matches selector. No move.",
     "intent": "false_negative"
@@ -300,7 +310,8 @@
       "state_assumption",
       "browser",
       "responsive_breakpoint",
-      "SB-03"
+      "SB-03",
+      "aspirational"
     ],
     "rationale": "Assumed: h1 is 1rem (mobile). Actual: base rule is 2rem, 1rem only in @media. File-level CSS extraction sees base rule.",
     "intent": "false_positive"
@@ -328,7 +339,8 @@
       "state_assumption",
       "browser",
       "responsive_breakpoint",
-      "SB-03"
+      "SB-03",
+      "aspirational"
     ],
     "rationale": "Assumed: body background is #1a1a2e. Actual: only in dark mode media query. Base rule has #ffffff.",
     "intent": "false_positive"
@@ -350,7 +362,8 @@
       "state_assumption",
       "browser",
       "responsive_breakpoint",
-      "SB-03"
+      "SB-03",
+      "aspirational"
     ],
     "rationale": "Assumed: .responsive-only has color #27ae60 at any viewport. Actual: only inside @media — no base rule exists.",
     "intent": "false_positive"
@@ -372,7 +385,8 @@
       "state_assumption",
       "browser",
       "responsive_breakpoint",
-      "SB-03"
+      "SB-03",
+      "aspirational"
     ],
     "rationale": "Assumed: .edge-hero font-size is 1rem. Actual: base rule is 1.5rem, 1rem only in @media block.",
     "intent": "false_positive"
@@ -395,7 +409,8 @@
       "browser",
       "responsive_breakpoint",
       "SB-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Base rule is 1.5rem — not inside any media query. Predicate matches reality.",
     "intent": "false_negative"
@@ -421,7 +436,8 @@
     "tags": [
       "state_assumption",
       "browser",
-      "sb-bolster"
+      "sb-bolster",
+      "aspirational"
     ],
     "rationale": "server.js port changed, config.json unaware",
     "intent": "false_positive"
@@ -447,7 +463,8 @@
     "tags": [
       "state_assumption",
       "browser",
-      "sb-bolster"
+      "sb-bolster",
+      "aspirational"
     ],
     "rationale": "config.json port changed, server.js unaware",
     "intent": "false_positive"
@@ -473,7 +490,8 @@
     "tags": [
       "state_assumption",
       "browser",
-      "sb-bolster"
+      "sb-bolster",
+      "aspirational"
     ],
     "rationale": ".env port changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -499,7 +517,8 @@
     "tags": [
       "state_assumption",
       "browser",
-      "sb-bolster"
+      "sb-bolster",
+      "aspirational"
     ],
     "rationale": "Dockerfile EXPOSE changed, .env unaware",
     "intent": "false_positive"
@@ -525,7 +544,8 @@
     "tags": [
       "state_assumption",
       "browser",
-      "sb-bolster"
+      "sb-bolster",
+      "aspirational"
     ],
     "rationale": "health response changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -551,7 +571,8 @@
     "tags": [
       "state_assumption",
       "browser",
-      "sb-bolster"
+      "sb-bolster",
+      "aspirational"
     ],
     "rationale": "app name changed in config, server.js unaware",
     "intent": "false_positive"
@@ -577,7 +598,8 @@
     "tags": [
       "state_assumption",
       "browser",
-      "sb-bolster"
+      "sb-bolster",
+      "aspirational"
     ],
     "rationale": "NODE_ENV changed, server.js unaware",
     "intent": "false_positive"
@@ -603,7 +625,8 @@
     "tags": [
       "state_assumption",
       "browser",
-      "sb-bolster"
+      "sb-bolster",
+      "aspirational"
     ],
     "rationale": "SECRET_KEY changed, config.json unaware",
     "intent": "false_positive"
@@ -630,7 +653,8 @@
       "state_assumption",
       "browser",
       "sb-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js port changed, verify in server.js",
     "intent": "false_negative"
@@ -657,7 +681,8 @@
       "state_assumption",
       "browser",
       "sb-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: config.json port changed, config gate reads it",
     "intent": "false_negative"
@@ -684,7 +709,8 @@
       "state_assumption",
       "browser",
       "sb-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: .env PORT changed, config gate reads it",
     "intent": "false_negative"
@@ -710,7 +736,8 @@
       "state_assumption",
       "browser",
       "sb-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js still exists after edit",
     "intent": "false_negative"
@@ -729,7 +756,8 @@
     "tags": [
       "state_assumption",
       "browser",
-      "sb-bolster"
+      "sb-bolster",
+      "aspirational"
     ],
     "rationale": "fabricated: package.json does not exist",
     "intent": "false_positive"
@@ -749,7 +777,8 @@
       "state_assumption",
       "browser",
       "sb-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js exists without edits",
     "intent": "false_negative"
@@ -770,7 +799,8 @@
       "state_assumption",
       "browser",
       "sb-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js has createServer",
     "intent": "false_negative"

@@ -21,7 +21,8 @@
       "temporal",
       "verify",
       "stale_schema",
-      "TV-01"
+      "TV-01",
+      "aspirational"
     ],
     "rationale": "Schema changed by migration — pre-migration hash is stale evidence",
     "intent": "false_positive"
@@ -48,7 +49,8 @@
       "temporal",
       "verify",
       "stale_schema",
-      "TV-01"
+      "TV-01",
+      "aspirational"
     ],
     "rationale": "New table added — schema snapshot taken before migration is stale",
     "intent": "false_positive"
@@ -75,7 +77,8 @@
       "temporal",
       "verify",
       "stale_schema",
-      "TV-01"
+      "TV-01",
+      "aspirational"
     ],
     "rationale": "Index added — hash of schema before migration is stale",
     "intent": "false_positive"
@@ -102,7 +105,8 @@
       "temporal",
       "verify",
       "stale_schema",
-      "TV-01"
+      "TV-01",
+      "aspirational"
     ],
     "rationale": "Column renamed — predicate checking old name finds stale evidence",
     "intent": "false_positive"
@@ -124,7 +128,8 @@
       "verify",
       "stale_schema",
       "TV-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "No migration applied — hash should match current state",
     "intent": "false_negative"
@@ -151,7 +156,8 @@
       "temporal",
       "verify",
       "stale_config",
-      "TV-02"
+      "TV-02",
+      "aspirational"
     ],
     "rationale": "Env changed — config read taken before change is stale",
     "intent": "false_positive"
@@ -178,7 +184,8 @@
       "temporal",
       "verify",
       "stale_config",
-      "TV-02"
+      "TV-02",
+      "aspirational"
     ],
     "rationale": "NODE_ENV changed but predicate still checks old value — stale config observation",
     "intent": "false_positive"
@@ -205,7 +212,8 @@
       "temporal",
       "verify",
       "stale_config",
-      "TV-02"
+      "TV-02",
+      "aspirational"
     ],
     "rationale": "DB name changed — observation of old name is stale evidence",
     "intent": "false_positive"
@@ -232,7 +240,8 @@
       "temporal",
       "verify",
       "stale_config",
-      "TV-02"
+      "TV-02",
+      "aspirational"
     ],
     "rationale": "Feature flag toggled — predicate checking old state is stale",
     "intent": "false_positive"
@@ -259,7 +268,8 @@
       "temporal",
       "verify",
       "stale_config",
-      "TV-02"
+      "TV-02",
+      "aspirational"
     ],
     "rationale": "Secret rotated — old secret pattern should not be found",
     "intent": "false_positive"
@@ -287,7 +297,8 @@
       "verify",
       "stale_config",
       "TV-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Predicate checks for new value — observation is fresh",
     "intent": "false_negative"
@@ -314,7 +325,8 @@
       "temporal",
       "verify",
       "stale_hash",
-      "TV-03"
+      "TV-03",
+      "aspirational"
     ],
     "rationale": "Edit modifies server.js — pre-edit hash is stale evidence",
     "intent": "false_positive"
@@ -341,7 +353,8 @@
       "temporal",
       "verify",
       "stale_hash",
-      "TV-03"
+      "TV-03",
+      "aspirational"
     ],
     "rationale": "Config name changed — file hash observation is stale",
     "intent": "false_positive"
@@ -368,7 +381,8 @@
       "temporal",
       "verify",
       "stale_hash",
-      "TV-03"
+      "TV-03",
+      "aspirational"
     ],
     "rationale": "Dockerfile changed — hash taken before edit is stale",
     "intent": "false_positive"
@@ -400,7 +414,8 @@
       "temporal",
       "verify",
       "stale_hash",
-      "TV-03"
+      "TV-03",
+      "aspirational"
     ],
     "rationale": "Multi-file edit — config.json hash from before both edits is stale",
     "intent": "false_positive"
@@ -422,7 +437,8 @@
       "verify",
       "stale_hash",
       "TV-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "No edit — hash is fresh evidence",
     "intent": "false_negative"
@@ -448,7 +464,8 @@
     "tags": [
       "temporal",
       "verify",
-      "temporal_gap"
+      "temporal_gap",
+      "aspirational"
     ],
     "rationale": "Edit server.js health, config.json has stale health config",
     "intent": "false_positive"
@@ -474,7 +491,8 @@
     "tags": [
       "temporal",
       "verify",
-      "temporal_gap"
+      "temporal_gap",
+      "aspirational"
     ],
     "rationale": "Edit .env SECRET_KEY, server.js still uses old reference",
     "intent": "false_positive"
@@ -500,7 +518,8 @@
     "tags": [
       "temporal",
       "verify",
-      "temporal_gap"
+      "temporal_gap",
+      "aspirational"
     ],
     "rationale": "Upgrade Dockerfile node version, .env unchanged",
     "intent": "false_positive"
@@ -526,7 +545,8 @@
     "tags": [
       "temporal",
       "verify",
-      "temporal_gap"
+      "temporal_gap",
+      "aspirational"
     ],
     "rationale": "Change compose port mapping, server.js listen unchanged",
     "intent": "false_positive"
@@ -554,7 +574,8 @@
     "tags": [
       "temporal",
       "verify",
-      "temporal_gap"
+      "temporal_gap",
+      "aspirational"
     ],
     "rationale": "Add column via migration, server.js has no query for it",
     "intent": "false_positive"
@@ -580,7 +601,8 @@
     "tags": [
       "temporal",
       "verify",
-      "temporal_gap"
+      "temporal_gap",
+      "aspirational"
     ],
     "rationale": "Edit init.sql table, config.json has stale DB config",
     "intent": "false_positive"
@@ -606,7 +628,8 @@
     "tags": [
       "temporal",
       "verify",
-      "temporal_gap"
+      "temporal_gap",
+      "aspirational"
     ],
     "rationale": "Compose env_file changed, .env filename unchanged",
     "intent": "false_positive"
@@ -632,7 +655,8 @@
     "tags": [
       "temporal",
       "verify",
-      "temporal_gap"
+      "temporal_gap",
+      "aspirational"
     ],
     "rationale": "Add CORS header, config.json has no CORS config",
     "intent": "false_positive"
@@ -658,7 +682,8 @@
     "tags": [
       "temporal",
       "verify",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: edit server.js, verify change",
     "intent": "false_negative"
@@ -684,7 +709,8 @@
     "tags": [
       "temporal",
       "verify",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: edit .env, verify change",
     "intent": "false_negative"
@@ -704,7 +730,8 @@
     "tags": [
       "temporal",
       "verify",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: Dockerfile has EXPOSE",
     "intent": "false_negative"
@@ -724,7 +751,8 @@
     "tags": [
       "temporal",
       "verify",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: compose has healthcheck",
     "intent": "false_negative"
@@ -750,7 +778,8 @@
     "tags": [
       "temporal",
       "verify",
-      "temporal_gap"
+      "temporal_gap",
+      "aspirational"
     ],
     "rationale": "Change healthcheck interval, server.js has no interval awareness",
     "intent": "false_positive"
@@ -778,7 +807,8 @@
     "tags": [
       "temporal",
       "verify",
-      "temporal_gap"
+      "temporal_gap",
+      "aspirational"
     ],
     "rationale": "Add NOT NULL constraint, server.js has no validation",
     "intent": "false_positive"

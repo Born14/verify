@@ -268,7 +268,7 @@ export async function runSelfTest(config: RunConfig): Promise<{ exitCode: number
     }
 
     // Per-gate staged scenarios from fixtures/scenarios/*-staged.json
-    const staged = loadStagedScenarios(fixtureDir);
+    const staged = loadStagedScenarios(fixtureDir, config.excludeTags);
     if (staged.length > 0) {
       scenarios = [...scenarios, ...staged];
       console.log(`  + ${staged.length} per-gate staged scenarios (synthetic)`);

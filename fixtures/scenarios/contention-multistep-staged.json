@@ -36,7 +36,8 @@
       "contention",
       "multistep",
       "config_deploy",
-      "JM-01"
+      "JM-01",
+      "aspirational"
     ],
     "rationale": "Deploy A step 2 changes .env to 4000, deploy B tries same line — search \"PORT=3000\" gone",
     "intent": "false_positive"
@@ -68,7 +69,8 @@
       "contention",
       "multistep",
       "config_deploy",
-      "JM-01"
+      "JM-01",
+      "aspirational"
     ],
     "rationale": "Deploy A turns off darkMode, deploy B search for darkMode:true gone — interleaving conflict",
     "intent": "false_positive"
@@ -100,7 +102,8 @@
       "contention",
       "multistep",
       "config_deploy",
-      "JM-01"
+      "JM-01",
+      "aspirational"
     ],
     "rationale": "Both deploys rotate same secret — second search gone after first applies alpha rotation",
     "intent": "false_positive"
@@ -132,7 +135,8 @@
       "contention",
       "multistep",
       "config_deploy",
-      "JM-01"
+      "JM-01",
+      "aspirational"
     ],
     "rationale": "Both deploys update base image — second search \"node:20-alpine\" gone after first edit",
     "intent": "false_positive"
@@ -164,7 +168,8 @@
       "contention",
       "multistep",
       "config_deploy",
-      "JM-01"
+      "JM-01",
+      "aspirational"
     ],
     "rationale": "Both deploys change host port — second search gone after first changes to 4000",
     "intent": "false_positive"
@@ -202,7 +207,8 @@
       "multistep",
       "config_deploy",
       "JM-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Deploys touch different files — no interleaving conflict",
     "intent": "false_negative"
@@ -234,7 +240,8 @@
       "contention",
       "multistep",
       "migration_conflict",
-      "JM-02"
+      "JM-02",
+      "aspirational"
     ],
     "rationale": "Both migrations insert after is_active — second search gone after first adds last_login",
     "intent": "false_positive"
@@ -266,7 +273,8 @@
       "contention",
       "multistep",
       "migration_conflict",
-      "JM-02"
+      "JM-02",
+      "aspirational"
     ],
     "rationale": "Both migrations change token column — second search gone after first changes to VARCHAR",
     "intent": "false_positive"
@@ -298,7 +306,8 @@
       "contention",
       "multistep",
       "migration_conflict",
-      "JM-02"
+      "JM-02",
+      "aspirational"
     ],
     "rationale": "Both migrations insert after expires index — second search gone after first adds user index",
     "intent": "false_positive"
@@ -330,7 +339,8 @@
       "contention",
       "multistep",
       "migration_conflict",
-      "JM-02"
+      "JM-02",
+      "aspirational"
     ],
     "rationale": "Both migrations modify published column — second search gone after first changes default",
     "intent": "false_positive"
@@ -362,7 +372,8 @@
       "contention",
       "multistep",
       "migration_conflict",
-      "JM-02"
+      "JM-02",
+      "aspirational"
     ],
     "rationale": "Both migrations modify value column — second search gone after first adds default",
     "intent": "false_positive"
@@ -400,7 +411,8 @@
       "multistep",
       "migration_conflict",
       "JM-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Different tables — no migration conflict, both additions apply cleanly",
     "intent": "false_negative"
@@ -432,7 +444,8 @@
       "contention",
       "multistep",
       "build_conflict",
-      "JM-03"
+      "JM-03",
+      "aspirational"
     ],
     "rationale": "Both builds change WORKDIR — second search gone after first changes to /opt/app",
     "intent": "false_positive"
@@ -464,7 +477,8 @@
       "contention",
       "multistep",
       "build_conflict",
-      "JM-03"
+      "JM-03",
+      "aspirational"
     ],
     "rationale": "Both builds change COPY source — second search gone after first changes to dist/",
     "intent": "false_positive"
@@ -496,7 +510,8 @@
       "contention",
       "multistep",
       "build_conflict",
-      "JM-03"
+      "JM-03",
+      "aspirational"
     ],
     "rationale": "Both builds change HEALTHCHECK — second search gone after first changes to curl",
     "intent": "false_positive"
@@ -528,7 +543,8 @@
       "contention",
       "multistep",
       "build_conflict",
-      "JM-03"
+      "JM-03",
+      "aspirational"
     ],
     "rationale": "Both builds change build context — second search gone after first restructures to multi-line",
     "intent": "false_positive"
@@ -560,7 +576,8 @@
       "contention",
       "multistep",
       "build_conflict",
-      "JM-03"
+      "JM-03",
+      "aspirational"
     ],
     "rationale": "Both builds change EXPOSE — second search gone after first changes to 4000",
     "intent": "false_positive"
@@ -598,7 +615,8 @@
       "multistep",
       "build_conflict",
       "JM-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Different files — no build output conflict, both apply cleanly",
     "intent": "false_negative"
@@ -629,7 +647,8 @@
     "tags": [
       "contention",
       "multistep",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Two edits to server.js, second overwrites first",
     "intent": "false_positive"
@@ -660,7 +679,8 @@
     "tags": [
       "contention",
       "multistep",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Edit server.js and config.json with conflicting ports",
     "intent": "false_positive"
@@ -691,7 +711,8 @@
     "tags": [
       "contention",
       "multistep",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Edit .env and compose with different ports",
     "intent": "false_positive"
@@ -723,7 +744,8 @@
     "tags": [
       "contention",
       "multistep",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Two migrations on same table",
     "intent": "false_positive"
@@ -749,7 +771,8 @@
     "tags": [
       "contention",
       "multistep",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Edit init.sql and server.js with mismatched column names",
     "intent": "false_positive"
@@ -775,7 +798,8 @@
     "tags": [
       "contention",
       "multistep",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Compose restart policy conflicts with Dockerfile CMD",
     "intent": "false_positive"
@@ -801,7 +825,8 @@
     "tags": [
       "contention",
       "multistep",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Edit both health endpoint and healthcheck with different paths",
     "intent": "false_positive"
@@ -832,7 +857,8 @@
     "tags": [
       "contention",
       "multistep",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Config.json and .env disagree on debug",
     "intent": "false_positive"
@@ -858,7 +884,8 @@
     "tags": [
       "contention",
       "multistep",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: single edit, consistent check",
     "intent": "false_negative"
@@ -884,7 +911,8 @@
     "tags": [
       "contention",
       "multistep",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: edit .env, check .env",
     "intent": "false_negative"
@@ -910,7 +938,8 @@
     "tags": [
       "contention",
       "multistep",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: edit config.json, check config.json",
     "intent": "false_negative"
@@ -941,7 +970,8 @@
     "tags": [
       "contention",
       "multistep",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Two edits to different routes, check both present",
     "intent": "false_negative"

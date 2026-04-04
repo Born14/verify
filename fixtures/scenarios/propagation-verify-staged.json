@@ -21,7 +21,8 @@
       "propagation",
       "verify",
       "schema_query",
-      "PV-01"
+      "PV-01",
+      "aspirational"
     ],
     "rationale": "Schema gate would pass (column exists) but query gate fails (app unaware) — verification chain gap",
     "intent": "false_positive"
@@ -48,7 +49,8 @@
       "propagation",
       "verify",
       "schema_query",
-      "PV-01"
+      "PV-01",
+      "aspirational"
     ],
     "rationale": "Index exists in schema but app has no email query — schema verification doesnt propagate to query layer",
     "intent": "false_positive"
@@ -75,7 +77,8 @@
       "propagation",
       "verify",
       "schema_query",
-      "PV-01"
+      "PV-01",
+      "aspirational"
     ],
     "rationale": "Schema verification passes (articles table exists) but query verification fails (code uses old name)",
     "intent": "false_positive"
@@ -102,7 +105,8 @@
       "propagation",
       "verify",
       "schema_query",
-      "PV-01"
+      "PV-01",
+      "aspirational"
     ],
     "rationale": "Schema constraint verification passes but config verification unaware of cascade policy",
     "intent": "false_positive"
@@ -130,7 +134,8 @@
       "verify",
       "schema_query",
       "PV-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Same-file check — column is present in schema",
     "intent": "false_negative"
@@ -157,7 +162,8 @@
       "propagation",
       "verify",
       "stale_snapshot",
-      "PV-02"
+      "PV-02",
+      "aspirational"
     ],
     "rationale": "File exists (gate 1 passes) but content check uses stale pattern from before edit",
     "intent": "false_positive"
@@ -184,7 +190,8 @@
       "propagation",
       "verify",
       "stale_snapshot",
-      "PV-02"
+      "PV-02",
+      "aspirational"
     ],
     "rationale": "File exists and is valid, but hash check uses stale snapshot — verification chain broken",
     "intent": "false_positive"
@@ -211,7 +218,8 @@
       "propagation",
       "verify",
       "stale_snapshot",
-      "PV-02"
+      "PV-02",
+      "aspirational"
     ],
     "rationale": "File exists check passes but content verification uses pre-edit snapshot of DATABASE_URL",
     "intent": "false_positive"
@@ -238,7 +246,8 @@
       "propagation",
       "verify",
       "stale_snapshot",
-      "PV-02"
+      "PV-02",
+      "aspirational"
     ],
     "rationale": "Schema file exists but content verification for \"posts\" uses stale snapshot after rename",
     "intent": "false_positive"
@@ -266,7 +275,8 @@
       "verify",
       "stale_snapshot",
       "PV-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Content check uses fresh evidence — should pass",
     "intent": "false_negative"
@@ -293,7 +303,8 @@
       "propagation",
       "verify",
       "health_functional",
-      "PV-03"
+      "PV-03",
+      "aspirational"
     ],
     "rationale": "Health endpoint passes (unchanged) but functional check for items.name fails — health gate doesnt cascade",
     "intent": "false_positive"
@@ -320,7 +331,8 @@
       "propagation",
       "verify",
       "health_functional",
-      "PV-03"
+      "PV-03",
+      "aspirational"
     ],
     "rationale": "Health endpoint responds OK but homepage content is broken — health gate passes, functional fails",
     "intent": "false_positive"
@@ -347,7 +359,8 @@
       "propagation",
       "verify",
       "health_functional",
-      "PV-03"
+      "PV-03",
+      "aspirational"
     ],
     "rationale": "Health route exists but Dockerfile healthcheck targets wrong port — health→deploy verification gap",
     "intent": "false_positive"
@@ -374,7 +387,8 @@
       "propagation",
       "verify",
       "health_functional",
-      "PV-03"
+      "PV-03",
+      "aspirational"
     ],
     "rationale": "Health check passes but nav link text changed — health gate doesnt propagate to content gate",
     "intent": "false_positive"
@@ -396,7 +410,8 @@
       "verify",
       "health_functional",
       "PV-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "No edit — health response pattern should be found",
     "intent": "false_negative"
@@ -422,7 +437,8 @@
     "tags": [
       "propagation",
       "verify",
-      "pv-bolster"
+      "pv-bolster",
+      "aspirational"
     ],
     "rationale": "server.js port changed, config.json unaware",
     "intent": "false_positive"
@@ -448,7 +464,8 @@
     "tags": [
       "propagation",
       "verify",
-      "pv-bolster"
+      "pv-bolster",
+      "aspirational"
     ],
     "rationale": "config.json port changed, server.js unaware",
     "intent": "false_positive"
@@ -474,7 +491,8 @@
     "tags": [
       "propagation",
       "verify",
-      "pv-bolster"
+      "pv-bolster",
+      "aspirational"
     ],
     "rationale": ".env port changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -500,7 +518,8 @@
     "tags": [
       "propagation",
       "verify",
-      "pv-bolster"
+      "pv-bolster",
+      "aspirational"
     ],
     "rationale": "Dockerfile EXPOSE changed, .env unaware",
     "intent": "false_positive"
@@ -526,7 +545,8 @@
     "tags": [
       "propagation",
       "verify",
-      "pv-bolster"
+      "pv-bolster",
+      "aspirational"
     ],
     "rationale": "health response changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -552,7 +572,8 @@
     "tags": [
       "propagation",
       "verify",
-      "pv-bolster"
+      "pv-bolster",
+      "aspirational"
     ],
     "rationale": "app name changed in config, server.js unaware",
     "intent": "false_positive"
@@ -578,7 +599,8 @@
     "tags": [
       "propagation",
       "verify",
-      "pv-bolster"
+      "pv-bolster",
+      "aspirational"
     ],
     "rationale": "NODE_ENV changed, server.js unaware",
     "intent": "false_positive"
@@ -604,7 +626,8 @@
     "tags": [
       "propagation",
       "verify",
-      "pv-bolster"
+      "pv-bolster",
+      "aspirational"
     ],
     "rationale": "SECRET_KEY changed, config.json unaware",
     "intent": "false_positive"
@@ -631,7 +654,8 @@
       "propagation",
       "verify",
       "pv-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js port changed, verify in server.js",
     "intent": "false_negative"
@@ -658,7 +682,8 @@
       "propagation",
       "verify",
       "pv-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: config.json port changed, config gate reads it",
     "intent": "false_negative"
@@ -685,7 +710,8 @@
       "propagation",
       "verify",
       "pv-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: .env PORT changed, config gate reads it",
     "intent": "false_negative"
@@ -711,7 +737,8 @@
       "propagation",
       "verify",
       "pv-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js still exists after edit",
     "intent": "false_negative"
@@ -730,7 +757,8 @@
     "tags": [
       "propagation",
       "verify",
-      "pv-bolster"
+      "pv-bolster",
+      "aspirational"
     ],
     "rationale": "fabricated: package.json does not exist",
     "intent": "false_positive"
@@ -750,7 +778,8 @@
       "propagation",
       "verify",
       "pv-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js exists without edits",
     "intent": "false_negative"
@@ -771,7 +800,8 @@
       "propagation",
       "verify",
       "pv-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js has createServer",
     "intent": "false_negative"

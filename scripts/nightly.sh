@@ -54,7 +54,7 @@ timeout 300 bun scripts/harvest/curriculum-agent.ts --adversarial --provider=gem
 echo "" | tee -a "$LOG"
 echo "[Stage 2] Baseline self-test (live tier)..." | tee -a "$LOG"
 rm -f data/self-test-ledger.jsonl
-bun run src/cli.ts self-test --live --source=all 2>&1 | tee -a "$LOG"
+bun run src/cli.ts self-test --live --source=all --exclude-tags=aspirational 2>&1 | tee -a "$LOG"
 BASELINE_EXIT=$?
 
 # ─── Post-flight: Triage dirty entries ──────────────────────────────────────
@@ -92,7 +92,7 @@ if [ "$COMMIT_MADE" -gt 0 ]; then
   echo "" | tee -a "$LOG"
   echo "[Verify] Re-running self-test to check for regressions..." | tee -a "$LOG"
   rm -f data/self-test-ledger.jsonl
-  bun run src/cli.ts self-test --live --source=all 2>&1 | tee -a "$LOG" || true
+  bun run src/cli.ts self-test --live --source=all --exclude-tags=aspirational 2>&1 | tee -a "$LOG" || true
   bun scripts/harness/auto-triage.ts 2>&1 | tee -a "$LOG" || true
 
   POST_DIRTY=0

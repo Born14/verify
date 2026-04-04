@@ -31,7 +31,8 @@
       "access",
       "cli",
       "sudo_required",
-      "HC-01"
+      "HC-01",
+      "aspirational"
     ],
     "rationale": "Both patterns exist in files. Port 80 binding is on the host side of compose — container user doesnt matter for host port. But inside container, USER node cannot bind <1024.",
     "intent": "false_negative"
@@ -78,7 +79,8 @@
       "access",
       "cli",
       "sudo_required",
-      "HC-01"
+      "HC-01",
+      "aspirational"
     ],
     "rationale": "Non-root user cannot bind port 443 inside container — EACCES at runtime. All content patterns present.",
     "intent": "false_negative"
@@ -115,7 +117,8 @@
       "access",
       "cli",
       "sudo_required",
-      "HC-01"
+      "HC-01",
+      "aspirational"
     ],
     "rationale": "Non-root user cannot write to /etc/nginx — permission denied. Both patterns present in source.",
     "intent": "false_negative"
@@ -152,7 +155,8 @@
       "access",
       "cli",
       "sudo_required",
-      "HC-01"
+      "HC-01",
+      "aspirational"
     ],
     "rationale": "systemctl requires root but process runs as \"app\" user — permission denied at runtime",
     "intent": "false_negative"
@@ -184,7 +188,8 @@
       "access",
       "cli",
       "sudo_required",
-      "HC-01"
+      "HC-01",
+      "aspirational"
     ],
     "rationale": "apt-get requires root but USER node is set before RUN — build will fail",
     "intent": "false_negative"
@@ -217,7 +222,8 @@
       "cli",
       "sudo_required",
       "HC-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "No USER directive — default root user can run apt-get without issue",
     "intent": "false_negative"
@@ -254,7 +260,8 @@
       "access",
       "cli",
       "docker_socket",
-      "HC-02"
+      "HC-02",
+      "aspirational"
     ],
     "rationale": "Docker socket mounted but USER node is not in docker group — socket access denied",
     "intent": "false_negative"
@@ -291,7 +298,8 @@
       "access",
       "cli",
       "docker_socket",
-      "HC-02"
+      "HC-02",
+      "aspirational"
     ],
     "rationale": "Server calls docker exec but user not in docker group — \"permission denied\" on socket",
     "intent": "false_negative"
@@ -323,7 +331,8 @@
       "access",
       "cli",
       "docker_socket",
-      "HC-02"
+      "HC-02",
+      "aspirational"
     ],
     "rationale": "docker:dind requires privileged mode but no privileged: true in compose — daemon will not start",
     "intent": "false_positive"
@@ -355,7 +364,8 @@
       "access",
       "cli",
       "docker_socket",
-      "HC-02"
+      "HC-02",
+      "aspirational"
     ],
     "rationale": "Healthcheck runs docker inspect but docker socket is not mounted — command will fail",
     "intent": "false_positive"
@@ -388,7 +398,8 @@
       "cli",
       "docker_socket",
       "HC-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Socket mounted and default root user — docker commands will work",
     "intent": "false_negative"
@@ -425,7 +436,8 @@
       "access",
       "cli",
       "ssh_key_rejected",
-      "HC-03"
+      "HC-03",
+      "aspirational"
     ],
     "rationale": "Config and .env reference different SSH keys — which one is used depends on code, but theyre inconsistent",
     "intent": "false_negative"
@@ -457,7 +469,8 @@
       "access",
       "cli",
       "ssh_key_rejected",
-      "HC-03"
+      "HC-03",
+      "aspirational"
     ],
     "rationale": "Server references SSH key but Dockerfile never COPYs it — file wont exist in container",
     "intent": "false_positive"
@@ -494,7 +507,8 @@
       "access",
       "cli",
       "ssh_key_rejected",
-      "HC-03"
+      "HC-03",
+      "aspirational"
     ],
     "rationale": "Two SSH auth methods configured — agent forwarding AND key file. If agent is empty and key doesnt exist, both fail.",
     "intent": "false_negative"
@@ -531,7 +545,8 @@
       "access",
       "cli",
       "ssh_key_rejected",
-      "HC-03"
+      "HC-03",
+      "aspirational"
     ],
     "rationale": "Different key paths per environment — deploying to prod with staging key will be rejected",
     "intent": "false_negative"
@@ -569,7 +584,8 @@
       "cli",
       "ssh_key_rejected",
       "HC-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Same SSH key path in both sources — no access mismatch",
     "intent": "false_negative"
@@ -595,7 +611,8 @@
     "tags": [
       "access",
       "cli",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Admin route in server.js, no admin role in config.json",
     "intent": "false_positive"
@@ -621,7 +638,8 @@
     "tags": [
       "access",
       "cli",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Auth token check in server.js, no token in .env",
     "intent": "false_positive"
@@ -647,7 +665,8 @@
     "tags": [
       "access",
       "cli",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Rate limit function added, no limit in config.json",
     "intent": "false_positive"
@@ -667,7 +686,8 @@
     "tags": [
       "access",
       "cli",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Session table in init.sql, no session config in .env",
     "intent": "false_positive"
@@ -693,7 +713,8 @@
     "tags": [
       "access",
       "cli",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "CORS header added, no CORS config in .env",
     "intent": "false_positive"
@@ -719,7 +740,8 @@
     "tags": [
       "access",
       "cli",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "CSP header added, not in config.json",
     "intent": "false_positive"
@@ -739,7 +761,8 @@
     "tags": [
       "access",
       "cli",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Password hash in init.sql, no hash algo in config",
     "intent": "false_positive"
@@ -759,7 +782,8 @@
     "tags": [
       "access",
       "cli",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: server.js has /health, check it exists",
     "intent": "false_negative"
@@ -779,7 +803,8 @@
     "tags": [
       "access",
       "cli",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: init.sql has sessions table",
     "intent": "false_negative"
@@ -799,7 +824,8 @@
     "tags": [
       "access",
       "cli",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: .env has SECRET_KEY",
     "intent": "false_negative"
@@ -819,7 +845,8 @@
     "tags": [
       "access",
       "cli",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Dockerfile exposes port, check Dockerfile",
     "intent": "false_negative"
@@ -839,7 +866,8 @@
     "tags": [
       "access",
       "cli",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Compose has env_file, check compose",
     "intent": "false_negative"
@@ -859,7 +887,8 @@
     "tags": [
       "access",
       "cli",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "User table has password_hash, server.js has no bcrypt",
     "intent": "false_positive"
@@ -879,7 +908,8 @@
     "tags": [
       "access",
       "cli",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Sessions table has expires_at, server.js has no expiry check",
     "intent": "false_positive"

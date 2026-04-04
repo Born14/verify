@@ -26,7 +26,8 @@
       "temporal",
       "database",
       "stale_pool",
-      "TD-01"
+      "TD-01",
+      "aspirational"
     ],
     "rationale": "Migration adds new column but predicate checks existing column — should still exist",
     "intent": "false_negative"
@@ -58,7 +59,8 @@
       "temporal",
       "database",
       "stale_pool",
-      "TD-01"
+      "TD-01",
+      "aspirational"
     ],
     "rationale": "After migration, new column should be visible — tests if gate refreshes schema",
     "intent": "false_negative"
@@ -89,7 +91,8 @@
       "temporal",
       "database",
       "stale_pool",
-      "TD-01"
+      "TD-01",
+      "aspirational"
     ],
     "rationale": "Table renamed — stale pool might still see old name, but fresh introspection should not",
     "intent": "false_positive"
@@ -121,7 +124,8 @@
       "temporal",
       "database",
       "stale_pool",
-      "TD-01"
+      "TD-01",
+      "aspirational"
     ],
     "rationale": "Column dropped — predicate should detect absence even if pool cached old schema",
     "intent": "false_positive"
@@ -145,7 +149,8 @@
       "database",
       "stale_pool",
       "TD-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "No schema change — existing table should be found",
     "intent": "false_negative"
@@ -180,7 +185,8 @@
       "temporal",
       "database",
       "replication_lag",
-      "TD-02"
+      "TD-02",
+      "aspirational"
     ],
     "rationale": "Schema change added column but API layer not updated — stale response shape",
     "intent": "false_positive"
@@ -215,7 +221,8 @@
       "temporal",
       "database",
       "replication_lag",
-      "TD-02"
+      "TD-02",
+      "aspirational"
     ],
     "rationale": "Schema changed but API response format unchanged — DB/API shape mismatch",
     "intent": "false_positive"
@@ -246,7 +253,8 @@
       "temporal",
       "database",
       "sequence_visibility",
-      "TD-03"
+      "TD-03",
+      "aspirational"
     ],
     "rationale": "New table created — should be immediately visible after migration",
     "intent": "false_negative"
@@ -278,7 +286,8 @@
       "temporal",
       "database",
       "sequence_visibility",
-      "TD-03"
+      "TD-03",
+      "aspirational"
     ],
     "rationale": "New table + column should be visible immediately after CREATE TABLE",
     "intent": "false_negative"
@@ -301,7 +310,8 @@
       "temporal",
       "database",
       "sequence_visibility",
-      "TD-03"
+      "TD-03",
+      "aspirational"
     ],
     "rationale": "Table never created — should not exist",
     "intent": "false_positive"
@@ -329,7 +339,8 @@
       "database",
       "stale_pool",
       "TD-01",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "Edit adds column to init.sql — content gate should find it",
     "intent": "false_negative"
@@ -357,7 +368,8 @@
       "database",
       "stale_pool",
       "TD-01",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "Table renamed in init.sql — old name should not be found",
     "intent": "false_positive"
@@ -385,7 +397,8 @@
       "database",
       "replication_lag",
       "TD-02",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "Column renamed in schema but server.js code references old name — DB/API desync",
     "intent": "false_positive"
@@ -413,7 +426,8 @@
       "database",
       "stale_pool",
       "TD-01",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "Schema constraint added but config has no awareness — temporal gap between layers",
     "intent": "false_positive"
@@ -442,7 +456,8 @@
       "temporal",
       "database",
       "index_gap",
-      "TD-04"
+      "TD-04",
+      "aspirational"
     ],
     "rationale": "Database index/constraint added but application code unaware",
     "intent": "false_positive"
@@ -471,7 +486,8 @@
       "temporal",
       "database",
       "index_gap",
-      "TD-04"
+      "TD-04",
+      "aspirational"
     ],
     "rationale": "Database index/constraint added but application code unaware",
     "intent": "false_positive"
@@ -500,7 +516,8 @@
       "temporal",
       "database",
       "index_gap",
-      "TD-04"
+      "TD-04",
+      "aspirational"
     ],
     "rationale": "Database index/constraint added but application code unaware",
     "intent": "false_positive"
@@ -529,7 +546,8 @@
       "temporal",
       "database",
       "index_gap",
-      "TD-04"
+      "TD-04",
+      "aspirational"
     ],
     "rationale": "Database index/constraint added but application code unaware",
     "intent": "false_positive"
@@ -558,7 +576,8 @@
       "temporal",
       "database",
       "type_change",
-      "TD-05"
+      "TD-05",
+      "aspirational"
     ],
     "rationale": "Column type/constraint changed via migration but dependent code not updated",
     "intent": "false_positive"
@@ -587,7 +606,8 @@
       "temporal",
       "database",
       "type_change",
-      "TD-05"
+      "TD-05",
+      "aspirational"
     ],
     "rationale": "Column type/constraint changed via migration but dependent code not updated",
     "intent": "false_positive"
@@ -616,7 +636,8 @@
       "temporal",
       "database",
       "type_change",
-      "TD-05"
+      "TD-05",
+      "aspirational"
     ],
     "rationale": "Column type/constraint changed via migration but dependent code not updated",
     "intent": "false_positive"
@@ -645,7 +666,8 @@
       "temporal",
       "database",
       "type_change",
-      "TD-05"
+      "TD-05",
+      "aspirational"
     ],
     "rationale": "Column type/constraint changed via migration but dependent code not updated",
     "intent": "false_positive"
@@ -675,7 +697,8 @@
       "database",
       "type_change",
       "TD-05",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Column type/constraint changed via migration but dependent code not updated",
     "intent": "false_negative"
@@ -708,7 +731,8 @@
       "temporal",
       "database",
       "multi_migration",
-      "TD-06"
+      "TD-06",
+      "aspirational"
     ],
     "rationale": "Multiple migrations applied but application layer not updated",
     "intent": "false_positive"
@@ -741,7 +765,8 @@
       "temporal",
       "database",
       "multi_migration",
-      "TD-06"
+      "TD-06",
+      "aspirational"
     ],
     "rationale": "Multiple migrations applied but application layer not updated",
     "intent": "false_positive"
@@ -775,7 +800,8 @@
       "database",
       "multi_migration",
       "TD-06",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Multiple migrations applied but application layer not updated",
     "intent": "false_negative"
@@ -804,7 +830,8 @@
       "temporal",
       "database",
       "foreign_key",
-      "TD-07"
+      "TD-07",
+      "aspirational"
     ],
     "rationale": "Foreign key/constraint added but application code has no awareness",
     "intent": "false_positive"
@@ -833,7 +860,8 @@
       "temporal",
       "database",
       "foreign_key",
-      "TD-07"
+      "TD-07",
+      "aspirational"
     ],
     "rationale": "Foreign key/constraint added but application code has no awareness",
     "intent": "false_positive"
@@ -862,7 +890,8 @@
       "temporal",
       "database",
       "foreign_key",
-      "TD-07"
+      "TD-07",
+      "aspirational"
     ],
     "rationale": "Foreign key/constraint added but application code has no awareness",
     "intent": "false_positive"
@@ -892,7 +921,8 @@
       "database",
       "foreign_key",
       "TD-07",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Foreign key/constraint added but application code has no awareness",
     "intent": "false_negative"

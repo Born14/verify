@@ -26,7 +26,8 @@
       "capacity",
       "http",
       "rate_limit",
-      "IH-01"
+      "IH-01",
+      "aspirational"
     ],
     "rationale": "Rate limiter added to server but config.json has no rateLimit key — config/code mismatch",
     "intent": "false_positive"
@@ -58,7 +59,8 @@
       "capacity",
       "http",
       "rate_limit",
-      "IH-01"
+      "IH-01",
+      "aspirational"
     ],
     "rationale": "Config says 100 but .env says 5 — env override means effective rate limit is 5, not 100",
     "intent": "false_negative"
@@ -90,7 +92,8 @@
       "capacity",
       "http",
       "rate_limit",
-      "IH-01"
+      "IH-01",
+      "aspirational"
     ],
     "rationale": "IP throttle in code but staging config has no throttle section — staging tests will hit limits",
     "intent": "false_positive"
@@ -127,7 +130,8 @@
       "capacity",
       "http",
       "rate_limit",
-      "IH-01"
+      "IH-01",
+      "aspirational"
     ],
     "rationale": "Rate limit set in .env (50) and read in code (default 1000) but config.json has no record",
     "intent": "false_positive"
@@ -165,7 +169,8 @@
       "http",
       "rate_limit",
       "IH-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Rate limit consistent in both server.js and config.json — no capacity conflict",
     "intent": "false_negative"
@@ -202,7 +207,8 @@
       "capacity",
       "http",
       "pool_exhaustion",
-      "IH-02"
+      "IH-02",
+      "aspirational"
     ],
     "rationale": "5 connections shared across 3 replicas = ~1.6 per replica — pool exhaustion under load",
     "intent": "false_negative"
@@ -239,7 +245,8 @@
       "capacity",
       "http",
       "pool_exhaustion",
-      "IH-02"
+      "IH-02",
+      "aspirational"
     ],
     "rationale": ".env limits pool to 3 but config.json claims 20 — effective pool is 3, capacity illusion",
     "intent": "false_negative"
@@ -271,7 +278,8 @@
       "capacity",
       "http",
       "pool_exhaustion",
-      "IH-02"
+      "IH-02",
+      "aspirational"
     ],
     "rationale": "Pool config in code but not in prod config — prod deployment may use different (wrong) pool size",
     "intent": "false_positive"
@@ -303,7 +311,8 @@
       "capacity",
       "http",
       "pool_exhaustion",
-      "IH-02"
+      "IH-02",
+      "aspirational"
     ],
     "rationale": "Production compose limits pool to 2 but test compose has no such limit — test/prod disparity",
     "intent": "false_positive"
@@ -341,7 +350,8 @@
       "http",
       "pool_exhaustion",
       "IH-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Pool size matches across config.json and .env — no capacity conflict",
     "intent": "false_negative"
@@ -373,7 +383,8 @@
       "capacity",
       "http",
       "payload_limit",
-      "IH-03"
+      "IH-03",
+      "aspirational"
     ],
     "rationale": "1KB limit but form has textarea for messages — realistic message will exceed 1KB",
     "intent": "false_negative"
@@ -410,7 +421,8 @@
       "capacity",
       "http",
       "payload_limit",
-      "IH-03"
+      "IH-03",
+      "aspirational"
     ],
     "rationale": ".env says 10mb but code hardcodes 100kb — env config is capacity fiction",
     "intent": "false_negative"
@@ -442,7 +454,8 @@
       "capacity",
       "http",
       "payload_limit",
-      "IH-03"
+      "IH-03",
+      "aspirational"
     ],
     "rationale": "Dev config has upload limit but prod config does not — prod may have no limit or wrong default",
     "intent": "false_positive"
@@ -474,7 +487,8 @@
       "capacity",
       "http",
       "payload_limit",
-      "IH-03"
+      "IH-03",
+      "aspirational"
     ],
     "rationale": "Body size set in compose env but server.js never reads it — limit is cosmetic",
     "intent": "false_positive"
@@ -512,7 +526,8 @@
       "http",
       "payload_limit",
       "IH-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Body limit set in env and read by code — consistent capacity configuration",
     "intent": "false_negative"
@@ -538,7 +553,8 @@
     "tags": [
       "capacity",
       "http",
-      "ih-bolster"
+      "ih-bolster",
+      "aspirational"
     ],
     "rationale": "server.js port changed, config.json unaware",
     "intent": "false_positive"
@@ -564,7 +580,8 @@
     "tags": [
       "capacity",
       "http",
-      "ih-bolster"
+      "ih-bolster",
+      "aspirational"
     ],
     "rationale": "config.json port changed, server.js unaware",
     "intent": "false_positive"
@@ -590,7 +607,8 @@
     "tags": [
       "capacity",
       "http",
-      "ih-bolster"
+      "ih-bolster",
+      "aspirational"
     ],
     "rationale": ".env port changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -616,7 +634,8 @@
     "tags": [
       "capacity",
       "http",
-      "ih-bolster"
+      "ih-bolster",
+      "aspirational"
     ],
     "rationale": "Dockerfile EXPOSE changed, .env unaware",
     "intent": "false_positive"
@@ -642,7 +661,8 @@
     "tags": [
       "capacity",
       "http",
-      "ih-bolster"
+      "ih-bolster",
+      "aspirational"
     ],
     "rationale": "health response changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -668,7 +688,8 @@
     "tags": [
       "capacity",
       "http",
-      "ih-bolster"
+      "ih-bolster",
+      "aspirational"
     ],
     "rationale": "app name changed in config, server.js unaware",
     "intent": "false_positive"
@@ -694,7 +715,8 @@
     "tags": [
       "capacity",
       "http",
-      "ih-bolster"
+      "ih-bolster",
+      "aspirational"
     ],
     "rationale": "NODE_ENV changed, server.js unaware",
     "intent": "false_positive"
@@ -720,7 +742,8 @@
     "tags": [
       "capacity",
       "http",
-      "ih-bolster"
+      "ih-bolster",
+      "aspirational"
     ],
     "rationale": "SECRET_KEY changed, config.json unaware",
     "intent": "false_positive"
@@ -747,7 +770,8 @@
       "capacity",
       "http",
       "ih-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js port changed, verify in server.js",
     "intent": "false_negative"
@@ -774,7 +798,8 @@
       "capacity",
       "http",
       "ih-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: config.json port changed, config gate reads it",
     "intent": "false_negative"
@@ -801,7 +826,8 @@
       "capacity",
       "http",
       "ih-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: .env PORT changed, config gate reads it",
     "intent": "false_negative"
@@ -827,7 +853,8 @@
       "capacity",
       "http",
       "ih-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js still exists after edit",
     "intent": "false_negative"
@@ -846,7 +873,8 @@
     "tags": [
       "capacity",
       "http",
-      "ih-bolster"
+      "ih-bolster",
+      "aspirational"
     ],
     "rationale": "fabricated: package.json does not exist",
     "intent": "false_positive"
@@ -866,7 +894,8 @@
       "capacity",
       "http",
       "ih-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js exists without edits",
     "intent": "false_negative"
@@ -887,7 +916,8 @@
       "capacity",
       "http",
       "ih-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js has createServer",
     "intent": "false_negative"

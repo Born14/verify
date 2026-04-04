@@ -25,7 +25,8 @@
       "propagation",
       "browser",
       "css_js_coupling",
-      "PB-01"
+      "PB-01",
+      "aspirational"
     ],
     "rationale": "CSS class renamed but HTML elements still use old class — style won't apply via renamed selector",
     "intent": "false_positive"
@@ -56,7 +57,8 @@
       "propagation",
       "browser",
       "css_js_coupling",
-      "PB-01"
+      "PB-01",
+      "aspirational"
     ],
     "rationale": "CSS class renamed from .subtitle to .tagline — HTML element still has old class, style lost",
     "intent": "false_positive"
@@ -87,7 +89,8 @@
       "propagation",
       "browser",
       "css_js_coupling",
-      "PB-01"
+      "PB-01",
+      "aspirational"
     ],
     "rationale": "CSS class .hero renamed to .banner — HTML div still has class=\"hero\", background lost",
     "intent": "false_positive"
@@ -115,7 +118,8 @@
       "browser",
       "css_js_coupling",
       "PB-01",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "CSS class renamed but HTML class attribute not updated — structural propagation gap",
     "intent": "false_positive"
@@ -143,7 +147,8 @@
       "browser",
       "css_js_coupling",
       "PB-01",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "CSS rule renamed — old class rule no longer present in source",
     "intent": "false_positive"
@@ -173,7 +178,8 @@
       "propagation",
       "browser",
       "html_selector",
-      "PB-02"
+      "PB-02",
+      "aspirational"
     ],
     "rationale": "HTML tag changed from h1 to h2 — CSS/selector targeting h1 finds nothing",
     "intent": "false_positive"
@@ -203,7 +209,8 @@
       "propagation",
       "browser",
       "html_selector",
-      "PB-02"
+      "PB-02",
+      "aspirational"
     ],
     "rationale": "Nav element removed but CSS rules for .nav-link still defined — orphaned styles",
     "intent": "false_positive"
@@ -233,7 +240,8 @@
       "propagation",
       "browser",
       "html_selector",
-      "PB-02"
+      "PB-02",
+      "aspirational"
     ],
     "rationale": "Footer tag replaced with div — CSS footer selector no longer matches any element",
     "intent": "false_positive"
@@ -261,7 +269,8 @@
       "browser",
       "html_selector",
       "PB-02",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "Form action changed but no matching route handler — HTML→API propagation gap",
     "intent": "false_positive"
@@ -289,7 +298,8 @@
       "browser",
       "html_selector",
       "PB-02",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "HTML table removed — class reference gone but CSS rules remain orphaned",
     "intent": "false_positive"
@@ -317,7 +327,8 @@
       "browser",
       "api_state",
       "PB-03",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "API data changed to Omega but homepage hardcodes \"Item Alpha\" — API→UI propagation gap",
     "intent": "false_positive"
@@ -345,7 +356,8 @@
       "browser",
       "api_state",
       "PB-03",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "API item removed but homepage HTML still hardcodes \"Item Beta\" — the propagation gap IS the finding (content still present)",
     "intent": "false_negative"
@@ -373,7 +385,8 @@
       "browser",
       "api_state",
       "PB-03",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "API status changed — old value no longer in source",
     "intent": "false_positive"
@@ -401,7 +414,8 @@
       "browser",
       "api_state",
       "PB-03",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "Homepage title changed but about page title still uses old \"Demo App\" prefix — cross-route propagation gap",
     "intent": "false_positive"
@@ -429,7 +443,8 @@
       "browser",
       "api_state",
       "PB-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Same-surface edit and check — no propagation needed, should pass",
     "intent": "false_negative"
@@ -455,7 +470,8 @@
     "tags": [
       "propagation",
       "browser",
-      "pb-bolster"
+      "pb-bolster",
+      "aspirational"
     ],
     "rationale": "server.js port changed, config.json unaware",
     "intent": "false_positive"
@@ -481,7 +497,8 @@
     "tags": [
       "propagation",
       "browser",
-      "pb-bolster"
+      "pb-bolster",
+      "aspirational"
     ],
     "rationale": "config.json port changed, server.js unaware",
     "intent": "false_positive"
@@ -507,7 +524,8 @@
     "tags": [
       "propagation",
       "browser",
-      "pb-bolster"
+      "pb-bolster",
+      "aspirational"
     ],
     "rationale": ".env port changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -533,7 +551,8 @@
     "tags": [
       "propagation",
       "browser",
-      "pb-bolster"
+      "pb-bolster",
+      "aspirational"
     ],
     "rationale": "Dockerfile EXPOSE changed, .env unaware",
     "intent": "false_positive"
@@ -559,7 +578,8 @@
     "tags": [
       "propagation",
       "browser",
-      "pb-bolster"
+      "pb-bolster",
+      "aspirational"
     ],
     "rationale": "health response changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -585,7 +605,8 @@
     "tags": [
       "propagation",
       "browser",
-      "pb-bolster"
+      "pb-bolster",
+      "aspirational"
     ],
     "rationale": "app name changed in config, server.js unaware",
     "intent": "false_positive"
@@ -611,7 +632,8 @@
     "tags": [
       "propagation",
       "browser",
-      "pb-bolster"
+      "pb-bolster",
+      "aspirational"
     ],
     "rationale": "NODE_ENV changed, server.js unaware",
     "intent": "false_positive"
@@ -637,7 +659,8 @@
     "tags": [
       "propagation",
       "browser",
-      "pb-bolster"
+      "pb-bolster",
+      "aspirational"
     ],
     "rationale": "SECRET_KEY changed, config.json unaware",
     "intent": "false_positive"
@@ -664,7 +687,8 @@
       "propagation",
       "browser",
       "pb-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js port changed, verify in server.js",
     "intent": "false_negative"
@@ -691,7 +715,8 @@
       "propagation",
       "browser",
       "pb-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: config.json port changed, config gate reads it",
     "intent": "false_negative"
@@ -718,7 +743,8 @@
       "propagation",
       "browser",
       "pb-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: .env PORT changed, config gate reads it",
     "intent": "false_negative"
@@ -744,7 +770,8 @@
       "propagation",
       "browser",
       "pb-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js still exists after edit",
     "intent": "false_negative"
@@ -763,7 +790,8 @@
     "tags": [
       "propagation",
       "browser",
-      "pb-bolster"
+      "pb-bolster",
+      "aspirational"
     ],
     "rationale": "fabricated: package.json does not exist",
     "intent": "false_positive"
@@ -783,7 +811,8 @@
       "propagation",
       "browser",
       "pb-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js exists without edits",
     "intent": "false_negative"
@@ -804,7 +833,8 @@
       "propagation",
       "browser",
       "pb-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js has createServer",
     "intent": "false_negative"

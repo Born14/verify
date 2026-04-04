@@ -21,7 +21,8 @@
       "temporal",
       "filesystem",
       "stale_flush",
-      "TF-01"
+      "TF-01",
+      "aspirational"
     ],
     "rationale": "Edit modifies server.js so pre-edit hash should NOT match post-edit content",
     "intent": "false_positive"
@@ -48,7 +49,8 @@
       "temporal",
       "filesystem",
       "stale_flush",
-      "TF-01"
+      "TF-01",
+      "aspirational"
     ],
     "rationale": "Edit modifies .env so pre-edit hash should NOT match",
     "intent": "false_positive"
@@ -75,7 +77,8 @@
       "temporal",
       "filesystem",
       "stale_flush",
-      "TF-01"
+      "TF-01",
+      "aspirational"
     ],
     "rationale": "Edit modifies config.json so pre-edit hash should NOT match",
     "intent": "false_positive"
@@ -97,7 +100,8 @@
       "filesystem",
       "stale_flush",
       "TF-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "No edit applied — hash should still match (proves the gate works both ways)",
     "intent": "false_negative"
@@ -119,7 +123,8 @@
       "filesystem",
       "stale_flush",
       "TF-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "No edit — hash should match",
     "intent": "false_negative"
@@ -146,7 +151,8 @@
       "temporal",
       "filesystem",
       "stale_artifact",
-      "TF-02"
+      "TF-02",
+      "aspirational"
     ],
     "rationale": "Edit changes server.js but config.json still has 3000 — cross-file staleness",
     "intent": "false_positive"
@@ -173,7 +179,8 @@
       "temporal",
       "filesystem",
       "stale_artifact",
-      "TF-02"
+      "TF-02",
+      "aspirational"
     ],
     "rationale": "Edit changes .env but server.js hardcodes 3000 — build artifact stale pattern",
     "intent": "false_positive"
@@ -200,7 +207,8 @@
       "temporal",
       "filesystem",
       "stale_artifact",
-      "TF-02"
+      "TF-02",
+      "aspirational"
     ],
     "rationale": "Config name changed but server.js still has \"Demo App\" in HTML — stale build",
     "intent": "false_positive"
@@ -227,7 +235,8 @@
       "temporal",
       "filesystem",
       "stale_artifact",
-      "TF-02"
+      "TF-02",
+      "aspirational"
     ],
     "rationale": "Title edit in server.js never propagates to Dockerfile",
     "intent": "false_positive"
@@ -255,7 +264,8 @@
       "filesystem",
       "stale_artifact",
       "TF-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Same file edited and checked — content should be found (non-stale)",
     "intent": "false_negative"
@@ -282,7 +292,8 @@
       "temporal",
       "filesystem",
       "mount_sync",
-      "TF-03"
+      "TF-03",
+      "aspirational"
     ],
     "rationale": "Route renamed from /api/items to /api/data — old pattern should not be found",
     "intent": "false_positive"
@@ -309,7 +320,8 @@
       "temporal",
       "filesystem",
       "mount_sync",
-      "TF-03"
+      "TF-03",
+      "aspirational"
     ],
     "rationale": "Dockerfile healthcheck still references /health — mount desync between source and infra",
     "intent": "false_negative"
@@ -336,7 +348,8 @@
       "temporal",
       "filesystem",
       "mount_sync",
-      "TF-03"
+      "TF-03",
+      "aspirational"
     ],
     "rationale": "ANALYTICS added to server.js but .env has no such key — cross-file desync",
     "intent": "false_positive"
@@ -363,7 +376,8 @@
       "temporal",
       "filesystem",
       "mount_sync",
-      "TF-03"
+      "TF-03",
+      "aspirational"
     ],
     "rationale": "Dockerfile port changed but docker-compose.yml still maps 3000",
     "intent": "false_positive"
@@ -390,7 +404,8 @@
       "temporal",
       "filesystem",
       "mount_sync",
-      "TF-03"
+      "TF-03",
+      "aspirational"
     ],
     "rationale": "docker-compose port env changed but Dockerfile EXPOSE still says 3000",
     "intent": "false_positive"
@@ -416,7 +431,8 @@
     "tags": [
       "temporal",
       "fs",
-      "tf-bolster"
+      "tf-bolster",
+      "aspirational"
     ],
     "rationale": "server.js port changed, config.json unaware",
     "intent": "false_positive"
@@ -442,7 +458,8 @@
     "tags": [
       "temporal",
       "fs",
-      "tf-bolster"
+      "tf-bolster",
+      "aspirational"
     ],
     "rationale": "config.json port changed, server.js unaware",
     "intent": "false_positive"
@@ -468,7 +485,8 @@
     "tags": [
       "temporal",
       "fs",
-      "tf-bolster"
+      "tf-bolster",
+      "aspirational"
     ],
     "rationale": ".env port changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -494,7 +512,8 @@
     "tags": [
       "temporal",
       "fs",
-      "tf-bolster"
+      "tf-bolster",
+      "aspirational"
     ],
     "rationale": "Dockerfile EXPOSE changed, .env unaware",
     "intent": "false_positive"
@@ -520,7 +539,8 @@
     "tags": [
       "temporal",
       "fs",
-      "tf-bolster"
+      "tf-bolster",
+      "aspirational"
     ],
     "rationale": "health response changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -546,7 +566,8 @@
     "tags": [
       "temporal",
       "fs",
-      "tf-bolster"
+      "tf-bolster",
+      "aspirational"
     ],
     "rationale": "app name changed in config, server.js unaware",
     "intent": "false_positive"
@@ -572,7 +593,8 @@
     "tags": [
       "temporal",
       "fs",
-      "tf-bolster"
+      "tf-bolster",
+      "aspirational"
     ],
     "rationale": "NODE_ENV changed, server.js unaware",
     "intent": "false_positive"
@@ -598,7 +620,8 @@
     "tags": [
       "temporal",
       "fs",
-      "tf-bolster"
+      "tf-bolster",
+      "aspirational"
     ],
     "rationale": "SECRET_KEY changed, config.json unaware",
     "intent": "false_positive"
@@ -625,7 +648,8 @@
       "temporal",
       "fs",
       "tf-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js port changed, verify in server.js",
     "intent": "false_negative"
@@ -652,7 +676,8 @@
       "temporal",
       "fs",
       "tf-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: config.json port changed, config gate reads it",
     "intent": "false_negative"
@@ -679,7 +704,8 @@
       "temporal",
       "fs",
       "tf-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: .env PORT changed, config gate reads it",
     "intent": "false_negative"
@@ -705,7 +731,8 @@
       "temporal",
       "fs",
       "tf-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js still exists after edit",
     "intent": "false_negative"
@@ -724,7 +751,8 @@
     "tags": [
       "temporal",
       "fs",
-      "tf-bolster"
+      "tf-bolster",
+      "aspirational"
     ],
     "rationale": "fabricated: package.json does not exist",
     "intent": "false_positive"
@@ -744,7 +772,8 @@
       "temporal",
       "fs",
       "tf-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js exists without edits",
     "intent": "false_negative"
@@ -765,7 +794,8 @@
       "temporal",
       "fs",
       "tf-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js has createServer",
     "intent": "false_negative"

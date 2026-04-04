@@ -21,7 +21,8 @@
       "propagation",
       "cli",
       "stale_image",
-      "PC-01"
+      "PC-01",
+      "aspirational"
     ],
     "rationale": "Dockerfile base image updated but compose has no image reference — build→deploy gap",
     "intent": "false_positive"
@@ -48,7 +49,8 @@
       "propagation",
       "cli",
       "stale_image",
-      "PC-01"
+      "PC-01",
+      "aspirational"
     ],
     "rationale": "Dockerfile exposes 8080 but compose port mapping still references 3000 — build→deploy port mismatch",
     "intent": "false_positive"
@@ -75,7 +77,8 @@
       "propagation",
       "cli",
       "stale_image",
-      "PC-01"
+      "PC-01",
+      "aspirational"
     ],
     "rationale": "WORKDIR changed but compose volumes/config not updated — build artifact path mismatch",
     "intent": "false_positive"
@@ -102,7 +105,8 @@
       "propagation",
       "cli",
       "stale_image",
-      "PC-01"
+      "PC-01",
+      "aspirational"
     ],
     "rationale": "CMD changed to npm start but no package.json with start script — build command gap",
     "intent": "false_positive"
@@ -129,7 +133,8 @@
       "propagation",
       "cli",
       "stale_image",
-      "PC-01"
+      "PC-01",
+      "aspirational"
     ],
     "rationale": "Dockerfile healthcheck path changed but compose healthcheck not updated — dual healthcheck drift",
     "intent": "false_positive"
@@ -157,7 +162,8 @@
       "cli",
       "stale_image",
       "PC-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Same-file check — value is present",
     "intent": "false_negative"
@@ -184,7 +190,8 @@
       "propagation",
       "cli",
       "missing_install",
-      "PC-02"
+      "PC-02",
+      "aspirational"
     ],
     "rationale": "Express required in code but Dockerfile has no npm install step — dependency not installed",
     "intent": "false_positive"
@@ -211,7 +218,8 @@
       "propagation",
       "cli",
       "missing_install",
-      "PC-02"
+      "PC-02",
+      "aspirational"
     ],
     "rationale": "PG driver required but config has no driver setting — dependency→config propagation gap",
     "intent": "false_positive"
@@ -238,7 +246,8 @@
       "propagation",
       "cli",
       "missing_install",
-      "PC-02"
+      "PC-02",
+      "aspirational"
     ],
     "rationale": "Redis required in code but compose has no redis service — runtime dependency missing",
     "intent": "false_positive"
@@ -265,7 +274,8 @@
       "propagation",
       "cli",
       "missing_install",
-      "PC-02"
+      "PC-02",
+      "aspirational"
     ],
     "rationale": "dotenv loaded but .env not included in Docker COPY — file not in image",
     "intent": "false_positive"
@@ -293,7 +303,8 @@
       "cli",
       "missing_install",
       "PC-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Same-file check — require is present",
     "intent": "false_negative"
@@ -320,7 +331,8 @@
       "propagation",
       "cli",
       "no_restart",
-      "PC-03"
+      "PC-03",
+      "aspirational"
     ],
     "rationale": "Env var added but compose env section not updated — process wont see new var",
     "intent": "false_positive"
@@ -347,7 +359,8 @@
       "propagation",
       "cli",
       "no_restart",
-      "PC-03"
+      "PC-03",
+      "aspirational"
     ],
     "rationale": "REDIS_URL added but server code never reads it — env→code propagation gap",
     "intent": "false_positive"
@@ -374,7 +387,8 @@
       "propagation",
       "cli",
       "no_restart",
-      "PC-03"
+      "PC-03",
+      "aspirational"
     ],
     "rationale": "Connection limit env var added but config has no pool settings — env→config gap",
     "intent": "false_positive"
@@ -401,7 +415,8 @@
       "propagation",
       "cli",
       "no_restart",
-      "PC-03"
+      "PC-03",
+      "aspirational"
     ],
     "rationale": "Compose env port changed but Dockerfile EXPOSE not updated — deploy→build propagation gap",
     "intent": "false_positive"
@@ -428,7 +443,8 @@
       "propagation",
       "cli",
       "no_restart",
-      "PC-03"
+      "PC-03",
+      "aspirational"
     ],
     "rationale": "CORS env var added to prod config but compose doesnt forward it — env→deploy gap",
     "intent": "false_positive"
@@ -456,7 +472,8 @@
       "cli",
       "no_restart",
       "PC-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Same-file check — env var is present",
     "intent": "false_negative"
@@ -482,7 +499,8 @@
     "tags": [
       "propagation",
       "cli",
-      "propagation_gap"
+      "propagation_gap",
+      "aspirational"
     ],
     "rationale": "Add column to init.sql, server.js unaware",
     "intent": "false_positive"
@@ -508,7 +526,8 @@
     "tags": [
       "propagation",
       "cli",
-      "propagation_gap"
+      "propagation_gap",
+      "aspirational"
     ],
     "rationale": "Change .env port, compose not updated",
     "intent": "false_positive"
@@ -534,7 +553,8 @@
     "tags": [
       "propagation",
       "cli",
-      "propagation_gap"
+      "propagation_gap",
+      "aspirational"
     ],
     "rationale": "Change config.json feature flag, server.js not updated",
     "intent": "false_positive"
@@ -560,7 +580,8 @@
     "tags": [
       "propagation",
       "cli",
-      "propagation_gap"
+      "propagation_gap",
+      "aspirational"
     ],
     "rationale": "Rename column in init.sql, server.js uses old name",
     "intent": "false_positive"
@@ -586,7 +607,8 @@
     "tags": [
       "propagation",
       "cli",
-      "propagation_gap"
+      "propagation_gap",
+      "aspirational"
     ],
     "rationale": "Add env var to .env, Dockerfile has no matching ENV",
     "intent": "false_positive"
@@ -612,7 +634,8 @@
     "tags": [
       "propagation",
       "cli",
-      "propagation_gap"
+      "propagation_gap",
+      "aspirational"
     ],
     "rationale": "Change Dockerfile node version, compose image tag unchanged",
     "intent": "false_positive"
@@ -640,7 +663,8 @@
     "tags": [
       "propagation",
       "cli",
-      "propagation_gap"
+      "propagation_gap",
+      "aspirational"
     ],
     "rationale": "Add migration column, config.json has no reference",
     "intent": "false_positive"
@@ -666,7 +690,8 @@
     "tags": [
       "propagation",
       "cli",
-      "propagation_gap"
+      "propagation_gap",
+      "aspirational"
     ],
     "rationale": "Change health response, Dockerfile healthcheck unchanged",
     "intent": "false_positive"
@@ -692,7 +717,8 @@
     "tags": [
       "propagation",
       "cli",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: edit server.js, check server.js",
     "intent": "false_negative"
@@ -718,7 +744,8 @@
     "tags": [
       "propagation",
       "cli",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: edit .env, check .env",
     "intent": "false_negative"
@@ -738,7 +765,8 @@
     "tags": [
       "propagation",
       "cli",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: init.sql has users table",
     "intent": "false_negative"
@@ -764,7 +792,8 @@
     "tags": [
       "propagation",
       "cli",
-      "propagation_gap"
+      "propagation_gap",
+      "aspirational"
     ],
     "rationale": "Add table to init.sql, server.js has no API for it",
     "intent": "false_positive"
@@ -790,7 +819,8 @@
     "tags": [
       "propagation",
       "cli",
-      "propagation_gap"
+      "propagation_gap",
+      "aspirational"
     ],
     "rationale": "Change compose service name, Dockerfile unchanged",
     "intent": "false_positive"

@@ -26,7 +26,8 @@
       "observation",
       "database",
       "introspection_artifact",
-      "FD-01"
+      "FD-01",
+      "aspirational"
     ],
     "rationale": "Assumed: schema introspection is read-only. Actual: pg_stat_statements extension tracks every query — observation adds measurement artifacts. server.js has no reference.",
     "intent": "false_positive"
@@ -53,7 +54,8 @@
       "observation",
       "database",
       "introspection_artifact",
-      "FD-01"
+      "FD-01",
+      "aspirational"
     ],
     "rationale": "Assumed: reading tables doesn't trigger maintenance. Actual: SELECT updates tuple statistics, triggering auto-analyze. App has no awareness.",
     "intent": "false_positive"
@@ -85,7 +87,8 @@
       "observation",
       "database",
       "introspection_artifact",
-      "FD-01"
+      "FD-01",
+      "aspirational"
     ],
     "rationale": "Assumed: schema introspection is side-effect-free. Actual: schema_versions table tracks observations — each look updates last_introspected_at.",
     "intent": "false_positive"
@@ -117,7 +120,8 @@
       "observation",
       "database",
       "introspection_artifact",
-      "FD-01"
+      "FD-01",
+      "aspirational"
     ],
     "rationale": "Assumed: queries don't generate logs. Actual: query_log table grows with each observation. Config has no awareness.",
     "intent": "false_positive"
@@ -139,7 +143,8 @@
       "database",
       "introspection_artifact",
       "FD-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Static schema check — no observation side effects. File content doesn't change from reading it.",
     "intent": "false_negative"
@@ -171,7 +176,8 @@
       "observation",
       "database",
       "select_side_effect",
-      "FD-02"
+      "FD-02",
+      "aspirational"
     ],
     "rationale": "Assumed: SELECT is read-only. Actual: trigger updates last_accessed on read. Observation mutates observed state.",
     "intent": "false_positive"
@@ -203,7 +209,8 @@
       "observation",
       "database",
       "select_side_effect",
-      "FD-02"
+      "FD-02",
+      "aspirational"
     ],
     "rationale": "Assumed: reading data doesn't create audit entries. Actual: audit_trail grows with each query. App has no audit awareness.",
     "intent": "false_positive"
@@ -230,7 +237,8 @@
       "observation",
       "database",
       "select_side_effect",
-      "FD-02"
+      "FD-02",
+      "aspirational"
     ],
     "rationale": "Assumed: SELECT on posts is read-only. Actual: view_count trigger fires on read. Each observation inflates metrics.",
     "intent": "false_positive"
@@ -257,7 +265,8 @@
       "observation",
       "database",
       "select_side_effect",
-      "FD-02"
+      "FD-02",
+      "aspirational"
     ],
     "rationale": "Assumed: checking session is read-only. Actual: lookup extends expiry — observation changes session lifetime.",
     "intent": "false_positive"
@@ -279,7 +288,8 @@
       "database",
       "select_side_effect",
       "FD-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Static file check — no database observation, no side effects.",
     "intent": "false_negative"
@@ -311,7 +321,8 @@
       "observation",
       "database",
       "connection_count",
-      "FD-03"
+      "FD-03",
+      "aspirational"
     ],
     "rationale": "Assumed: observation is free. Actual: each probe holds a connection slot. At max_connections=20, 20 concurrent probes = pool exhaustion.",
     "intent": "false_positive"
@@ -343,7 +354,8 @@
       "observation",
       "database",
       "connection_count",
-      "FD-03"
+      "FD-03",
+      "aspirational"
     ],
     "rationale": "Assumed: querying connection count is read-only. Actual: the query itself is a connection — Heisenberg: you can't observe connections without being one.",
     "intent": "false_positive"
@@ -375,7 +387,8 @@
       "observation",
       "database",
       "connection_count",
-      "FD-03"
+      "FD-03",
+      "aspirational"
     ],
     "rationale": "Assumed: server.js respects pool_size. Actual: server.js has no DB client — pool_size in config is inert.",
     "intent": "false_positive"
@@ -402,7 +415,8 @@
       "observation",
       "database",
       "connection_count",
-      "FD-03"
+      "FD-03",
+      "aspirational"
     ],
     "rationale": "Assumed: config timeout propagates to .env. Actual: .env has no timeout config — observation timeout only in config.json.",
     "intent": "false_positive"
@@ -429,7 +443,8 @@
       "database",
       "connection_count",
       "FD-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Static file check — config and schema files are read without any DB connections.",
     "intent": "false_negative"
@@ -455,7 +470,8 @@
     "tags": [
       "observation",
       "db",
-      "fd-bolster"
+      "fd-bolster",
+      "aspirational"
     ],
     "rationale": "server.js port changed, config.json unaware",
     "intent": "false_positive"
@@ -481,7 +497,8 @@
     "tags": [
       "observation",
       "db",
-      "fd-bolster"
+      "fd-bolster",
+      "aspirational"
     ],
     "rationale": "config.json port changed, server.js unaware",
     "intent": "false_positive"
@@ -507,7 +524,8 @@
     "tags": [
       "observation",
       "db",
-      "fd-bolster"
+      "fd-bolster",
+      "aspirational"
     ],
     "rationale": ".env port changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -533,7 +551,8 @@
     "tags": [
       "observation",
       "db",
-      "fd-bolster"
+      "fd-bolster",
+      "aspirational"
     ],
     "rationale": "Dockerfile EXPOSE changed, .env unaware",
     "intent": "false_positive"
@@ -559,7 +578,8 @@
     "tags": [
       "observation",
       "db",
-      "fd-bolster"
+      "fd-bolster",
+      "aspirational"
     ],
     "rationale": "health response changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -585,7 +605,8 @@
     "tags": [
       "observation",
       "db",
-      "fd-bolster"
+      "fd-bolster",
+      "aspirational"
     ],
     "rationale": "app name changed in config, server.js unaware",
     "intent": "false_positive"
@@ -611,7 +632,8 @@
     "tags": [
       "observation",
       "db",
-      "fd-bolster"
+      "fd-bolster",
+      "aspirational"
     ],
     "rationale": "NODE_ENV changed, server.js unaware",
     "intent": "false_positive"
@@ -637,7 +659,8 @@
     "tags": [
       "observation",
       "db",
-      "fd-bolster"
+      "fd-bolster",
+      "aspirational"
     ],
     "rationale": "SECRET_KEY changed, config.json unaware",
     "intent": "false_positive"
@@ -664,7 +687,8 @@
       "observation",
       "db",
       "fd-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js port changed, verify in server.js",
     "intent": "false_negative"
@@ -691,7 +715,8 @@
       "observation",
       "db",
       "fd-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: config.json port changed, config gate reads it",
     "intent": "false_negative"
@@ -718,7 +743,8 @@
       "observation",
       "db",
       "fd-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: .env PORT changed, config gate reads it",
     "intent": "false_negative"
@@ -744,7 +770,8 @@
       "observation",
       "db",
       "fd-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js still exists after edit",
     "intent": "false_negative"
@@ -763,7 +790,8 @@
     "tags": [
       "observation",
       "db",
-      "fd-bolster"
+      "fd-bolster",
+      "aspirational"
     ],
     "rationale": "fabricated: package.json does not exist",
     "intent": "false_positive"
@@ -783,7 +811,8 @@
       "observation",
       "db",
       "fd-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js exists without edits",
     "intent": "false_negative"
@@ -804,7 +833,8 @@
       "observation",
       "db",
       "fd-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js has createServer",
     "intent": "false_negative"

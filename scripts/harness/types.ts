@@ -195,6 +195,8 @@ export interface RunConfig {
   scenarioIds?: string[];
   /** Scenario source filter: 'synthetic' (default), 'real-world', or 'all'. */
   source?: 'synthetic' | 'real-world' | 'all';
+  /** Exclude scenarios with any of these tags (e.g., ['aspirational']). */
+  excludeTags?: string[];
 }
 
 // =============================================================================

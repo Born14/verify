@@ -26,7 +26,8 @@
       "contention",
       "verify",
       "health_check",
-      "JV-01"
+      "JV-01",
+      "aspirational"
     ],
     "rationale": "Edit replaces JSON health response — predicate expecting old JSON format fails observation",
     "intent": "false_positive"
@@ -58,7 +59,8 @@
       "contention",
       "verify",
       "health_check",
-      "JV-01"
+      "JV-01",
+      "aspirational"
     ],
     "rationale": "Edit succeeds but creates inconsistency — compose still checks /health while server serves /ready. Both predicates pass because edit only touches server.js and compose is unchanged.",
     "intent": "false_negative"
@@ -90,7 +92,8 @@
       "contention",
       "verify",
       "health_check",
-      "JV-01"
+      "JV-01",
+      "aspirational"
     ],
     "rationale": "Health returns 503 but compose will retry 3 times — both predicates independently pass",
     "intent": "false_negative"
@@ -122,7 +125,8 @@
       "contention",
       "verify",
       "health_check",
-      "JV-01"
+      "JV-01",
+      "aspirational"
     ],
     "rationale": "Server adds header but Dockerfile health still uses wget — both predicates independently pass",
     "intent": "false_negative"
@@ -160,7 +164,8 @@
       "verify",
       "health_check",
       "JV-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Both files updated consistently — no observer conflict",
     "intent": "false_negative"
@@ -192,7 +197,8 @@
       "contention",
       "verify",
       "schema_introspection",
-      "JV-02"
+      "JV-02",
+      "aspirational"
     ],
     "rationale": "Migration changes email from VARCHAR(255) to TEXT — predicate expecting old type fails",
     "intent": "false_positive"
@@ -224,7 +230,8 @@
       "contention",
       "verify",
       "schema_introspection",
-      "JV-02"
+      "JV-02",
+      "aspirational"
     ],
     "rationale": "Column renamed — predicate checking old name \"password_hash\" fails introspection",
     "intent": "false_positive"
@@ -256,7 +263,8 @@
       "contention",
       "verify",
       "schema_introspection",
-      "JV-02"
+      "JV-02",
+      "aspirational"
     ],
     "rationale": "Migration replaces UUID with SERIAL — predicate checking gen_random_uuid fails",
     "intent": "false_positive"
@@ -288,7 +296,8 @@
       "contention",
       "verify",
       "schema_introspection",
-      "JV-02"
+      "JV-02",
+      "aspirational"
     ],
     "rationale": "Old index replaced — predicate checking original index name fails during migration window",
     "intent": "false_positive"
@@ -320,7 +329,8 @@
       "contention",
       "verify",
       "schema_introspection",
-      "JV-02"
+      "JV-02",
+      "aspirational"
     ],
     "rationale": "Default changed from 0 to 100 — predicate expecting old default fails mid-migration",
     "intent": "false_positive"
@@ -348,7 +358,8 @@
       "verify",
       "schema_introspection",
       "JV-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Only checking new state — no conflict with pre-migration schema",
     "intent": "false_negative"
@@ -380,7 +391,8 @@
       "contention",
       "verify",
       "hash_conflict",
-      "JV-03"
+      "JV-03",
+      "aspirational"
     ],
     "rationale": "File hash changes mid-write — predicate checking old \"Demo App\" name fails",
     "intent": "false_positive"
@@ -412,7 +424,8 @@
       "contention",
       "verify",
       "hash_conflict",
-      "JV-03"
+      "JV-03",
+      "aspirational"
     ],
     "rationale": "DATABASE_URL rotated — predicate checking old localhost URL fails mid-write",
     "intent": "false_positive"
@@ -444,7 +457,8 @@
       "contention",
       "verify",
       "hash_conflict",
-      "JV-03"
+      "JV-03",
+      "aspirational"
     ],
     "rationale": "Title changed — hash computed before write sees Demo App, after write sees Live Dashboard",
     "intent": "false_positive"
@@ -476,7 +490,8 @@
       "contention",
       "verify",
       "hash_conflict",
-      "JV-03"
+      "JV-03",
+      "aspirational"
     ],
     "rationale": "Base image changed — file hash mid-write catches inconsistent state",
     "intent": "false_positive"
@@ -508,7 +523,8 @@
       "contention",
       "verify",
       "hash_conflict",
-      "JV-03"
+      "JV-03",
+      "aspirational"
     ],
     "rationale": "PORT changed — predicate verifying old PORT=3000 fails when hash computed after write",
     "intent": "false_positive"
@@ -536,7 +552,8 @@
       "verify",
       "hash_conflict",
       "JV-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Only checking post-write state — no stale hash conflict",
     "intent": "false_negative"
@@ -567,7 +584,8 @@
     "tags": [
       "contention",
       "verify",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Two edits to server.js, second overwrites first",
     "intent": "false_positive"
@@ -598,7 +616,8 @@
     "tags": [
       "contention",
       "verify",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Edit server.js and config.json with conflicting ports",
     "intent": "false_positive"
@@ -629,7 +648,8 @@
     "tags": [
       "contention",
       "verify",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Edit .env and compose with different ports",
     "intent": "false_positive"
@@ -661,7 +681,8 @@
     "tags": [
       "contention",
       "verify",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Two migrations on same table",
     "intent": "false_positive"
@@ -687,7 +708,8 @@
     "tags": [
       "contention",
       "verify",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Edit init.sql and server.js with mismatched column names",
     "intent": "false_positive"
@@ -713,7 +735,8 @@
     "tags": [
       "contention",
       "verify",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Compose restart policy conflicts with Dockerfile CMD",
     "intent": "false_positive"
@@ -739,7 +762,8 @@
     "tags": [
       "contention",
       "verify",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Edit both health endpoint and healthcheck with different paths",
     "intent": "false_positive"
@@ -770,7 +794,8 @@
     "tags": [
       "contention",
       "verify",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Config.json and .env disagree on debug",
     "intent": "false_positive"
@@ -796,7 +821,8 @@
     "tags": [
       "contention",
       "verify",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: single edit, consistent check",
     "intent": "false_negative"
@@ -822,7 +848,8 @@
     "tags": [
       "contention",
       "verify",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: edit .env, check .env",
     "intent": "false_negative"
@@ -848,7 +875,8 @@
     "tags": [
       "contention",
       "verify",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: edit config.json, check config.json",
     "intent": "false_negative"
@@ -879,7 +907,8 @@
     "tags": [
       "contention",
       "verify",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Two edits to different routes, check both present",
     "intent": "false_negative"
@@ -907,7 +936,8 @@
     "tags": [
       "contention",
       "verify",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Migration adds column that server.js doesnt reference",
     "intent": "false_positive"

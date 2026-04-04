@@ -24,7 +24,8 @@
       "access",
       "verify",
       "auth_gated",
-      "HV-01"
+      "HV-01",
+      "aspirational"
     ],
     "rationale": "Health endpoint returns 401 without Bearer token — probe fails",
     "intent": "false_positive"
@@ -54,7 +55,8 @@
       "access",
       "verify",
       "auth_gated",
-      "HV-01"
+      "HV-01",
+      "aspirational"
     ],
     "rationale": "Health endpoint needs ?key=probe-key — probe without key gets 403",
     "intent": "false_positive"
@@ -89,7 +91,8 @@
       "access",
       "verify",
       "auth_gated",
-      "HV-01"
+      "HV-01",
+      "aspirational"
     ],
     "rationale": "Health endpoint restricted to localhost — external verification probe gets 403",
     "intent": "false_positive"
@@ -124,7 +127,8 @@
       "access",
       "verify",
       "auth_gated",
-      "HV-01"
+      "HV-01",
+      "aspirational"
     ],
     "rationale": "Health requires basic auth but Docker HEALTHCHECK wget sends none — container marked unhealthy",
     "intent": "false_positive"
@@ -150,7 +154,8 @@
       "verify",
       "auth_gated",
       "HV-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Health endpoint is public — probe succeeds without credentials",
     "intent": "false_negative"
@@ -185,7 +190,8 @@
       "access",
       "verify",
       "port_not_exposed",
-      "HV-02"
+      "HV-02",
+      "aspirational"
     ],
     "rationale": "Metrics server on 9090 but compose only maps 3000 — external probe cannot reach metrics",
     "intent": "false_positive"
@@ -217,7 +223,8 @@
       "access",
       "verify",
       "port_not_exposed",
-      "HV-02"
+      "HV-02",
+      "aspirational"
     ],
     "rationale": "Debug server created but Dockerfile does not EXPOSE 4000 — port invisible to verifier",
     "intent": "false_positive"
@@ -249,7 +256,8 @@
       "access",
       "verify",
       "port_not_exposed",
-      "HV-02"
+      "HV-02",
+      "aspirational"
     ],
     "rationale": "Admin server on 8080 but compose has no port mapping for it — unreachable",
     "intent": "false_positive"
@@ -284,7 +292,8 @@
       "access",
       "verify",
       "port_not_exposed",
-      "HV-02"
+      "HV-02",
+      "aspirational"
     ],
     "rationale": "Port bound to 127.0.0.1 — only accessible from inside Docker host, not from external probe",
     "intent": "false_positive"
@@ -311,7 +320,8 @@
       "verify",
       "port_not_exposed",
       "HV-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Port 3000 properly exposed in both Dockerfile and compose — verification can reach it",
     "intent": "false_negative"
@@ -340,7 +350,8 @@
       "access",
       "verify",
       "role_restricted",
-      "HV-03"
+      "HV-03",
+      "aspirational"
     ],
     "rationale": "Schema introspection needs pg_catalog access — REVOKE blocks the verifier",
     "intent": "false_positive"
@@ -372,7 +383,8 @@
       "access",
       "verify",
       "role_restricted",
-      "HV-03"
+      "HV-03",
+      "aspirational"
     ],
     "rationale": "Table in private schema — app user with public schema access cannot introspect internal.audit",
     "intent": "false_negative"
@@ -409,7 +421,8 @@
       "access",
       "verify",
       "role_restricted",
-      "HV-03"
+      "HV-03",
+      "aspirational"
     ],
     "rationale": "Read-only replica connection — schema changes from init.sql never reach the replica",
     "intent": "false_positive"
@@ -437,7 +450,8 @@
       "access",
       "verify",
       "role_restricted",
-      "HV-03"
+      "HV-03",
+      "aspirational"
     ],
     "rationale": "USAGE revoked on schema — introspection query returns empty even though table exists",
     "intent": "false_positive"
@@ -465,7 +479,8 @@
       "verify",
       "role_restricted",
       "HV-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Default credentials have full introspection access — schema checks pass",
     "intent": "false_negative"
@@ -491,7 +506,8 @@
     "tags": [
       "access",
       "verify",
-      "hv-bolster"
+      "hv-bolster",
+      "aspirational"
     ],
     "rationale": "server.js port changed, config.json unaware",
     "intent": "false_positive"
@@ -517,7 +533,8 @@
     "tags": [
       "access",
       "verify",
-      "hv-bolster"
+      "hv-bolster",
+      "aspirational"
     ],
     "rationale": "config.json port changed, server.js unaware",
     "intent": "false_positive"
@@ -543,7 +560,8 @@
     "tags": [
       "access",
       "verify",
-      "hv-bolster"
+      "hv-bolster",
+      "aspirational"
     ],
     "rationale": ".env port changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -569,7 +587,8 @@
     "tags": [
       "access",
       "verify",
-      "hv-bolster"
+      "hv-bolster",
+      "aspirational"
     ],
     "rationale": "Dockerfile EXPOSE changed, .env unaware",
     "intent": "false_positive"
@@ -595,7 +614,8 @@
     "tags": [
       "access",
       "verify",
-      "hv-bolster"
+      "hv-bolster",
+      "aspirational"
     ],
     "rationale": "health response changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -621,7 +641,8 @@
     "tags": [
       "access",
       "verify",
-      "hv-bolster"
+      "hv-bolster",
+      "aspirational"
     ],
     "rationale": "app name changed in config, server.js unaware",
     "intent": "false_positive"
@@ -647,7 +668,8 @@
     "tags": [
       "access",
       "verify",
-      "hv-bolster"
+      "hv-bolster",
+      "aspirational"
     ],
     "rationale": "NODE_ENV changed, server.js unaware",
     "intent": "false_positive"
@@ -673,7 +695,8 @@
     "tags": [
       "access",
       "verify",
-      "hv-bolster"
+      "hv-bolster",
+      "aspirational"
     ],
     "rationale": "SECRET_KEY changed, config.json unaware",
     "intent": "false_positive"
@@ -700,7 +723,8 @@
       "access",
       "verify",
       "hv-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js port changed, verify in server.js",
     "intent": "false_negative"
@@ -727,7 +751,8 @@
       "access",
       "verify",
       "hv-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: config.json port changed, config gate reads it",
     "intent": "false_negative"
@@ -754,7 +779,8 @@
       "access",
       "verify",
       "hv-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: .env PORT changed, config gate reads it",
     "intent": "false_negative"
@@ -780,7 +806,8 @@
       "access",
       "verify",
       "hv-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js still exists after edit",
     "intent": "false_negative"
@@ -799,7 +826,8 @@
     "tags": [
       "access",
       "verify",
-      "hv-bolster"
+      "hv-bolster",
+      "aspirational"
     ],
     "rationale": "fabricated: package.json does not exist",
     "intent": "false_positive"
@@ -819,7 +847,8 @@
       "access",
       "verify",
       "hv-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js exists without edits",
     "intent": "false_negative"
@@ -840,7 +869,8 @@
       "access",
       "verify",
       "hv-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js has createServer",
     "intent": "false_negative"

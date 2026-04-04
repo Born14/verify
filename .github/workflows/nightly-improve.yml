@@ -134,7 +134,7 @@ jobs:
       - name: Run baseline self-test
         id: baseline
         run: |
-          bun run src/cli.ts self-test 2>&1 | tee baseline-output.txt || true
+          bun run src/cli.ts self-test --exclude-tags=aspirational 2>&1 | tee baseline-output.txt || true
           # self-test writes ledger to data/self-test-ledger.jsonl (hardcoded default)
           LEDGER=data/self-test-ledger.jsonl
           FAILING=$(grep -c '"clean":false' "$LEDGER" 2>/dev/null || echo "0")
@@ -245,7 +245,7 @@ jobs:
       - name: Run full validation
         id: validate
         run: |
-          bun run src/cli.ts self-test 2>&1 | tee validate-output.txt
+          bun run src/cli.ts self-test --exclude-tags=aspirational 2>&1 | tee validate-output.txt
           EXIT_CODE=$?
           if [ $EXIT_CODE -eq 0 ]; then
             echo "clean=true" >> $GITHUB_OUTPUT

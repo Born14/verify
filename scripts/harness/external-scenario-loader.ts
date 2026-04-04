@@ -53,7 +53,7 @@ export function loadUniversalScenarios(fixtureDir: string): VerifyScenario[] {
  * These are SerializedScenario format (same as universal.json).
  * Excludes wpt-staged.json (loaded separately via loadWPTScenarios).
  */
-export function loadStagedScenarios(fixtureDir: string): VerifyScenario[] {
+export function loadStagedScenarios(fixtureDir: string, excludeTags?: string[]): VerifyScenario[] {
   const scenariosDir = join(fixtureDir, '..', 'scenarios');
   if (!existsSync(scenariosDir)) return [];
 
@@ -61,14 +61,24 @@ export function loadStagedScenarios(fixtureDir: string): VerifyScenario[] {
     const files = readdirSync(scenariosDir)
       .filter(f => f.endsWith('-staged.json') && f !== 'wpt-staged.json');
     const all: VerifyScenario[] = [];
+    let excluded = 0;
     for (const file of files) {
       try {
         const raw = JSON.parse(readFileSync(join(scenariosDir, file), 'utf-8')) as SerializedScenario[];
         // Filter out non-conforming scenarios (e.g., message-staged uses envelope/policy format)
-        const conforming = raw.filter(s => Array.isArray(s.edits) && Array.isArray(s.predicates));
+        let conforming = raw.filter(s => Array.isArray(s.edits) && Array.isArray(s.predicates));
+        // Filter by excluded tags (e.g., 'aspirational')
+        if (excludeTags && excludeTags.length > 0) {
+          const before = conforming.length;
+          conforming = conforming.filter(s =>
+            !s.tags || !s.tags.some((t: string) => excludeTags.includes(t))
+          );
+          excluded += before - conforming.length;
+        }
         all.push(...conforming.map(s => deserialize(s, fixtureDir)));
       } catch { /* skip malformed files */ }
     }
+    if (excluded > 0) console.log(`  Excluded ${excluded} scenarios by tag filter (${excludeTags!.join(', ')})`);
     return all;
   } catch {
     return [];

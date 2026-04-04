@@ -21,7 +21,8 @@
       "state_assumption",
       "http",
       "api_version",
-      "SH-01"
+      "SH-01",
+      "aspirational"
     ],
     "rationale": "Assumed: /api/items still exists. Actual: renamed to /api/v2/items. Agent calls the old version.",
     "intent": "false_positive"
@@ -48,7 +49,8 @@
       "state_assumption",
       "http",
       "api_version",
-      "SH-01"
+      "SH-01",
+      "aspirational"
     ],
     "rationale": "Assumed: health returns {status:\"ok\"}. Actual: format changed to {healthy,version}. Parsing old format fails.",
     "intent": "false_positive"
@@ -75,7 +77,8 @@
       "state_assumption",
       "http",
       "api_version",
-      "SH-01"
+      "SH-01",
+      "aspirational"
     ],
     "rationale": "Assumed: /api/items returns bare array. Actual: wrapped in {data,total} envelope. Client parsing breaks.",
     "intent": "false_positive"
@@ -102,7 +105,8 @@
       "state_assumption",
       "http",
       "api_version",
-      "SH-01"
+      "SH-01",
+      "aspirational"
     ],
     "rationale": "Assumed: config.json port controls server. Actual: server.js reads PORT from env, ignores config.json.",
     "intent": "false_positive"
@@ -130,7 +134,8 @@
       "http",
       "api_version",
       "SH-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Edit and check same file — new item appears in server.js. No version mismatch.",
     "intent": "false_negative"
@@ -157,7 +162,8 @@
       "state_assumption",
       "http",
       "endpoint_moved",
-      "SH-02"
+      "SH-02",
+      "aspirational"
     ],
     "rationale": "Assumed: Dockerfile healthcheck tracks route rename. Actual: Dockerfile still references /health — endpoint moved but consumer didn't follow.",
     "intent": "false_positive"
@@ -184,7 +190,8 @@
       "state_assumption",
       "http",
       "endpoint_moved",
-      "SH-02"
+      "SH-02",
+      "aspirational"
     ],
     "rationale": "Assumed: /about still exists. Actual: renamed to /info. Agent's route map is stale.",
     "intent": "false_positive"
@@ -211,7 +218,8 @@
       "state_assumption",
       "http",
       "endpoint_moved",
-      "SH-02"
+      "SH-02",
+      "aspirational"
     ],
     "rationale": "Assumed: nav link updated with route. Actual: homepage HTML still has href=\"/api/items\" — broken internal link.",
     "intent": "false_positive"
@@ -238,7 +246,8 @@
       "state_assumption",
       "http",
       "endpoint_moved",
-      "SH-02"
+      "SH-02",
+      "aspirational"
     ],
     "rationale": "Assumed: form action follows route rename. Actual: form action still says /api/echo — route and form are independent.",
     "intent": "false_positive"
@@ -265,7 +274,8 @@
       "http",
       "endpoint_moved",
       "SH-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Both infra and app agree on /health path — no endpoint relocation.",
     "intent": "false_negative"
@@ -292,7 +302,8 @@
       "state_assumption",
       "http",
       "format_changed",
-      "SH-03"
+      "SH-03",
+      "aspirational"
     ],
     "rationale": "Assumed: items have name field. Actual: renamed to title. Client parsing by field name breaks.",
     "intent": "false_positive"
@@ -319,7 +330,8 @@
       "state_assumption",
       "http",
       "format_changed",
-      "SH-03"
+      "SH-03",
+      "aspirational"
     ],
     "rationale": "Tricky: application/json still appears in /api/items route. Predicate passes on wrong match — false confidence.",
     "intent": "false_negative"
@@ -346,7 +358,8 @@
       "state_assumption",
       "http",
       "format_changed",
-      "SH-03"
+      "SH-03",
+      "aspirational"
     ],
     "rationale": "Assumed: /api/echo returns JSON. Actual: changed to XML. Agent parsing JSON.parse(response) breaks.",
     "intent": "false_positive"
@@ -373,7 +386,8 @@
       "state_assumption",
       "http",
       "format_changed",
-      "SH-03"
+      "SH-03",
+      "aspirational"
     ],
     "rationale": "Assumed: items response is bare array. Actual: wrapped in pagination object. response[0] is now undefined.",
     "intent": "false_positive"
@@ -400,7 +414,8 @@
       "state_assumption",
       "http",
       "format_changed",
-      "SH-03"
+      "SH-03",
+      "aspirational"
     ],
     "rationale": "Assumed: 404 returns text/plain. Actual: changed to JSON. Error handling that checks for plain text breaks.",
     "intent": "false_positive"
@@ -428,7 +443,8 @@
       "http",
       "format_changed",
       "SH-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Same format, new data — response structure unchanged, just more items. No format mismatch.",
     "intent": "false_negative"
@@ -448,7 +464,8 @@
     "tags": [
       "state",
       "http",
-      "state_assumption"
+      "state_assumption",
+      "aspirational"
     ],
     "rationale": "Assume server.js has /api/users route — it doesnt",
     "intent": "false_positive"
@@ -468,7 +485,8 @@
     "tags": [
       "state",
       "http",
-      "state_assumption"
+      "state_assumption",
+      "aspirational"
     ],
     "rationale": "Assume config.json has redis section — it doesnt",
     "intent": "false_positive"
@@ -488,7 +506,8 @@
     "tags": [
       "state",
       "http",
-      "state_assumption"
+      "state_assumption",
+      "aspirational"
     ],
     "rationale": "Assume .env has REDIS_URL — it doesnt",
     "intent": "false_positive"
@@ -508,7 +527,8 @@
     "tags": [
       "state",
       "http",
-      "state_assumption"
+      "state_assumption",
+      "aspirational"
     ],
     "rationale": "Assume init.sql has products table — it doesnt",
     "intent": "false_positive"
@@ -528,7 +548,8 @@
     "tags": [
       "state",
       "http",
-      "state_assumption"
+      "state_assumption",
+      "aspirational"
     ],
     "rationale": "Assume Dockerfile has multi-stage build — it doesnt",
     "intent": "false_positive"
@@ -548,7 +569,8 @@
     "tags": [
       "state",
       "http",
-      "state_assumption"
+      "state_assumption",
+      "aspirational"
     ],
     "rationale": "Assume compose has redis service — it doesnt",
     "intent": "false_positive"
@@ -568,7 +590,8 @@
     "tags": [
       "state",
       "http",
-      "state_assumption"
+      "state_assumption",
+      "aspirational"
     ],
     "rationale": "Assume server.js uses express — it uses http",
     "intent": "false_positive"
@@ -588,7 +611,8 @@
     "tags": [
       "state",
       "http",
-      "state_assumption"
+      "state_assumption",
+      "aspirational"
     ],
     "rationale": "Assume config.json has logging config — it doesnt",
     "intent": "false_positive"
@@ -614,7 +638,8 @@
     "tags": [
       "state",
       "http",
-      "state_assumption"
+      "state_assumption",
+      "aspirational"
     ],
     "rationale": "Edit adds /api/users, predicate checks wrong file",
     "intent": "false_positive"
@@ -640,7 +665,8 @@
     "tags": [
       "state",
       "http",
-      "state_assumption"
+      "state_assumption",
+      "aspirational"
     ],
     "rationale": "Edit .env port, check wrong file",
     "intent": "false_positive"
@@ -660,7 +686,8 @@
     "tags": [
       "state",
       "http",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: server.js has /health",
     "intent": "false_negative"
@@ -680,7 +707,8 @@
     "tags": [
       "state",
       "http",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: init.sql has users table",
     "intent": "false_negative"
@@ -700,7 +728,8 @@
     "tags": [
       "state",
       "http",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: compose has healthcheck",
     "intent": "false_negative"
@@ -720,7 +749,8 @@
     "tags": [
       "state",
       "http",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: .env has DATABASE_URL",
     "intent": "false_negative"

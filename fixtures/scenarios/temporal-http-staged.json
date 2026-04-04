@@ -26,7 +26,8 @@
       "temporal",
       "http",
       "startup_race",
-      "TH-01"
+      "TH-01",
+      "aspirational"
     ],
     "rationale": "Health endpoint renamed but predicate checks old path — simulates startup race where old route is gone",
     "intent": "false_positive"
@@ -59,7 +60,8 @@
       "temporal",
       "http",
       "startup_race",
-      "TH-01"
+      "TH-01",
+      "aspirational"
     ],
     "rationale": "Server responds with starting status — health check finds wrong body content",
     "intent": "false_positive"
@@ -91,7 +93,8 @@
       "temporal",
       "http",
       "startup_race",
-      "TH-01"
+      "TH-01",
+      "aspirational"
     ],
     "rationale": "Server returns 503 during startup phase — predicate expects 200",
     "intent": "false_positive"
@@ -119,7 +122,8 @@
       "http",
       "startup_race",
       "TH-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "No edit — health endpoint works as expected",
     "intent": "false_negative"
@@ -152,7 +156,8 @@
       "temporal",
       "http",
       "stale_cache",
-      "TH-02"
+      "TH-02",
+      "aspirational"
     ],
     "rationale": "API response changed but predicate checks for old stale content",
     "intent": "false_positive"
@@ -185,7 +190,8 @@
       "temporal",
       "http",
       "stale_cache",
-      "TH-02"
+      "TH-02",
+      "aspirational"
     ],
     "rationale": "Item removed from API but predicate still expects it — stale cache pattern",
     "intent": "false_positive"
@@ -221,7 +227,8 @@
       "temporal",
       "http",
       "stale_cache",
-      "TH-02"
+      "TH-02",
+      "aspirational"
     ],
     "rationale": "Response format changed but predicate checks old key name — stale contract",
     "intent": "false_positive"
@@ -255,7 +262,8 @@
       "http",
       "stale_cache",
       "TH-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Edit and check match — no staleness",
     "intent": "false_negative"
@@ -294,7 +302,8 @@
       "temporal",
       "http",
       "sequence_timing",
-      "TH-01"
+      "TH-01",
+      "aspirational"
     ],
     "rationale": "Health endpoint is stable — both immediate and delayed checks pass",
     "intent": "false_negative"
@@ -334,7 +343,8 @@
     "tags": [
       "temporal",
       "http",
-      "sequence_timing"
+      "sequence_timing",
+      "aspirational"
     ],
     "rationale": "POST then GET — server handles both methods in sequence",
     "intent": "false_negative"
@@ -378,7 +388,8 @@
       "temporal",
       "http",
       "sequence_timing",
-      "TH-02"
+      "TH-02",
+      "aspirational"
     ],
     "rationale": "Route renamed — first step gets 404, sequence fails",
     "intent": "false_positive"
@@ -406,7 +417,8 @@
       "http",
       "stale_route",
       "TH-02",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "Route renamed in server.js — old pattern no longer present (pure tier)",
     "intent": "false_positive"
@@ -434,7 +446,8 @@
       "http",
       "stale_route",
       "TH-01",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "Dockerfile checks /ready but server.js has no /ready route — cross-file desync",
     "intent": "false_positive"
@@ -462,7 +475,8 @@
       "http",
       "stale_cache",
       "TH-02",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "Content-Type changed in server.js but Dockerfile has no reference to it",
     "intent": "false_positive"
@@ -489,7 +503,8 @@
       "temporal",
       "http",
       "stale_response",
-      "TH-03"
+      "TH-03",
+      "aspirational"
     ],
     "rationale": "HTTP response edited but stale cache might serve old data",
     "intent": "false_positive"
@@ -516,7 +531,8 @@
       "temporal",
       "http",
       "stale_response",
-      "TH-03"
+      "TH-03",
+      "aspirational"
     ],
     "rationale": "HTTP response edited but stale cache might serve old data",
     "intent": "false_positive"
@@ -543,7 +559,8 @@
       "temporal",
       "http",
       "stale_response",
-      "TH-03"
+      "TH-03",
+      "aspirational"
     ],
     "rationale": "HTTP response edited but stale cache might serve old data",
     "intent": "false_positive"
@@ -571,7 +588,8 @@
       "http",
       "stale_response",
       "TH-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "HTTP response edited but stale cache might serve old data",
     "intent": "false_negative"
@@ -598,7 +616,8 @@
       "temporal",
       "http",
       "route_config_gap",
-      "TH-04"
+      "TH-04",
+      "aspirational"
     ],
     "rationale": "New route added but supporting config not updated — route/config temporal gap",
     "intent": "false_positive"
@@ -625,7 +644,8 @@
       "temporal",
       "http",
       "route_config_gap",
-      "TH-04"
+      "TH-04",
+      "aspirational"
     ],
     "rationale": "New route added but supporting config not updated — route/config temporal gap",
     "intent": "false_positive"
@@ -652,7 +672,8 @@
       "temporal",
       "http",
       "route_config_gap",
-      "TH-04"
+      "TH-04",
+      "aspirational"
     ],
     "rationale": "New route added but supporting config not updated — route/config temporal gap",
     "intent": "false_positive"
@@ -680,7 +701,8 @@
       "http",
       "route_config_gap",
       "TH-04",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "New route added but supporting config not updated — route/config temporal gap",
     "intent": "false_negative"
@@ -708,7 +730,8 @@
       "http",
       "header_desync",
       "TH-05",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "HTTP header changed but downstream config not updated",
     "intent": "false_negative"
@@ -735,7 +758,8 @@
       "temporal",
       "http",
       "header_desync",
-      "TH-05"
+      "TH-05",
+      "aspirational"
     ],
     "rationale": "HTTP header changed but downstream config not updated",
     "intent": "false_positive"
@@ -762,7 +786,8 @@
       "temporal",
       "http",
       "header_desync",
-      "TH-05"
+      "TH-05",
+      "aspirational"
     ],
     "rationale": "HTTP header changed but downstream config not updated",
     "intent": "false_positive"
@@ -790,7 +815,8 @@
       "http",
       "header_desync",
       "TH-05",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "HTTP header changed but downstream config not updated",
     "intent": "false_negative"
@@ -817,7 +843,8 @@
       "temporal",
       "http",
       "error_handling",
-      "TH-06"
+      "TH-06",
+      "aspirational"
     ],
     "rationale": "HTTP error handling changed but config/compose not updated",
     "intent": "false_positive"
@@ -844,7 +871,8 @@
       "temporal",
       "http",
       "error_handling",
-      "TH-06"
+      "TH-06",
+      "aspirational"
     ],
     "rationale": "HTTP error handling changed but config/compose not updated",
     "intent": "false_positive"
@@ -872,7 +900,8 @@
       "http",
       "error_handling",
       "TH-06",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "HTTP error handling changed but config/compose not updated",
     "intent": "false_negative"
@@ -900,7 +929,8 @@
       "http",
       "error_handling",
       "TH-06",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "HTTP error handling changed but config/compose not updated",
     "intent": "false_negative"

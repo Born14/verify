@@ -27,7 +27,8 @@
       "propagation",
       "http",
       "db_api_shape",
-      "PH-01"
+      "PH-01",
+      "aspirational"
     ],
     "rationale": "Schema column added but API hardcoded — response shape doesn't include new field",
     "intent": "false_positive"
@@ -60,7 +61,8 @@
       "propagation",
       "http",
       "db_api_shape",
-      "PH-01"
+      "PH-01",
+      "aspirational"
     ],
     "rationale": "Schema adds timestamp column but API layer not updated — stale response shape",
     "intent": "false_positive"
@@ -88,7 +90,8 @@
       "http",
       "db_api_shape",
       "PH-01",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "Schema column added — server.js API has no code to serve it (pure structural check)",
     "intent": "false_positive"
@@ -116,7 +119,8 @@
       "http",
       "db_api_shape",
       "PH-01",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "Column renamed in schema — server.js code still uses old column name",
     "intent": "false_positive"
@@ -149,7 +153,8 @@
       "propagation",
       "http",
       "api_frontend",
-      "PH-02"
+      "PH-02",
+      "aspirational"
     ],
     "rationale": "API field renamed from \"name\" to \"title\" — response no longer contains \"name\" key",
     "intent": "false_positive"
@@ -186,7 +191,8 @@
       "http",
       "api_frontend",
       "PH-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "API response wrapped — check confirms new shape is served",
     "intent": "false_negative"
@@ -222,7 +228,8 @@
       "propagation",
       "http",
       "api_frontend",
-      "PH-02"
+      "PH-02",
+      "aspirational"
     ],
     "rationale": "API contract changed — old key \"echo\" no longer in response",
     "intent": "false_positive"
@@ -250,7 +257,8 @@
       "http",
       "api_frontend",
       "PH-02",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "API data changed but homepage HTML still hardcodes \"Item Alpha\" — the content predicate PASSES because Item Alpha IS still in the HTML template (it's the propagation gap that the API and HTML are inconsistent)",
     "intent": "false_negative"
@@ -278,7 +286,8 @@
       "http",
       "api_frontend",
       "PH-02",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "Health response changed — old value no longer present",
     "intent": "false_positive"
@@ -310,7 +319,8 @@
       "propagation",
       "http",
       "env_process",
-      "PH-03"
+      "PH-03",
+      "aspirational"
     ],
     "rationale": ".env changed but process started with old port — still responds on 3000 (docker-compose overrides)",
     "intent": "false_negative"
@@ -343,7 +353,8 @@
       "propagation",
       "http",
       "env_process",
-      "PH-03"
+      "PH-03",
+      "aspirational"
     ],
     "rationale": "Secret changed in .env but process doesn't expose secrets — env→API propagation gap",
     "intent": "false_positive"
@@ -376,7 +387,8 @@
       "propagation",
       "http",
       "env_process",
-      "PH-03"
+      "PH-03",
+      "aspirational"
     ],
     "rationale": "DEBUG flag enabled but server has no debug mode — env→behavior propagation gap",
     "intent": "false_positive"
@@ -404,7 +416,8 @@
       "http",
       "env_process",
       "PH-03",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "Config flag changed but .env has no corresponding variable — config→env propagation gap",
     "intent": "false_positive"
@@ -432,7 +445,8 @@
       "http",
       "env_process",
       "PH-03",
-      "pure"
+      "pure",
+      "aspirational"
     ],
     "rationale": "DB port changed in config but docker-compose has no DB service to update",
     "intent": "false_positive"
@@ -459,7 +473,8 @@
       "propagation",
       "http",
       "middleware_gap",
-      "PH-04"
+      "PH-04",
+      "aspirational"
     ],
     "rationale": "Middleware/utility added but not propagated to all consumers",
     "intent": "false_positive"
@@ -486,7 +501,8 @@
       "propagation",
       "http",
       "middleware_gap",
-      "PH-04"
+      "PH-04",
+      "aspirational"
     ],
     "rationale": "Middleware/utility added but not propagated to all consumers",
     "intent": "false_positive"
@@ -513,7 +529,8 @@
       "propagation",
       "http",
       "middleware_gap",
-      "PH-04"
+      "PH-04",
+      "aspirational"
     ],
     "rationale": "Middleware/utility added but not propagated to all consumers",
     "intent": "false_positive"
@@ -541,7 +558,8 @@
       "http",
       "middleware_gap",
       "PH-04",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Middleware/utility added but not propagated to all consumers",
     "intent": "false_negative"
@@ -569,7 +587,8 @@
       "http",
       "error_handling",
       "PH-05",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Error handling changed but not propagated to all layers",
     "intent": "false_negative"
@@ -596,7 +615,8 @@
       "propagation",
       "http",
       "error_handling",
-      "PH-05"
+      "PH-05",
+      "aspirational"
     ],
     "rationale": "Error handling changed but not propagated to all layers",
     "intent": "false_positive"
@@ -623,7 +643,8 @@
       "propagation",
       "http",
       "error_handling",
-      "PH-05"
+      "PH-05",
+      "aspirational"
     ],
     "rationale": "Error handling changed but not propagated to all layers",
     "intent": "false_positive"
@@ -651,7 +672,8 @@
       "http",
       "error_handling",
       "PH-05",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Error handling changed but not propagated to all layers",
     "intent": "false_negative"
@@ -678,7 +700,8 @@
       "propagation",
       "http",
       "schema_config",
-      "PH-06"
+      "PH-06",
+      "aspirational"
     ],
     "rationale": "Schema changed but application config not propagated",
     "intent": "false_positive"
@@ -705,7 +728,8 @@
       "propagation",
       "http",
       "schema_config",
-      "PH-06"
+      "PH-06",
+      "aspirational"
     ],
     "rationale": "Schema changed but application config not propagated",
     "intent": "false_positive"
@@ -732,7 +756,8 @@
       "propagation",
       "http",
       "schema_config",
-      "PH-06"
+      "PH-06",
+      "aspirational"
     ],
     "rationale": "Schema changed but application config not propagated",
     "intent": "false_positive"
@@ -760,7 +785,8 @@
       "http",
       "schema_config",
       "PH-06",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Schema changed but application config not propagated",
     "intent": "false_negative"
@@ -788,7 +814,8 @@
       "http",
       "template_api_gap",
       "PH-07",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Template/HTML and API contract out of sync — propagation gap",
     "intent": "false_negative"
@@ -815,7 +842,8 @@
       "propagation",
       "http",
       "template_api_gap",
-      "PH-07"
+      "PH-07",
+      "aspirational"
     ],
     "rationale": "Template/HTML and API contract out of sync — propagation gap",
     "intent": "false_positive"
@@ -842,7 +870,8 @@
       "propagation",
       "http",
       "template_api_gap",
-      "PH-07"
+      "PH-07",
+      "aspirational"
     ],
     "rationale": "Template/HTML and API contract out of sync — propagation gap",
     "intent": "false_positive"
@@ -870,7 +899,8 @@
       "http",
       "template_api_gap",
       "PH-07",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Template/HTML and API contract out of sync — propagation gap",
     "intent": "false_negative"

@@ -26,7 +26,8 @@
       "access",
       "http",
       "auth_rejection",
-      "HH-01"
+      "HH-01",
+      "aspirational"
     ],
     "rationale": "Auth middleware IS in the code and /api/items route IS in the code — both content predicates pass. The 401 is a runtime behavior, file content is consistent.",
     "intent": "false_negative"
@@ -58,7 +59,8 @@
       "access",
       "http",
       "auth_rejection",
-      "HH-01"
+      "HH-01",
+      "aspirational"
     ],
     "rationale": "Route added to server.js but config.json has no mention of /api/admin — whitelist not updated",
     "intent": "false_positive"
@@ -95,7 +97,8 @@
       "access",
       "http",
       "auth_rejection",
-      "HH-01"
+      "HH-01",
+      "aspirational"
     ],
     "rationale": "server.js references SECRET_KEY but .env had it removed — auth will fail at runtime",
     "intent": "false_positive"
@@ -132,7 +135,8 @@
       "access",
       "http",
       "auth_rejection",
-      "HH-01"
+      "HH-01",
+      "aspirational"
     ],
     "rationale": "Both files contain their respective values — content predicates pass. The mismatch is a runtime auth failure not visible at file level.",
     "intent": "false_negative"
@@ -164,7 +168,8 @@
       "access",
       "http",
       "auth_rejection",
-      "HH-01"
+      "HH-01",
+      "aspirational"
     ],
     "rationale": "Server references AUTH_TOKEN but .env has no such variable — cross-source access gap",
     "intent": "false_positive"
@@ -192,7 +197,8 @@
       "http",
       "auth_rejection",
       "HH-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "/health is public — edit and predicate both succeed without auth concerns",
     "intent": "false_negative"
@@ -229,7 +235,8 @@
       "access",
       "http",
       "cors_rejection",
-      "HH-02"
+      "HH-02",
+      "aspirational"
     ],
     "rationale": "Both values exist in their files — content passes. But CORS allowlist and frontend URL mismatch means runtime cross-origin failure.",
     "intent": "false_negative"
@@ -261,7 +268,8 @@
       "access",
       "http",
       "cors_rejection",
-      "HH-02"
+      "HH-02",
+      "aspirational"
     ],
     "rationale": "Both patterns found in files but ports dont align — CORS will reject requests from port 3000",
     "intent": "false_negative"
@@ -298,7 +306,8 @@
       "access",
       "http",
       "cors_rejection",
-      "HH-02"
+      "HH-02",
+      "aspirational"
     ],
     "rationale": "Server comment says \"allow all\" but config restricts — inconsistent CORS intent across files",
     "intent": "false_negative"
@@ -335,7 +344,8 @@
       "access",
       "http",
       "cors_rejection",
-      "HH-02"
+      "HH-02",
+      "aspirational"
     ],
     "rationale": "Both content patterns present but semantically contradictory — .env disables what server enables",
     "intent": "false_negative"
@@ -373,7 +383,8 @@
       "http",
       "cors_rejection",
       "HH-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "CORS origin configured consistently — .env sets it, server reads it",
     "intent": "false_negative"
@@ -410,7 +421,8 @@
       "access",
       "http",
       "rate_limit",
-      "HH-03"
+      "HH-03",
+      "aspirational"
     ],
     "rationale": "Both content patterns present but 5 req/min rate limit will choke the batch endpoint at runtime",
     "intent": "false_negative"
@@ -447,7 +459,8 @@
       "access",
       "http",
       "rate_limit",
-      "HH-03"
+      "HH-03",
+      "aspirational"
     ],
     "rationale": "Health endpoint subject to 3 req/min limit — Docker HEALTHCHECK every 5s will be denied",
     "intent": "false_negative"
@@ -484,7 +497,8 @@
       "access",
       "http",
       "rate_limit",
-      "HH-03"
+      "HH-03",
+      "aspirational"
     ],
     "rationale": "Config says 100 but .env overrides to 2 — env takes precedence, silently restrictive",
     "intent": "false_negative"
@@ -516,7 +530,8 @@
       "access",
       "http",
       "rate_limit",
-      "HH-03"
+      "HH-03",
+      "aspirational"
     ],
     "rationale": "Healthcheck fires every 5s but rate limit allows 1 req per 10s — healthcheck will fail",
     "intent": "false_negative"
@@ -544,7 +559,8 @@
       "http",
       "rate_limit",
       "HH-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "1000 req/min is generous — no access denial expected",
     "intent": "false_negative"
@@ -570,7 +586,8 @@
     "tags": [
       "access",
       "http",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Admin route in server.js, no admin role in config.json",
     "intent": "false_positive"
@@ -596,7 +613,8 @@
     "tags": [
       "access",
       "http",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Auth token check in server.js, no token in .env",
     "intent": "false_positive"
@@ -622,7 +640,8 @@
     "tags": [
       "access",
       "http",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Rate limit function added, no limit in config.json",
     "intent": "false_positive"
@@ -642,7 +661,8 @@
     "tags": [
       "access",
       "http",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Session table in init.sql, no session config in .env",
     "intent": "false_positive"
@@ -668,7 +688,8 @@
     "tags": [
       "access",
       "http",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "CORS header added, no CORS config in .env",
     "intent": "false_positive"
@@ -694,7 +715,8 @@
     "tags": [
       "access",
       "http",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "CSP header added, not in config.json",
     "intent": "false_positive"
@@ -714,7 +736,8 @@
     "tags": [
       "access",
       "http",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Password hash in init.sql, no hash algo in config",
     "intent": "false_positive"
@@ -734,7 +757,8 @@
     "tags": [
       "access",
       "http",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: server.js has /health, check it exists",
     "intent": "false_negative"
@@ -754,7 +778,8 @@
     "tags": [
       "access",
       "http",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: init.sql has sessions table",
     "intent": "false_negative"
@@ -774,7 +799,8 @@
     "tags": [
       "access",
       "http",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: .env has SECRET_KEY",
     "intent": "false_negative"
@@ -794,7 +820,8 @@
     "tags": [
       "access",
       "http",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Dockerfile exposes port, check Dockerfile",
     "intent": "false_negative"
@@ -814,7 +841,8 @@
     "tags": [
       "access",
       "http",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Compose has env_file, check compose",
     "intent": "false_negative"
@@ -834,7 +862,8 @@
     "tags": [
       "access",
       "http",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "User table has password_hash, server.js has no bcrypt",
     "intent": "false_positive"
@@ -854,7 +883,8 @@
     "tags": [
       "access",
       "http",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Sessions table has expires_at, server.js has no expiry check",
     "intent": "false_positive"

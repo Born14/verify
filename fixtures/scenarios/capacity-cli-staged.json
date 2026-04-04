@@ -31,7 +31,8 @@
       "capacity",
       "cli",
       "oom_killed",
-      "IC-01"
+      "IC-01",
+      "aspirational"
     ],
     "rationale": "Container limited to 128MB but Node heap set to 512MB — OOM kill inevitable",
     "intent": "false_negative"
@@ -63,7 +64,8 @@
       "capacity",
       "cli",
       "oom_killed",
-      "IC-01"
+      "IC-01",
+      "aspirational"
     ],
     "rationale": "Unbounded in-memory cache with no container memory limit — will grow until OOM",
     "intent": "false_positive"
@@ -100,7 +102,8 @@
       "capacity",
       "cli",
       "oom_killed",
-      "IC-01"
+      "IC-01",
+      "aspirational"
     ],
     "rationale": "64MB memory limit but code allocates 256MB buffer — OOM kill on first image process",
     "intent": "false_negative"
@@ -137,7 +140,8 @@
       "capacity",
       "cli",
       "oom_killed",
-      "IC-01"
+      "IC-01",
+      "aspirational"
     ],
     "rationale": "1000 entries × 512KB = ~500MB cache but heap limited to 64MB — config is a lie",
     "intent": "false_negative"
@@ -169,7 +173,8 @@
       "capacity",
       "cli",
       "oom_killed",
-      "IC-01"
+      "IC-01",
+      "aspirational"
     ],
     "rationale": "Prod has 128MB limit but test has no limit — tests pass but prod OOMs",
     "intent": "false_positive"
@@ -207,7 +212,8 @@
       "cli",
       "oom_killed",
       "IC-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Container 512MB, heap 256MB — sufficient headroom for Node overhead + GC",
     "intent": "false_negative"
@@ -239,7 +245,8 @@
       "capacity",
       "cli",
       "pid_limit",
-      "IC-02"
+      "IC-02",
+      "aspirational"
     ],
     "rationale": "Workers spawned per CPU but config.json has no maxWorkers — container may have limited CPUs",
     "intent": "false_positive"
@@ -276,7 +283,8 @@
       "capacity",
       "cli",
       "pid_limit",
-      "IC-02"
+      "IC-02",
+      "aspirational"
     ],
     "rationale": "PID limit of 10 but each request spawns a child — 10 concurrent requests will fork-bomb",
     "intent": "false_negative"
@@ -308,7 +316,8 @@
       "capacity",
       "cli",
       "pid_limit",
-      "IC-02"
+      "IC-02",
+      "aspirational"
     ],
     "rationale": "16 workers requested but no process manager — node directly cannot manage worker lifecycle",
     "intent": "false_positive"
@@ -340,7 +349,8 @@
       "capacity",
       "cli",
       "pid_limit",
-      "IC-02"
+      "IC-02",
+      "aspirational"
     ],
     "rationale": "Background jobs enabled with unlimited concurrency but no PID limit in compose",
     "intent": "false_positive"
@@ -378,7 +388,8 @@
       "cli",
       "pid_limit",
       "IC-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "2 workers well within PID limit of 50 — no capacity concern",
     "intent": "false_negative"
@@ -415,7 +426,8 @@
       "capacity",
       "cli",
       "ulimit_exceeded",
-      "IC-03"
+      "IC-03",
+      "aspirational"
     ],
     "rationale": "File descriptor limit 256 but file watcher opens fd per file — large apps exceed limit",
     "intent": "false_negative"
@@ -452,7 +464,8 @@
       "capacity",
       "cli",
       "ulimit_exceeded",
-      "IC-03"
+      "IC-03",
+      "aspirational"
     ],
     "rationale": "FD limit 1024 but max connections 2000 — each connection uses an fd, will exceed ulimit",
     "intent": "false_negative"
@@ -484,7 +497,8 @@
       "capacity",
       "cli",
       "ulimit_exceeded",
-      "IC-03"
+      "IC-03",
+      "aspirational"
     ],
     "rationale": "Code calculates 316+ FDs needed but compose has no ulimits config — default may be too low",
     "intent": "false_positive"
@@ -516,7 +530,8 @@
       "capacity",
       "cli",
       "ulimit_exceeded",
-      "IC-03"
+      "IC-03",
+      "aspirational"
     ],
     "rationale": "File watcher on directory tree but no fd limit config anywhere — prod may hit default ulimit",
     "intent": "false_positive"
@@ -548,7 +563,8 @@
       "capacity",
       "cli",
       "ulimit_exceeded",
-      "IC-03"
+      "IC-03",
+      "aspirational"
     ],
     "rationale": "OPEN_FILE_LIMIT env var set but no actual ulimits config — env var is cosmetic, not enforced",
     "intent": "false_positive"
@@ -581,7 +597,8 @@
       "cli",
       "ulimit_exceeded",
       "IC-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Generous fd limit of 65536 — more than sufficient for any reasonable Node.js app",
     "intent": "false_negative"
@@ -601,7 +618,8 @@
     "tags": [
       "capacity",
       "cli",
-      "cross_file"
+      "cross_file",
+      "aspirational"
     ],
     "rationale": "server.js references 3000 but config.json has no such reference",
     "intent": "false_positive"
@@ -621,7 +639,8 @@
     "tags": [
       "capacity",
       "cli",
-      "cross_file"
+      "cross_file",
+      "aspirational"
     ],
     "rationale": "server.js references http.createServer but .env has no such reference",
     "intent": "false_positive"
@@ -641,7 +660,8 @@
     "tags": [
       "capacity",
       "cli",
-      "cross_file"
+      "cross_file",
+      "aspirational"
     ],
     "rationale": "server.js references api/items but init.sql has no such reference",
     "intent": "false_positive"
@@ -661,7 +681,8 @@
     "tags": [
       "capacity",
       "cli",
-      "cross_file"
+      "cross_file",
+      "aspirational"
     ],
     "rationale": "server.js references listen but Dockerfile has no such reference",
     "intent": "false_positive"
@@ -681,7 +702,8 @@
     "tags": [
       "capacity",
       "cli",
-      "cross_file"
+      "cross_file",
+      "aspirational"
     ],
     "rationale": "server.js references health but docker-compose.yml has no such reference",
     "intent": "false_positive"
@@ -701,7 +723,8 @@
     "tags": [
       "capacity",
       "cli",
-      "cross_file"
+      "cross_file",
+      "aspirational"
     ],
     "rationale": "config.json references database but .env has no such reference",
     "intent": "false_positive"
@@ -721,7 +744,8 @@
     "tags": [
       "capacity",
       "cli",
-      "cross_file"
+      "cross_file",
+      "aspirational"
     ],
     "rationale": "config.json references port but docker-compose.yml has no such reference",
     "intent": "false_positive"
@@ -741,7 +765,8 @@
     "tags": [
       "capacity",
       "cli",
-      "cross_file"
+      "cross_file",
+      "aspirational"
     ],
     "rationale": ".env references NODE_ENV but Dockerfile has no such reference",
     "intent": "false_positive"
@@ -761,7 +786,8 @@
     "tags": [
       "capacity",
       "cli",
-      "cross_file"
+      "cross_file",
+      "aspirational"
     ],
     "rationale": ".env references PORT but docker-compose.yml has no such reference",
     "intent": "false_positive"
@@ -781,7 +807,8 @@
     "tags": [
       "capacity",
       "cli",
-      "cross_file"
+      "cross_file",
+      "aspirational"
     ],
     "rationale": "init.sql references users but server.js has no such reference",
     "intent": "false_positive"
@@ -801,7 +828,8 @@
     "tags": [
       "capacity",
       "cli",
-      "cross_file"
+      "cross_file",
+      "aspirational"
     ],
     "rationale": "init.sql references sessions but config.json has no such reference",
     "intent": "false_positive"
@@ -821,7 +849,8 @@
     "tags": [
       "capacity",
       "cli",
-      "cross_file"
+      "cross_file",
+      "aspirational"
     ],
     "rationale": "Dockerfile references EXPOSE but docker-compose.yml has no such reference",
     "intent": "false_positive"
@@ -841,7 +870,8 @@
     "tags": [
       "capacity",
       "cli",
-      "cross_file"
+      "cross_file",
+      "aspirational"
     ],
     "rationale": "server.js references /health but config.json has no such reference",
     "intent": "false_positive"

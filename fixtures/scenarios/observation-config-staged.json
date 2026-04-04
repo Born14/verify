@@ -26,7 +26,8 @@
       "observation",
       "config",
       "mtime_hotreload",
-      "FG-01"
+      "FG-01",
+      "aspirational"
     ],
     "rationale": "Assumed: reading config is side-effect-free. Actual: file watcher on config.json triggers reload when mtime changes. server.js has no watcher.",
     "intent": "false_positive"
@@ -58,7 +59,8 @@
       "observation",
       "config",
       "mtime_hotreload",
-      "FG-01"
+      "FG-01",
+      "aspirational"
     ],
     "rationale": "Assumed: lastChecked in config is inert. Actual: any write to config.json (even adding null field) updates mtime. server.js has no handler.",
     "intent": "false_positive"
@@ -90,7 +92,8 @@
       "observation",
       "config",
       "mtime_hotreload",
-      "FG-01"
+      "FG-01",
+      "aspirational"
     ],
     "rationale": "Assumed: reading staging config is harmless. Actual: hot reload watcher fires on access. .env.staging has no such note.",
     "intent": "false_positive"
@@ -123,7 +126,8 @@
       "observation",
       "config",
       "mtime_hotreload",
-      "FG-01"
+      "FG-01",
+      "aspirational"
     ],
     "rationale": "Assumed: config version is readable without side effects. Actual: version-aware systems may increment on read. server.js has no awareness.",
     "intent": "false_positive"
@@ -145,7 +149,8 @@
       "config",
       "mtime_hotreload",
       "FG-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Static file check — reading config.json in test doesn't trigger any watcher.",
     "intent": "false_negative"
@@ -177,7 +182,8 @@
       "observation",
       "config",
       "lazy_init",
-      "FG-02"
+      "FG-02",
+      "aspirational"
     ],
     "rationale": "Assumed: reading DATABASE_URL is pure. Actual: lazy init pattern means first access creates pool. No pool.connect in server.js.",
     "intent": "false_positive"
@@ -209,7 +215,8 @@
       "observation",
       "config",
       "lazy_init",
-      "FG-02"
+      "FG-02",
+      "aspirational"
     ],
     "rationale": "Assumed: checking DEBUG flag is read-only. Actual: reading triggers debug subsystem init. config.json has no DEBUG field.",
     "intent": "false_positive"
@@ -241,7 +248,8 @@
       "observation",
       "config",
       "lazy_init",
-      "FG-02"
+      "FG-02",
+      "aspirational"
     ],
     "rationale": "Assumed: reading SECRET_KEY is pure. Actual: first access triggers HMAC derivation. .env.prod has different secret, not \"not-very-secret\".",
     "intent": "false_positive"
@@ -267,7 +275,8 @@
       "observation",
       "config",
       "lazy_init",
-      "FG-02"
+      "FG-02",
+      "aspirational"
     ],
     "rationale": "Assumed: .env and .env.staging have same NODE_ENV. Actual: .env has production, .env.staging has staging. Read triggers different init paths.",
     "intent": "false_positive"
@@ -289,7 +298,8 @@
       "config",
       "lazy_init",
       "FG-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Static file check — reading .env as text file doesn't trigger any lazy initialization.",
     "intent": "false_negative"
@@ -321,7 +331,8 @@
       "observation",
       "config",
       "secret_audit",
-      "FG-03"
+      "FG-03",
+      "aspirational"
     ],
     "rationale": "Assumed: reading secrets is transparent. Actual: secret access creates audit log entry. server.js has no audit log reference.",
     "intent": "false_positive"
@@ -353,7 +364,8 @@
       "observation",
       "config",
       "secret_audit",
-      "FG-03"
+      "FG-03",
+      "aspirational"
     ],
     "rationale": "Assumed: checking prod secret is read-only. Actual: compliance logging fires on every access. config.prod.json has no compliance config.",
     "intent": "false_positive"
@@ -385,7 +397,8 @@
       "observation",
       "config",
       "secret_audit",
-      "FG-03"
+      "FG-03",
+      "aspirational"
     ],
     "rationale": "Assumed: checking DATABASE_URL format is read-only. Actual: any connection attempt is logged in pg_stat_activity. init.sql has no reference.",
     "intent": "false_positive"
@@ -417,7 +430,8 @@
       "observation",
       "config",
       "secret_audit",
-      "FG-03"
+      "FG-03",
+      "aspirational"
     ],
     "rationale": "Assumed: env validation is harmless. Actual: each var access = one audit entry. Bulk check = N entries. config.json has no audit field.",
     "intent": "false_positive"
@@ -439,7 +453,8 @@
       "config",
       "secret_audit",
       "FG-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Static file check — reading .env as text doesn't trigger any audit system.",
     "intent": "false_negative"
@@ -465,7 +480,8 @@
     "tags": [
       "observation",
       "config",
-      "fg-bolster"
+      "fg-bolster",
+      "aspirational"
     ],
     "rationale": "server.js port changed, config.json unaware",
     "intent": "false_positive"
@@ -491,7 +507,8 @@
     "tags": [
       "observation",
       "config",
-      "fg-bolster"
+      "fg-bolster",
+      "aspirational"
     ],
     "rationale": "config.json port changed, server.js unaware",
     "intent": "false_positive"
@@ -517,7 +534,8 @@
     "tags": [
       "observation",
       "config",
-      "fg-bolster"
+      "fg-bolster",
+      "aspirational"
     ],
     "rationale": ".env port changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -543,7 +561,8 @@
     "tags": [
       "observation",
       "config",
-      "fg-bolster"
+      "fg-bolster",
+      "aspirational"
     ],
     "rationale": "Dockerfile EXPOSE changed, .env unaware",
     "intent": "false_positive"
@@ -569,7 +588,8 @@
     "tags": [
       "observation",
       "config",
-      "fg-bolster"
+      "fg-bolster",
+      "aspirational"
     ],
     "rationale": "health response changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -595,7 +615,8 @@
     "tags": [
       "observation",
       "config",
-      "fg-bolster"
+      "fg-bolster",
+      "aspirational"
     ],
     "rationale": "app name changed in config, server.js unaware",
     "intent": "false_positive"
@@ -621,7 +642,8 @@
     "tags": [
       "observation",
       "config",
-      "fg-bolster"
+      "fg-bolster",
+      "aspirational"
     ],
     "rationale": "NODE_ENV changed, server.js unaware",
     "intent": "false_positive"
@@ -647,7 +669,8 @@
     "tags": [
       "observation",
       "config",
-      "fg-bolster"
+      "fg-bolster",
+      "aspirational"
     ],
     "rationale": "SECRET_KEY changed, config.json unaware",
     "intent": "false_positive"
@@ -674,7 +697,8 @@
       "observation",
       "config",
       "fg-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js port changed, verify in server.js",
     "intent": "false_negative"
@@ -701,7 +725,8 @@
       "observation",
       "config",
       "fg-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: config.json port changed, config gate reads it",
     "intent": "false_negative"
@@ -728,7 +753,8 @@
       "observation",
       "config",
       "fg-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: .env PORT changed, config gate reads it",
     "intent": "false_negative"
@@ -754,7 +780,8 @@
       "observation",
       "config",
       "fg-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js still exists after edit",
     "intent": "false_negative"
@@ -773,7 +800,8 @@
     "tags": [
       "observation",
       "config",
-      "fg-bolster"
+      "fg-bolster",
+      "aspirational"
     ],
     "rationale": "fabricated: package.json does not exist",
     "intent": "false_positive"
@@ -793,7 +821,8 @@
       "observation",
       "config",
       "fg-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js exists without edits",
     "intent": "false_negative"
@@ -814,7 +843,8 @@
       "observation",
       "config",
       "fg-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js has createServer",
     "intent": "false_negative"

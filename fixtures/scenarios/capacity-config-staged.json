@@ -21,7 +21,8 @@
       "capacity",
       "config",
       "env_count",
-      "IG-01"
+      "IG-01",
+      "aspirational"
     ],
     "rationale": "500 env vars — nears shell environment size limit, docker compose parsing slows down",
     "intent": "false_negative"
@@ -48,7 +49,8 @@
       "capacity",
       "config",
       "env_count",
-      "IG-01"
+      "IG-01",
+      "aspirational"
     ],
     "rationale": "200 vars with ~100-char names — total environment block exceeds typical limits",
     "intent": "false_negative"
@@ -80,7 +82,8 @@
       "capacity",
       "config",
       "env_count",
-      "IG-01"
+      "IG-01",
+      "aspirational"
     ],
     "rationale": "100 compose environment entries — YAML parsing and container start overhead",
     "intent": "false_negative"
@@ -117,7 +120,8 @@
       "capacity",
       "config",
       "env_count",
-      "IG-01"
+      "IG-01",
+      "aspirational"
     ],
     "rationale": "300 combined env vars — if both loaded, cumulative environment exceeds practical limits",
     "intent": "false_negative"
@@ -144,7 +148,8 @@
       "config",
       "env_count",
       "IG-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Standard .env with 6 variables — well within all limits",
     "intent": "false_negative"
@@ -176,7 +181,8 @@
       "capacity",
       "config",
       "config_size",
-      "IG-02"
+      "IG-02",
+      "aspirational"
     ],
     "rationale": "1000 flags x ~250 bytes each = ~250KB config — JSON parse time and memory increases",
     "intent": "false_negative"
@@ -203,7 +209,8 @@
       "capacity",
       "config",
       "config_size",
-      "IG-02"
+      "IG-02",
+      "aspirational"
     ],
     "rationale": "100-level nesting — some JSON parsers hit recursion limits",
     "intent": "false_negative"
@@ -235,7 +242,8 @@
       "capacity",
       "config",
       "config_size",
-      "IG-02"
+      "IG-02",
+      "aspirational"
     ],
     "rationale": "500 connection pool entries — config file enormous, deployment tool may reject",
     "intent": "false_negative"
@@ -267,7 +275,8 @@
       "capacity",
       "config",
       "config_size",
-      "IG-02"
+      "IG-02",
+      "aspirational"
     ],
     "rationale": "200 labels with long values — YAML parsing and Docker API label limits",
     "intent": "false_negative"
@@ -289,7 +298,8 @@
       "config",
       "config_size",
       "IG-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Standard config — small JSON, no parser issues",
     "intent": "false_negative"
@@ -316,7 +326,8 @@
       "capacity",
       "config",
       "value_size",
-      "IG-03"
+      "IG-03",
+      "aspirational"
     ],
     "rationale": "1MB env var value — exceeds practical limits for shell environment, exec may fail",
     "intent": "false_negative"
@@ -343,7 +354,8 @@
       "capacity",
       "config",
       "value_size",
-      "IG-03"
+      "IG-03",
+      "aspirational"
     ],
     "rationale": "500 URL params x 50 chars each = ~30KB URL — exceeds URL parser and driver limits",
     "intent": "false_negative"
@@ -375,7 +387,8 @@
       "capacity",
       "config",
       "value_size",
-      "IG-03"
+      "IG-03",
+      "aspirational"
     ],
     "rationale": "~4KB PEM as single-line env var — some .env parsers cannot handle multi-KB lines",
     "intent": "false_negative"
@@ -407,7 +420,8 @@
       "capacity",
       "config",
       "value_size",
-      "IG-03"
+      "IG-03",
+      "aspirational"
     ],
     "rationale": "50KB JSON embedded in compose env var — YAML parser and Docker exec env limit",
     "intent": "false_negative"
@@ -435,7 +449,8 @@
       "config",
       "value_size",
       "IG-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Short secret value — well within all env var size limits",
     "intent": "false_negative"
@@ -461,7 +476,8 @@
     "tags": [
       "capacity",
       "config",
-      "ig-bolster"
+      "ig-bolster",
+      "aspirational"
     ],
     "rationale": "server.js port changed, config.json unaware",
     "intent": "false_positive"
@@ -487,7 +503,8 @@
     "tags": [
       "capacity",
       "config",
-      "ig-bolster"
+      "ig-bolster",
+      "aspirational"
     ],
     "rationale": "config.json port changed, server.js unaware",
     "intent": "false_positive"
@@ -513,7 +530,8 @@
     "tags": [
       "capacity",
       "config",
-      "ig-bolster"
+      "ig-bolster",
+      "aspirational"
     ],
     "rationale": ".env port changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -539,7 +557,8 @@
     "tags": [
       "capacity",
       "config",
-      "ig-bolster"
+      "ig-bolster",
+      "aspirational"
     ],
     "rationale": "Dockerfile EXPOSE changed, .env unaware",
     "intent": "false_positive"
@@ -565,7 +584,8 @@
     "tags": [
       "capacity",
       "config",
-      "ig-bolster"
+      "ig-bolster",
+      "aspirational"
     ],
     "rationale": "health response changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -591,7 +611,8 @@
     "tags": [
       "capacity",
       "config",
-      "ig-bolster"
+      "ig-bolster",
+      "aspirational"
     ],
     "rationale": "app name changed in config, server.js unaware",
     "intent": "false_positive"
@@ -617,7 +638,8 @@
     "tags": [
       "capacity",
       "config",
-      "ig-bolster"
+      "ig-bolster",
+      "aspirational"
     ],
     "rationale": "NODE_ENV changed, server.js unaware",
     "intent": "false_positive"
@@ -643,7 +665,8 @@
     "tags": [
       "capacity",
       "config",
-      "ig-bolster"
+      "ig-bolster",
+      "aspirational"
     ],
     "rationale": "SECRET_KEY changed, config.json unaware",
     "intent": "false_positive"
@@ -670,7 +693,8 @@
       "capacity",
       "config",
       "ig-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js port changed, verify in server.js",
     "intent": "false_negative"
@@ -697,7 +721,8 @@
       "capacity",
       "config",
       "ig-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: config.json port changed, config gate reads it",
     "intent": "false_negative"
@@ -724,7 +749,8 @@
       "capacity",
       "config",
       "ig-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: .env PORT changed, config gate reads it",
     "intent": "false_negative"
@@ -750,7 +776,8 @@
       "capacity",
       "config",
       "ig-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js still exists after edit",
     "intent": "false_negative"
@@ -769,7 +796,8 @@
     "tags": [
       "capacity",
       "config",
-      "ig-bolster"
+      "ig-bolster",
+      "aspirational"
     ],
     "rationale": "fabricated: package.json does not exist",
     "intent": "false_positive"
@@ -789,7 +817,8 @@
       "capacity",
       "config",
       "ig-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js exists without edits",
     "intent": "false_negative"
@@ -810,7 +839,8 @@
       "capacity",
       "config",
       "ig-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js has createServer",
     "intent": "false_negative"

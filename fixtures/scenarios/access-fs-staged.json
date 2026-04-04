@@ -21,7 +21,8 @@
       "access",
       "filesystem",
       "permission_denied",
-      "HF-01"
+      "HF-01",
+      "aspirational"
     ],
     "rationale": "Agent adds DB_HOST to server.js but /etc/hosts is a system file — app cannot write it",
     "intent": "false_positive"
@@ -48,7 +49,8 @@
       "access",
       "filesystem",
       "permission_denied",
-      "HF-01"
+      "HF-01",
+      "aspirational"
     ],
     "rationale": "Agent sets cert path in .env but predicate expects cert file in root-owned /etc/ssl/",
     "intent": "false_positive"
@@ -75,7 +77,8 @@
       "access",
       "filesystem",
       "permission_denied",
-      "HF-01"
+      "HF-01",
+      "aspirational"
     ],
     "rationale": "Config references /var/log/app.log but app user lacks write permission to /var/log/",
     "intent": "false_positive"
@@ -102,7 +105,8 @@
       "access",
       "filesystem",
       "permission_denied",
-      "HF-01"
+      "HF-01",
+      "aspirational"
     ],
     "rationale": "App tries to write PID to /var/run/ which requires root — permission denied at runtime",
     "intent": "false_positive"
@@ -129,7 +133,8 @@
       "access",
       "filesystem",
       "permission_denied",
-      "HF-01"
+      "HF-01",
+      "aspirational"
     ],
     "rationale": "Dockerfile COPY to /usr/local/bin/ but predicate checks host path — not the container",
     "intent": "false_positive"
@@ -157,7 +162,8 @@
       "filesystem",
       "permission_denied",
       "HF-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Both edit and predicate target the same writable app file — no permission issue",
     "intent": "false_negative"
@@ -184,7 +190,8 @@
       "access",
       "filesystem",
       "path_traversal",
-      "HF-02"
+      "HF-02",
+      "aspirational"
     ],
     "rationale": "Path traversal ../../etc/passwd escapes app sandbox — should be blocked",
     "intent": "false_positive"
@@ -211,7 +218,8 @@
       "access",
       "filesystem",
       "path_traversal",
-      "HF-02"
+      "HF-02",
+      "aspirational"
     ],
     "rationale": "Deep traversal ../../../tmp/ escapes sandbox — content should never land",
     "intent": "false_positive"
@@ -238,7 +246,8 @@
       "access",
       "filesystem",
       "path_traversal",
-      "HF-02"
+      "HF-02",
+      "aspirational"
     ],
     "rationale": "Absolute path /root/.ssh/ is outside app boundary — sandbox violation",
     "intent": "false_positive"
@@ -265,7 +274,8 @@
       "access",
       "filesystem",
       "path_traversal",
-      "HF-02"
+      "HF-02",
+      "aspirational"
     ],
     "rationale": "Edit is valid but predicate uses ../ traversal to check file outside app dir",
     "intent": "false_positive"
@@ -292,7 +302,8 @@
       "access",
       "filesystem",
       "path_traversal",
-      "HF-02"
+      "HF-02",
+      "aspirational"
     ],
     "rationale": "Path uses node_modules + ../ traversal to escape sandbox boundary",
     "intent": "false_positive"
@@ -320,7 +331,8 @@
       "filesystem",
       "path_traversal",
       "HF-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Relative path stays within app directory — no traversal violation",
     "intent": "false_negative"
@@ -347,7 +359,8 @@
       "access",
       "filesystem",
       "ownership_mismatch",
-      "HF-03"
+      "HF-03",
+      "aspirational"
     ],
     "rationale": "/opt/data is owned by root — container mounts it but app user cannot write",
     "intent": "false_positive"
@@ -374,7 +387,8 @@
       "access",
       "filesystem",
       "ownership_mismatch",
-      "HF-03"
+      "HF-03",
+      "aspirational"
     ],
     "rationale": "Container runs as user node but /etc/crontab is owned by root — cannot write cron entry",
     "intent": "false_positive"
@@ -401,7 +415,8 @@
       "access",
       "filesystem",
       "ownership_mismatch",
-      "HF-03"
+      "HF-03",
+      "aspirational"
     ],
     "rationale": "Shared volume mounted but nginx.conf is owned by www-data — app user cannot read/write",
     "intent": "false_positive"
@@ -428,7 +443,8 @@
       "access",
       "filesystem",
       "ownership_mismatch",
-      "HF-03"
+      "HF-03",
+      "aspirational"
     ],
     "rationale": "/tmp/app.lock may be owned by previous process run as different user — ownership conflict",
     "intent": "false_positive"
@@ -455,7 +471,8 @@
       "access",
       "filesystem",
       "ownership_mismatch",
-      "HF-03"
+      "HF-03",
+      "aspirational"
     ],
     "rationale": "PostgreSQL data directory owned by postgres user — app user has no access",
     "intent": "false_positive"
@@ -483,7 +500,8 @@
       "filesystem",
       "ownership_mismatch",
       "HF-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Both edit and predicate operate on app-owned server.js — no ownership issue",
     "intent": "false_negative"
@@ -509,7 +527,8 @@
     "tags": [
       "access",
       "fs",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Admin route in server.js, no admin role in config.json",
     "intent": "false_positive"
@@ -535,7 +554,8 @@
     "tags": [
       "access",
       "fs",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Auth token check in server.js, no token in .env",
     "intent": "false_positive"
@@ -561,7 +581,8 @@
     "tags": [
       "access",
       "fs",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Rate limit function added, no limit in config.json",
     "intent": "false_positive"
@@ -581,7 +602,8 @@
     "tags": [
       "access",
       "fs",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Session table in init.sql, no session config in .env",
     "intent": "false_positive"
@@ -607,7 +629,8 @@
     "tags": [
       "access",
       "fs",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "CORS header added, no CORS config in .env",
     "intent": "false_positive"
@@ -633,7 +656,8 @@
     "tags": [
       "access",
       "fs",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "CSP header added, not in config.json",
     "intent": "false_positive"
@@ -653,7 +677,8 @@
     "tags": [
       "access",
       "fs",
-      "cross_file_gap"
+      "cross_file_gap",
+      "aspirational"
     ],
     "rationale": "Password hash in init.sql, no hash algo in config",
     "intent": "false_positive"
@@ -673,7 +698,8 @@
     "tags": [
       "access",
       "fs",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: server.js has /health, check it exists",
     "intent": "false_negative"
@@ -693,7 +719,8 @@
     "tags": [
       "access",
       "fs",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: init.sql has sessions table",
     "intent": "false_negative"
@@ -713,7 +740,8 @@
     "tags": [
       "access",
       "fs",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: .env has SECRET_KEY",
     "intent": "false_negative"
@@ -733,7 +761,8 @@
     "tags": [
       "access",
       "fs",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Dockerfile exposes port, check Dockerfile",
     "intent": "false_negative"
@@ -753,7 +782,8 @@
     "tags": [
       "access",
       "fs",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Compose has env_file, check compose",
     "intent": "false_negative"

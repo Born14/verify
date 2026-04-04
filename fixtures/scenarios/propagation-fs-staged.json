@@ -21,7 +21,8 @@
       "propagation",
       "filesystem",
       "source_artifact",
-      "PF-01"
+      "PF-01",
+      "aspirational"
     ],
     "rationale": "Port changed in config.json but .env not updated — cross-file propagation gap",
     "intent": "false_positive"
@@ -48,7 +49,8 @@
       "propagation",
       "filesystem",
       "source_artifact",
-      "PF-01"
+      "PF-01",
+      "aspirational"
     ],
     "rationale": "Port changed in config but Dockerfile not updated — build artifact stale",
     "intent": "false_positive"
@@ -75,7 +77,8 @@
       "propagation",
       "filesystem",
       "source_artifact",
-      "PF-01"
+      "PF-01",
+      "aspirational"
     ],
     "rationale": ".env port changed but docker-compose environment not updated",
     "intent": "false_positive"
@@ -102,7 +105,8 @@
       "propagation",
       "filesystem",
       "source_artifact",
-      "PF-01"
+      "PF-01",
+      "aspirational"
     ],
     "rationale": "DB name changed in config but DATABASE_URL in .env still points to old name",
     "intent": "false_positive"
@@ -129,7 +133,8 @@
       "propagation",
       "filesystem",
       "source_artifact",
-      "PF-01"
+      "PF-01",
+      "aspirational"
     ],
     "rationale": "DB host changed in config.json but .env DATABASE_URL still points to localhost",
     "intent": "false_positive"
@@ -156,7 +161,8 @@
       "propagation",
       "filesystem",
       "source_artifact",
-      "PF-01"
+      "PF-01",
+      "aspirational"
     ],
     "rationale": "Dockerfile healthcheck path changed but docker-compose not updated",
     "intent": "false_positive"
@@ -183,7 +189,8 @@
       "propagation",
       "filesystem",
       "source_artifact",
-      "PF-01"
+      "PF-01",
+      "aspirational"
     ],
     "rationale": "App name changed in config but server.js HTML titles not updated — config→source propagation gap",
     "intent": "false_positive"
@@ -211,7 +218,8 @@
       "filesystem",
       "source_artifact",
       "PF-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Same-file check — no propagation needed, should pass",
     "intent": "false_negative"
@@ -238,7 +246,8 @@
       "propagation",
       "filesystem",
       "rebuild_gap",
-      "PF-02"
+      "PF-02",
+      "aspirational"
     ],
     "rationale": "Route handler renamed but nav link in same file still references old route — intra-file propagation gap",
     "intent": "false_positive"
@@ -265,7 +274,8 @@
       "propagation",
       "filesystem",
       "rebuild_gap",
-      "PF-02"
+      "PF-02",
+      "aspirational"
     ],
     "rationale": "CMD changed to app.js but COPY still copies server.js — Dockerfile internal propagation gap",
     "intent": "false_positive"
@@ -292,7 +302,8 @@
       "propagation",
       "filesystem",
       "rebuild_gap",
-      "PF-02"
+      "PF-02",
+      "aspirational"
     ],
     "rationale": "Env changed to development but server.js has no conditional logic for it — config→code propagation gap",
     "intent": "false_positive"
@@ -319,7 +330,8 @@
       "propagation",
       "filesystem",
       "rebuild_gap",
-      "PF-02"
+      "PF-02",
+      "aspirational"
     ],
     "rationale": "Schema column added but API layer not updated — DB→API propagation gap",
     "intent": "false_positive"
@@ -346,7 +358,8 @@
       "propagation",
       "filesystem",
       "rebuild_gap",
-      "PF-02"
+      "PF-02",
+      "aspirational"
     ],
     "rationale": "Table renamed in schema but server.js code not updated — schema→code propagation gap",
     "intent": "false_positive"
@@ -373,7 +386,8 @@
       "propagation",
       "filesystem",
       "rebuild_gap",
-      "PF-02"
+      "PF-02",
+      "aspirational"
     ],
     "rationale": "Feature flag enabled but server has no analytics implementation — config→behavior propagation gap",
     "intent": "false_positive"
@@ -401,7 +415,8 @@
       "filesystem",
       "rebuild_gap",
       "PF-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Same-file check — no propagation needed, should pass",
     "intent": "false_negative"
@@ -427,7 +442,8 @@
     "tags": [
       "propagation",
       "fs",
-      "pf-bolster"
+      "pf-bolster",
+      "aspirational"
     ],
     "rationale": "server.js port changed, config.json unaware",
     "intent": "false_positive"
@@ -453,7 +469,8 @@
     "tags": [
       "propagation",
       "fs",
-      "pf-bolster"
+      "pf-bolster",
+      "aspirational"
     ],
     "rationale": "config.json port changed, server.js unaware",
     "intent": "false_positive"
@@ -479,7 +496,8 @@
     "tags": [
       "propagation",
       "fs",
-      "pf-bolster"
+      "pf-bolster",
+      "aspirational"
     ],
     "rationale": ".env port changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -505,7 +523,8 @@
     "tags": [
       "propagation",
       "fs",
-      "pf-bolster"
+      "pf-bolster",
+      "aspirational"
     ],
     "rationale": "Dockerfile EXPOSE changed, .env unaware",
     "intent": "false_positive"
@@ -531,7 +550,8 @@
     "tags": [
       "propagation",
       "fs",
-      "pf-bolster"
+      "pf-bolster",
+      "aspirational"
     ],
     "rationale": "health response changed, Dockerfile unaware",
     "intent": "false_positive"
@@ -557,7 +577,8 @@
     "tags": [
       "propagation",
       "fs",
-      "pf-bolster"
+      "pf-bolster",
+      "aspirational"
     ],
     "rationale": "app name changed in config, server.js unaware",
     "intent": "false_positive"
@@ -583,7 +604,8 @@
     "tags": [
       "propagation",
       "fs",
-      "pf-bolster"
+      "pf-bolster",
+      "aspirational"
     ],
     "rationale": "NODE_ENV changed, server.js unaware",
     "intent": "false_positive"
@@ -609,7 +631,8 @@
     "tags": [
       "propagation",
       "fs",
-      "pf-bolster"
+      "pf-bolster",
+      "aspirational"
     ],
     "rationale": "SECRET_KEY changed, config.json unaware",
     "intent": "false_positive"
@@ -636,7 +659,8 @@
       "propagation",
       "fs",
       "pf-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js port changed, verify in server.js",
     "intent": "false_negative"
@@ -663,7 +687,8 @@
       "propagation",
       "fs",
       "pf-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: config.json port changed, config gate reads it",
     "intent": "false_negative"
@@ -690,7 +715,8 @@
       "propagation",
       "fs",
       "pf-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: .env PORT changed, config gate reads it",
     "intent": "false_negative"
@@ -716,7 +742,8 @@
       "propagation",
       "fs",
       "pf-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js still exists after edit",
     "intent": "false_negative"
@@ -735,7 +762,8 @@
     "tags": [
       "propagation",
       "fs",
-      "pf-bolster"
+      "pf-bolster",
+      "aspirational"
     ],
     "rationale": "fabricated: package.json does not exist",
     "intent": "false_positive"
@@ -755,7 +783,8 @@
       "propagation",
       "fs",
       "pf-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js exists without edits",
     "intent": "false_negative"
@@ -776,7 +805,8 @@
       "propagation",
       "fs",
       "pf-bolster",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "control: server.js has createServer",
     "intent": "false_negative"

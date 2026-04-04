@@ -31,7 +31,8 @@
     "tags": [
       "identity",
       "session_collision",
-      "ID-01"
+      "ID-01",
+      "aspirational"
     ],
     "rationale": "Second-precision timestamps allow two concurrent requests to generate the same session ID, causing session collision between users.",
     "intent": "false_positive"
@@ -59,7 +60,8 @@
     "tags": [
       "identity",
       "session_collision",
-      "ID-01"
+      "ID-01",
+      "aspirational"
     ],
     "rationale": "Hardcoded static session token means all users share a single session — identity confusion guaranteed.",
     "intent": "false_positive"
@@ -97,7 +99,8 @@
       "identity",
       "session_collision",
       "ID-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "crypto.randomUUID() generates 128-bit random session IDs — collision probability negligible.",
     "intent": "false_negative"
@@ -131,7 +134,8 @@
     "tags": [
       "identity",
       "foreign_key_wrong_table",
-      "ID-03"
+      "ID-03",
+      "aspirational"
     ],
     "rationale": "Posts.user_id references sessions(id) instead of users(id) — joins produce session UUIDs instead of user integer IDs, causing data association with wrong entities.",
     "intent": "false_positive"
@@ -159,7 +163,8 @@
     "tags": [
       "identity",
       "foreign_key_wrong_table",
-      "ID-03"
+      "ID-03",
+      "aspirational"
     ],
     "rationale": "Posts.user_id references settings(key) — type mismatch and wrong table entirely, posts associated with config keys instead of users.",
     "intent": "false_positive"
@@ -188,7 +193,8 @@
       "identity",
       "foreign_key_wrong_table",
       "ID-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Unmodified schema — posts.user_id correctly references users(id).",
     "intent": "false_negative"
@@ -225,7 +231,8 @@
     "tags": [
       "identity",
       "wrong_user_data",
-      "ID-04"
+      "ID-04",
+      "aspirational"
     ],
     "rationale": "Hardcoded user_id: 42 on all items means every user sees the same owner ID — data associated with wrong identity.",
     "intent": "false_positive"
@@ -265,7 +272,8 @@
     "tags": [
       "identity",
       "wrong_user_data",
-      "ID-04"
+      "ID-04",
+      "aspirational"
     ],
     "rationale": "Echo endpoint leaks another user session token in every response — identity data cross-contamination.",
     "intent": "false_positive"
@@ -291,7 +299,8 @@
       "identity",
       "wrong_user_data",
       "ID-04",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Unmodified items endpoint returns only item data without any user identity fields.",
     "intent": "false_negative"
@@ -319,7 +328,8 @@
     "tags": [
       "identity",
       "cache_key_collision",
-      "ID-05"
+      "ID-05",
+      "aspirational"
     ],
     "rationale": "Cache key \"user-profile\" without user ID means all users read/write the same cache entry — first writer defines everyone else identity.",
     "intent": "false_positive"
@@ -347,7 +357,8 @@
     "tags": [
       "identity",
       "cache_key_collision",
-      "ID-05"
+      "ID-05",
+      "aspirational"
     ],
     "rationale": "Truncating cache keys to 5 chars causes collisions — \"[1,2]\".substring(0,5) === \"[1,2,\".substring(0,5), different item sets share cache slot.",
     "intent": "false_positive"
@@ -385,7 +396,8 @@
       "identity",
       "cache_key_collision",
       "ID-05",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Cache key includes user ID — each entity gets its own cache slot, no collision.",
     "intent": "false_negative"
@@ -413,7 +425,8 @@
     "tags": [
       "identity",
       "id_type_mismatch",
-      "ID-07"
+      "ID-07",
+      "aspirational"
     ],
     "rationale": "Sessions.id is UUID, posts.user_id is INTEGER — join always produces empty set or type error, silently returning wrong data.",
     "intent": "false_positive"
@@ -451,7 +464,8 @@
     "tags": [
       "identity",
       "id_type_mismatch",
-      "ID-07"
+      "ID-07",
+      "aspirational"
     ],
     "rationale": "parseInt on a UUID returns NaN or truncated prefix — user resolved to wrong identity or null.",
     "intent": "false_positive"
@@ -488,7 +502,8 @@
       "identity",
       "id_type_mismatch",
       "ID-07",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Both posts.user_id and users.id are INTEGER SERIAL — type-compatible join.",
     "intent": "false_negative"
@@ -522,7 +537,8 @@
     "tags": [
       "identity",
       "soft_delete_reuse",
-      "ID-09"
+      "ID-09",
+      "aspirational"
     ],
     "rationale": "Removing UNIQUE constraint on username allows re-inserting a deleted username — old posts and sessions now appear to belong to the new user with the same name.",
     "intent": "false_positive"
@@ -559,7 +575,8 @@
     "tags": [
       "identity",
       "soft_delete_reuse",
-      "ID-09"
+      "ID-09",
+      "aspirational"
     ],
     "rationale": "Query omits WHERE deleted_at IS NULL — soft-deleted user data leaks into active query results.",
     "intent": "false_positive"
@@ -594,7 +611,8 @@
       "identity",
       "soft_delete_reuse",
       "ID-09",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "UNIQUE constraint preserved — soft-deleted usernames cannot be reused, preventing identity confusion.",
     "intent": "false_negative"
@@ -628,7 +646,8 @@
     "tags": [
       "identity",
       "multi_tenant_leak",
-      "ID-10"
+      "ID-10",
+      "aspirational"
     ],
     "rationale": "No tenant_id column — query by post ID returns data regardless of which tenant owns it, causing cross-tenant data leakage.",
     "intent": "false_positive"
@@ -662,7 +681,8 @@
     "tags": [
       "identity",
       "multi_tenant_leak",
-      "ID-10"
+      "ID-10",
+      "aspirational"
     ],
     "rationale": "Settings keyed only by name — all tenants read/write same \"theme\" setting, tenant A config leaks to tenant B.",
     "intent": "false_positive"
@@ -699,7 +719,8 @@
       "identity",
       "multi_tenant_leak",
       "ID-10",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Query includes tenant_id filter — data correctly scoped to requesting tenant.",
     "intent": "false_negative"
@@ -736,7 +757,8 @@
     "tags": [
       "identity",
       "autoincrement_gap",
-      "ID-11"
+      "ID-11",
+      "aspirational"
     ],
     "rationale": "Assuming max(id)+1 is the next ID skips gaps from deletes — could reference non-existent or wrong entity.",
     "intent": "false_positive"
@@ -764,7 +786,8 @@
     "tags": [
       "identity",
       "autoincrement_gap",
-      "ID-11"
+      "ID-11",
+      "aspirational"
     ],
     "rationale": "ID-range pagination assumes no gaps — after bulk deletes, pages contain fewer records than expected and some IDs are silently skipped.",
     "intent": "false_positive"
@@ -793,7 +816,8 @@
       "identity",
       "autoincrement_gap",
       "ID-11",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Using RETURNING id from INSERT lets the database assign the next sequence value — gap-safe.",
     "intent": "false_negative"
@@ -827,7 +851,8 @@
     "tags": [
       "identity",
       "stale_external_mapping",
-      "ID-12"
+      "ID-12",
+      "aspirational"
     ],
     "rationale": "Hardcoded Stripe customer → internal ID mapping goes stale when users are deleted or re-created — payments route to wrong user.",
     "intent": "false_positive"
@@ -864,7 +889,8 @@
     "tags": [
       "identity",
       "stale_external_mapping",
-      "ID-12"
+      "ID-12",
+      "aspirational"
     ],
     "rationale": "OAuth provider UID cached in-memory without TTL or refresh — if user re-registers with same Google account, they inherit old user data.",
     "intent": "false_positive"
@@ -899,7 +925,8 @@
       "identity",
       "stale_external_mapping",
       "ID-12",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "External ID mapping includes TTL and freshness check — stale mappings detected and refreshable.",
     "intent": "false_negative"

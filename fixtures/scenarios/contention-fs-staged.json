@@ -26,7 +26,8 @@
       "contention",
       "filesystem",
       "concurrent_edit",
-      "JF-01"
+      "JF-01",
+      "aspirational"
     ],
     "rationale": "Second edit search string no longer exists after first edit applied — concurrent collision",
     "intent": "false_positive"
@@ -58,7 +59,8 @@
       "contention",
       "filesystem",
       "concurrent_edit",
-      "JF-01"
+      "JF-01",
+      "aspirational"
     ],
     "rationale": "Second edit targets original name which was already replaced by first edit",
     "intent": "false_positive"
@@ -90,7 +92,8 @@
       "contention",
       "filesystem",
       "concurrent_edit",
-      "JF-01"
+      "JF-01",
+      "aspirational"
     ],
     "rationale": "Second edit search string \"PORT=3000\" gone after first edit changed it to 8080",
     "intent": "false_positive"
@@ -122,7 +125,8 @@
       "contention",
       "filesystem",
       "concurrent_edit",
-      "JF-01"
+      "JF-01",
+      "aspirational"
     ],
     "rationale": "Both edits target same h1 rule — second edit search string gone after first applies",
     "intent": "false_positive"
@@ -154,7 +158,8 @@
       "contention",
       "filesystem",
       "concurrent_edit",
-      "JF-01"
+      "JF-01",
+      "aspirational"
     ],
     "rationale": "Second edit targets original CMD which first edit already changed",
     "intent": "false_positive"
@@ -186,7 +191,8 @@
       "contention",
       "filesystem",
       "concurrent_edit",
-      "JF-01"
+      "JF-01",
+      "aspirational"
     ],
     "rationale": "Second secret rotation fails — original secret was already replaced",
     "intent": "false_positive"
@@ -224,7 +230,8 @@
       "filesystem",
       "concurrent_edit",
       "JF-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Non-overlapping edits in same file — both should apply cleanly",
     "intent": "false_negative"
@@ -256,7 +263,8 @@
       "contention",
       "filesystem",
       "lock_conflict",
-      "JF-02"
+      "JF-02",
+      "aspirational"
     ],
     "rationale": "Config edit succeeds but .env still has DEBUG=false — locked state prevents full update",
     "intent": "false_positive"
@@ -288,7 +296,8 @@
       "contention",
       "filesystem",
       "lock_conflict",
-      "JF-02"
+      "JF-02",
+      "aspirational"
     ],
     "rationale": "Env switched to development but config.json feature flags not updated — locked by config state",
     "intent": "false_positive"
@@ -320,7 +329,8 @@
       "contention",
       "filesystem",
       "lock_conflict",
-      "JF-02"
+      "JF-02",
+      "aspirational"
     ],
     "rationale": "Port changed in compose but Dockerfile EXPOSE locked at 3000 — cross-file lock contention",
     "intent": "false_positive"
@@ -352,7 +362,8 @@
       "contention",
       "filesystem",
       "lock_conflict",
-      "JF-02"
+      "JF-02",
+      "aspirational"
     ],
     "rationale": "Server.js port updated but .env still locked at PORT=3000",
     "intent": "false_positive"
@@ -380,7 +391,8 @@
       "filesystem",
       "lock_conflict",
       "JF-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Single file edit with same-file predicate — no lock contention possible",
     "intent": "false_negative"
@@ -412,7 +424,8 @@
       "contention",
       "filesystem",
       "merge_conflict",
-      "JF-03"
+      "JF-03",
+      "aspirational"
     ],
     "rationale": "First edit replaced entire health block — second edit search string gone, merge conflict",
     "intent": "false_positive"
@@ -444,7 +457,8 @@
       "contention",
       "filesystem",
       "merge_conflict",
-      "JF-03"
+      "JF-03",
+      "aspirational"
     ],
     "rationale": "First edit replaced whole body rule — second edit partial match gone, merge conflict",
     "intent": "false_positive"
@@ -476,7 +490,8 @@
       "contention",
       "filesystem",
       "merge_conflict",
-      "JF-03"
+      "JF-03",
+      "aspirational"
     ],
     "rationale": "Nav block replaced and simplified — the specific link second edit targets was removed",
     "intent": "false_positive"
@@ -508,7 +523,8 @@
       "contention",
       "filesystem",
       "merge_conflict",
-      "JF-03"
+      "JF-03",
+      "aspirational"
     ],
     "rationale": "First edit replaced entire healthcheck — second edit targets old interval value",
     "intent": "false_positive"
@@ -540,7 +556,8 @@
       "contention",
       "filesystem",
       "merge_conflict",
-      "JF-03"
+      "JF-03",
+      "aspirational"
     ],
     "rationale": "First edit replaced users table entirely — second edit line no longer exists",
     "intent": "false_positive"
@@ -578,7 +595,8 @@
       "filesystem",
       "merge_conflict",
       "JF-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Edits target different files — no merge conflict, both apply cleanly",
     "intent": "false_negative"
@@ -609,7 +627,8 @@
     "tags": [
       "contention",
       "fs",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Two edits to server.js, second overwrites first",
     "intent": "false_positive"
@@ -640,7 +659,8 @@
     "tags": [
       "contention",
       "fs",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Edit server.js and config.json with conflicting ports",
     "intent": "false_positive"
@@ -671,7 +691,8 @@
     "tags": [
       "contention",
       "fs",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Edit .env and compose with different ports",
     "intent": "false_positive"
@@ -703,7 +724,8 @@
     "tags": [
       "contention",
       "fs",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Two migrations on same table",
     "intent": "false_positive"
@@ -729,7 +751,8 @@
     "tags": [
       "contention",
       "fs",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Edit init.sql and server.js with mismatched column names",
     "intent": "false_positive"
@@ -755,7 +778,8 @@
     "tags": [
       "contention",
       "fs",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Compose restart policy conflicts with Dockerfile CMD",
     "intent": "false_positive"
@@ -781,7 +805,8 @@
     "tags": [
       "contention",
       "fs",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Edit both health endpoint and healthcheck with different paths",
     "intent": "false_positive"
@@ -812,7 +837,8 @@
     "tags": [
       "contention",
       "fs",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Config.json and .env disagree on debug",
     "intent": "false_positive"
@@ -838,7 +864,8 @@
     "tags": [
       "contention",
       "fs",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: single edit, consistent check",
     "intent": "false_negative"
@@ -864,7 +891,8 @@
     "tags": [
       "contention",
       "fs",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: edit .env, check .env",
     "intent": "false_negative"
@@ -890,7 +918,8 @@
     "tags": [
       "contention",
       "fs",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: edit config.json, check config.json",
     "intent": "false_negative"
@@ -921,7 +950,8 @@
     "tags": [
       "contention",
       "fs",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Two edits to different routes, check both present",
     "intent": "false_negative"

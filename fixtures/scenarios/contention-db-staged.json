@@ -26,7 +26,8 @@
       "contention",
       "database",
       "deadlock",
-      "JD-01"
+      "JD-01",
+      "aspirational"
     ],
     "rationale": "Second edit targets original email line which first edit already modified — concurrent constraint collision",
     "intent": "false_positive"
@@ -63,7 +64,8 @@
       "contention",
       "database",
       "deadlock",
-      "JD-01"
+      "JD-01",
+      "aspirational"
     ],
     "rationale": "FK references sessions(id) as UUID but sessions table rewritten with SERIAL id — type mismatch deadlock",
     "intent": "false_positive"
@@ -95,7 +97,8 @@
       "contention",
       "database",
       "deadlock",
-      "JD-01"
+      "JD-01",
+      "aspirational"
     ],
     "rationale": "Both edits target same column definition — second search string gone after first edit",
     "intent": "false_positive"
@@ -127,7 +130,8 @@
       "contention",
       "database",
       "deadlock",
-      "JD-01"
+      "JD-01",
+      "aspirational"
     ],
     "rationale": "Both edits target same \"body TEXT,\" line — second edit search fails after first modifies it",
     "intent": "false_positive"
@@ -159,7 +163,8 @@
       "contention",
       "database",
       "deadlock",
-      "JD-01"
+      "JD-01",
+      "aspirational"
     ],
     "rationale": "Both edits target same key column definition — concurrent type change collision",
     "intent": "false_positive"
@@ -197,7 +202,8 @@
       "database",
       "deadlock",
       "JD-01",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Edits target different tables (users vs settings) — no deadlock possible",
     "intent": "false_negative"
@@ -229,7 +235,8 @@
       "contention",
       "database",
       "concurrent_migration",
-      "JD-02"
+      "JD-02",
+      "aspirational"
     ],
     "rationale": "Second edit search string gone after first edit appended its version of audit_log",
     "intent": "false_positive"
@@ -261,7 +268,8 @@
       "contention",
       "database",
       "concurrent_migration",
-      "JD-02"
+      "JD-02",
+      "aspirational"
     ],
     "rationale": "Both edits target same CREATE INDEX statement — second search string gone after first",
     "intent": "false_positive"
@@ -298,7 +306,8 @@
       "contention",
       "database",
       "concurrent_migration",
-      "JD-02"
+      "JD-02",
+      "aspirational"
     ],
     "rationale": "Non-overlapping search strings — rename and column add both succeed but create semantic inconsistency (articles table with posts-era columns)",
     "intent": "false_negative"
@@ -335,7 +344,8 @@
       "contention",
       "database",
       "concurrent_migration",
-      "JD-02"
+      "JD-02",
+      "aspirational"
     ],
     "rationale": "Both edits apply (different search strings) but create FK type mismatch — VARCHAR(100) references UUID column",
     "intent": "false_negative"
@@ -373,7 +383,8 @@
       "database",
       "concurrent_migration",
       "JD-02",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Different tables added at different insertion points — no migration conflict",
     "intent": "false_negative"
@@ -410,7 +421,8 @@
       "contention",
       "database",
       "lock_timeout",
-      "JD-03"
+      "JD-03",
+      "aspirational"
     ],
     "rationale": "Config sets timeout but init.sql still has all tables — structural check passes even if runtime would timeout",
     "intent": "false_negative"
@@ -447,7 +459,8 @@
       "contention",
       "database",
       "lock_timeout",
-      "JD-03"
+      "JD-03",
+      "aspirational"
     ],
     "rationale": "Both edits apply (different files) but create runtime contention — advisory lock with 50ms timeout",
     "intent": "false_negative"
@@ -479,7 +492,8 @@
       "contention",
       "database",
       "lock_timeout",
-      "JD-03"
+      "JD-03",
+      "aspirational"
     ],
     "rationale": "Edit adds exclusive lock on users but server.js has no SQL — predicate for concurrent SELECT fails",
     "intent": "false_positive"
@@ -511,7 +525,8 @@
       "contention",
       "database",
       "lock_timeout",
-      "JD-03"
+      "JD-03",
+      "aspirational"
     ],
     "rationale": "DATABASE_URL points to \"production\" but init.sql has no reference — schema/connection contention",
     "intent": "false_positive"
@@ -539,7 +554,8 @@
       "database",
       "lock_timeout",
       "JD-03",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Single file edit, same file predicate — no lock contention",
     "intent": "false_negative"
@@ -570,7 +586,8 @@
     "tags": [
       "contention",
       "db",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Two edits to server.js, second overwrites first",
     "intent": "false_positive"
@@ -601,7 +618,8 @@
     "tags": [
       "contention",
       "db",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Edit server.js and config.json with conflicting ports",
     "intent": "false_positive"
@@ -632,7 +650,8 @@
     "tags": [
       "contention",
       "db",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Edit .env and compose with different ports",
     "intent": "false_positive"
@@ -664,7 +683,8 @@
     "tags": [
       "contention",
       "db",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Two migrations on same table",
     "intent": "false_positive"
@@ -690,7 +710,8 @@
     "tags": [
       "contention",
       "db",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Edit init.sql and server.js with mismatched column names",
     "intent": "false_positive"
@@ -716,7 +737,8 @@
     "tags": [
       "contention",
       "db",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Compose restart policy conflicts with Dockerfile CMD",
     "intent": "false_positive"
@@ -742,7 +764,8 @@
     "tags": [
       "contention",
       "db",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Edit both health endpoint and healthcheck with different paths",
     "intent": "false_positive"
@@ -773,7 +796,8 @@
     "tags": [
       "contention",
       "db",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Config.json and .env disagree on debug",
     "intent": "false_positive"
@@ -799,7 +823,8 @@
     "tags": [
       "contention",
       "db",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: single edit, consistent check",
     "intent": "false_negative"
@@ -825,7 +850,8 @@
     "tags": [
       "contention",
       "db",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: edit .env, check .env",
     "intent": "false_negative"
@@ -851,7 +877,8 @@
     "tags": [
       "contention",
       "db",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Control: edit config.json, check config.json",
     "intent": "false_negative"
@@ -882,7 +909,8 @@
     "tags": [
       "contention",
       "db",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Two edits to different routes, check both present",
     "intent": "false_negative"
@@ -910,7 +938,8 @@
     "tags": [
       "contention",
       "db",
-      "contention_gap"
+      "contention_gap",
+      "aspirational"
     ],
     "rationale": "Migration adds column that server.js doesnt reference",
     "intent": "false_positive"
@@ -930,7 +959,8 @@
     "tags": [
       "contention",
       "db",
-      "control"
+      "control",
+      "aspirational"
     ],
     "rationale": "Concurrent healthcheck: compose and Dockerfile both define, check agreement",
     "intent": "false_negative"
