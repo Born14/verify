@@ -37,7 +37,7 @@ The process of narrowing toward a correct solution. Each failed attempt seeds co
 ## The Parity Model
 
 ### Parity Grid
-The strategic map. An 8×7 matrix of agent capabilities × failure classes = 56 cells. Each cell either has coverage (✓), partial coverage (◐), or is blind (✗). The grid drives priorities — fill blind cells first. See PARITY-GRID.md.
+The strategic map. An 8×10 matrix of agent capabilities × failure classes = 80 cells. Each cell either has coverage (✓), partial coverage (◐), or is blind (✗). The grid drives priorities — fill blind cells first. See PARITY-GRID.md.
 
 ### Execution Parity
 Verify has parity when every (agent capability × failure class) intersection is represented by at least one grounded, reproducible failure shape backed by a generator that simulates real-world failure mechanics.
@@ -46,7 +46,7 @@ Verify has parity when every (agent capability × failure class) intersection is
 What agents actually do. The 8 rows of the grid: Filesystem Edits, HTTP Calls, Browser Interaction, Database Operations, CLI/Process Execution, Multi-Step Workflows, Verification/Observation, Configuration/State.
 
 ### Failure Class
-How reality breaks, invariant across all capabilities. The 7 columns of the grid: Selection (wrong target), Mutation (change didn't apply), State Assumption (wrong belief about reality), Temporal (ordering/timing/readiness), Propagation (change didn't cascade), Observation (verification itself is wrong), Convergence (repeating failed patterns).
+How reality breaks, invariant across all capabilities. The 10 columns of the grid: Selection (wrong target), Mutation (change didn't apply), State Assumption (wrong belief about reality), Temporal (ordering/timing/readiness), Propagation (change didn't cascade), Observation (verification itself is wrong), Convergence (repeating failed patterns), Access (privilege/permission boundary), Capacity (resource exhaustion), Contention (concurrency/race conditions).
 
 ### Cell
 One intersection on the parity grid. "Temporal × Database" is a cell. A cell is filled when at least one shape has a working generator that simulates the real failure mechanic.
@@ -247,7 +247,7 @@ A parent class that produces hundreds of failures, all same gate, same root caus
 
 | Document | Role |
 |----------|------|
-| **PARITY-GRID.md** | The map — what must be covered (8×7 grid, priorities, metrics) |
+| **PARITY-GRID.md** | The map — what must be covered (8×10 grid, priorities, metrics) |
 | **FAILURE-TAXONOMY.md** | The dictionary — 603 shapes, 27 domains, technical detail |
 | **GLOSSARY.md** | This file — plain-language definitions |
 | **ASSESSMENT.md** | The settled view — what verify is, what not to say about it |

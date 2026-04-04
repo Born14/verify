@@ -1,6 +1,6 @@
 # How Verify Works
 
-**Your agent just got better.**
+**Know how your AI coding agent fails.**
 
 26 gates check your agent's work. On failure, it learns what went wrong and doesn't repeat it. On success, you have proof it worked. The gates themselves improve every night — automatically.
 
@@ -16,7 +16,7 @@ Verify doesn't hope. It checks.
 
 ## What Verify Does
 
-An agent proposes a change: "I edited server.js to change the background color to blue." Verify asks 25 independent questions about that change:
+An agent proposes a change: "I edited server.js to change the background color to blue." Verify asks 26 independent questions about that change:
 
 - **Grounding:** Does the CSS selector you're targeting actually exist in the code?
 - **Syntax:** Is your edit valid? Will the file still parse after your change?
@@ -199,13 +199,13 @@ A key architectural insight emerged: the LLM diagnoses which line to fix, but th
 Layer 5: Curriculum Agent         — generates new scenarios from the taxonomy
 Layer 4: Improve Loop             — finds gate bugs, proposes fixes, validates via holdout
 Layer 3: Self-Test Harness        — runs 18,391 scenarios, checks verdicts against oracles
-Layer 2: Verification Pipeline    — verify() and govern(), the 25-gate product
+Layer 2: Verification Pipeline    — verify() and govern(), the 26-gate product
 Layer 1: Governance Kernel        — 7 invariants as pure functions (honesty, non-repetition, etc.)
 ```
 
 Each layer depends only on the layers below it. The kernel never changes. The pipeline rarely changes. The harness changes when scenarios are added. The improve loop and curriculum agent run on top.
 
-### The 25 Gates (with code size)
+### The 26 Gates (with code size)
 
 | Gate | File | LOC | What it checks |
 |------|------|-----|----------------|
@@ -243,7 +243,7 @@ Each layer depends only on the layers below it. The kernel never changes. The pi
 |-----------|-----------|----------------|
 | Package | The npm artifact | `@sovereign-labs/verify` |
 | Pipeline | `verify()` + `govern()` | `src/verify.ts`, `src/govern.ts` |
-| Gates | 25 domain-specific checkers | `src/gates/*.ts` |
+| Gates | 26 domain-specific checkers | `src/gates/*.ts` |
 | Store | K5 constraints + fault ledger | `src/store/*.ts` |
 | Harness | Self-test runner + oracles | `scripts/harness/*.ts` |
 | Generators | 100 synthetic scenario scripts | `scripts/harvest/stage-*.ts` |
@@ -298,7 +298,7 @@ This means verify can gate any agent touching any system — file system agents,
 
 Verify ships as a single npm package with no external dependencies. No frameworks, no runtime services, no cloud APIs required for the core pipeline. You install it, point it at your app directory, and it works.
 
-The real-world harvesters need network access to fetch data. The improve loop needs an LLM API key (Gemini, Claude, or Ollama locally). But `verify()` itself — the 25-gate pipeline that checks your agent's work — runs entirely on your machine with zero network calls.
+The real-world harvesters need network access to fetch data. The improve loop needs an LLM API key (Gemini, Claude, or Ollama locally). But `verify()` itself — the 26-gate pipeline that checks your agent's work — runs entirely on your machine with zero network calls.
 
 ---
 
