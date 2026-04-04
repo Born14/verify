@@ -12,6 +12,9 @@ data/subprocess-ledger.jsonl
 .verify-tmp/
 fixtures/demo-app/.verify-tmp/
 
+# Verify state directories (created by test runs)
+fixtures/demo-app/.verify/
+
 # Real-world harvest cache (fetched data, 24h TTL, never committed)
 .verify-cache/
 
