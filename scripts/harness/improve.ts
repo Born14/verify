@@ -22,6 +22,8 @@ import { splitScenarios, validateCandidate, runHoldout } from './improve-subproc
 import { createLLMProvider } from './llm-providers.js';
 import { printImprovementReport } from './improve-report.js';
 import { hashEdits } from './improve-utils.js';
+import { loadDirective, formatDirectiveForPrompt, applyDirectiveToBundles, type ImproveDirective } from './improve-directive.js';
+import { formatPromptSurfaceContext, isPromptRegion } from './improve-prompt-surface.js';
 
 // =============================================================================
 // CROSS-RUN MEMORY — improve-history.json
@@ -87,18 +89,99 @@ export async function runImproveLoop(
   runConfig: RunConfig,
   improveConfig: ImproveConfig,
 ): Promise<void> {
+  const maxIterations = improveConfig.maxIterations ?? 1;
+  const continuous = maxIterations > 1;
+
+  if (continuous) {
+    console.log('\n  ╔══════════════════════════════════════════════════╗');
+    console.log('  ║  Verify Improvement Engine — Continuous Mode      ║');
+    console.log('  ╚══════════════════════════════════════════════════╝\n');
+    console.log(`  Max iterations: ${maxIterations}  LLM: ${improveConfig.llm}\n`);
+  }
+
+  const cumulativeUsage: LLMUsage = { inputTokens: 0, outputTokens: 0, calls: 0 };
+  const allEntries: ImprovementEntry[] = [];
+  let totalAccepted = 0;
+
+  for (let iteration = 1; iteration <= maxIterations; iteration++) {
+    if (continuous) {
+      console.log(`\n  ═══ Iteration ${iteration}/${maxIterations} ═══════════════════════════════\n`);
+    }
+
+    const { entries, usage, hadAccepted } = await runSingleIteration(
+      runConfig, improveConfig, iteration,
+    );
+
+    allEntries.push(...entries);
+    cumulativeUsage.inputTokens += usage.inputTokens;
+    cumulativeUsage.outputTokens += usage.outputTokens;
+    cumulativeUsage.calls += usage.calls;
+
+    const accepted = entries.filter(e => e.verdict === 'accepted').length;
+    totalAccepted += accepted;
+
+    // Early termination: no improvements this iteration → stop climbing
+    if (!hadAccepted) {
+      if (continuous && iteration < maxIterations) {
+        console.log(`  No improvements in iteration ${iteration} — stopping continuous loop.\n`);
+      }
+      break;
+    }
+
+    // If continuous and we accepted something, the next iteration re-baselines
+    // against the improved code (edits were applied by the orchestrator)
+    if (continuous && iteration < maxIterations) {
+      console.log(`  Iteration ${iteration}: ${accepted} accepted — re-baselining for next iteration...\n`);
+    }
+  }
+
+  // Cumulative summary for continuous mode
+  if (continuous) {
+    console.log('  ┌──────────────────────────────────────────────────┐');
+    console.log('  │          CONTINUOUS MODE SUMMARY                  │');
+    console.log('  └──────────────────────────────────────────────────┘\n');
+    console.log(`  Total accepted: ${totalAccepted}`);
+    console.log(`  Total LLM cost: ${cumulativeUsage.calls} calls, ${cumulativeUsage.inputTokens} in / ${cumulativeUsage.outputTokens} out tokens\n`);
+  }
+}
+
+/**
+ * Run a single iteration of the improvement pipeline.
+ * Extracted from the original runImproveLoop to support continuous mode.
+ */
+async function runSingleIteration(
+  runConfig: RunConfig,
+  improveConfig: ImproveConfig,
+  iteration: number,
+): Promise<{ entries: ImprovementEntry[]; usage: LLMUsage; hadAccepted: boolean }> {
   const packageRoot = resolve(import.meta.dir, '../..');
   const dataDir = join(packageRoot, 'data');
   mkdirSync(dataDir, { recursive: true });
 
   const callLLM = createLLMProvider(improveConfig);
 
-  console.log('\n  ╔══════════════════════════════════════════════════╗');
-  console.log('  ║  Verify Improvement Engine — Evidence-Centric    ║');
-  console.log('  ╚══════════════════════════════════════════════════╝\n');
-  console.log(`  LLM: ${improveConfig.llm}  Candidates: ${improveConfig.maxCandidates}  Max lines: ${improveConfig.maxLines}`);
-  if (improveConfig.dryRun) console.log('  Mode: DRY RUN (no edits applied)\n');
-  else console.log('');
+  // ─── Load directive ──────────────────────────────────────────────────
+  const directive = loadDirective(packageRoot, improveConfig.directivePath);
+  if (directive.raw && iteration === 1) {
+    console.log(`  Directive loaded: focus=${directive.focus}, style=${directive.editStyle}`);
+    if (directive.priorityGates.length > 0) {
+      console.log(`  Priority gates: ${directive.priorityGates.join(', ')}`);
+    }
+    if (directive.customInstructions) {
+      console.log(`  Custom instructions: ${directive.customInstructions.substring(0, 80)}...`);
+    }
+    console.log('');
+  }
+
+  if (iteration === 1) {
+    console.log('\n  ╔══════════════════════════════════════════════════╗');
+    console.log('  ║  Verify Improvement Engine — Evidence-Centric    ║');
+    console.log('  ╚══════════════════════════════════════════════════╝\n');
+    console.log(`  LLM: ${improveConfig.llm}  Candidates: ${improveConfig.maxCandidates}  Max lines: ${improveConfig.maxLines}`);
+    if (improveConfig.promptSurface) console.log('  Prompt surface: ENABLED (LLM prompts in gates are tunable)');
+    if (improveConfig.dryRun) console.log('  Mode: DRY RUN (no edits applied)\n');
+    else console.log('');
+  }
 
   // ─── Step 1: Baseline run ─────────────────────────────────────────────
   console.log('  [1/7] Running baseline self-test...');
@@ -107,15 +190,21 @@ export async function runImproveLoop(
   const clean = baselineLedger.filter(e => e.clean);
   console.log(`        ${baselineLedger.length} scenarios: ${clean.length} clean, ${dirty.length} dirty\n`);
 
+  const usage: LLMUsage = { inputTokens: 0, outputTokens: 0, calls: 0 };
+
   if (dirty.length === 0) {
     console.log('  ✓ All scenarios clean — nothing to improve.\n');
     saveImprovementLedger(dataDir, []);
-    return;
+    return { entries: [], usage, hadAccepted: false };
   }
 
   // ─── Step 2: Evidence bundling ────────────────────────────────────────
   console.log('  [2/7] Bundling violations by root cause...');
-  const bundles = bundleViolations(baselineLedger);
+  let bundles = bundleViolations(baselineLedger);
+
+  // Apply directive priorities to bundle ordering
+  bundles = applyDirectiveToBundles(bundles, directive);
+
   console.log(`        ${bundles.length} evidence bundle(s)\n`);
 
   for (const b of bundles) {
@@ -144,14 +233,13 @@ export async function runImproveLoop(
 
   // ─── Step 4-6: Process each bundle ────────────────────────────────────
   const entries: ImprovementEntry[] = [];
-  const usage: LLMUsage = { inputTokens: 0, outputTokens: 0, calls: 0 };
   const attemptedHashes = new Set<string>(priorHashes); // includes cross-run hashes
   const attempts: AttemptRecord[] = [];
 
   for (const bundle of bundles) {
     const entry = await processBundle(
       bundle, split, packageRoot, runConfig, improveConfig, callLLM, usage,
-      attemptedHashes, attempts,
+      attemptedHashes, attempts, directive,
     );
     entries.push(entry);
   }
@@ -175,6 +263,9 @@ export async function runImproveLoop(
   // ─── Step 7: Report ───────────────────────────────────────────────────
   saveImprovementLedger(dataDir, entries);
   printImprovementReport(entries, usage);
+
+  const hadAccepted = entries.some(e => e.verdict === 'accepted');
+  return { entries, usage, hadAccepted };
 }
 
 // =============================================================================
@@ -191,6 +282,7 @@ async function processBundle(
   usage: LLMUsage,
   attemptedHashes: Set<string>,
   attempts: AttemptRecord[],
+  directive: ImproveDirective = { raw: '', priorityGates: [], focus: 'all', editStyle: 'minimal', customInstructions: '' },
 ): Promise<ImprovementEntry> {
   const timestamp = new Date().toISOString();
   const bundleId = bundle.id;
@@ -231,9 +323,27 @@ async function processBundle(
 
   // Enrich diagnosis with prior attempt context (Fix 7)
   const priorContext = formatPriorAttempts(attempts);
-  const enrichedDiagnosis = diagnosis
-    ? diagnosis + priorContext
-    : priorContext || null;
+
+  // Inject directive and prompt surface context
+  const directiveContext = formatDirectiveForPrompt(directive);
+  const promptSurfaceContext = improveConfig.promptSurface && bundle.triage.targetFile
+    ? formatPromptSurfaceContext(packageRoot, bundle.triage.targetFile)
+    : '';
+
+  // Check if this bundle targets a prompt region
+  const promptRegion = bundle.triage.targetFile
+    ? isPromptRegion(bundle.triage.targetFile, bundle.triage.targetFunction ?? undefined)
+    : null;
+  if (promptRegion && improveConfig.promptSurface) {
+    console.log(`        Prompt surface: ${promptRegion.functionName} — ${promptRegion.description}`);
+  }
+
+  const enrichedDiagnosis = [
+    diagnosis,
+    priorContext,
+    directiveContext,
+    promptSurfaceContext,
+  ].filter(Boolean).join('\n') || null;
 
   const isClaude = improveConfig.llm === 'claude' || improveConfig.llm === 'claude-code';
   console.log(`  [5/7] Generating fix candidates${isClaude ? ' (Claude — architectural context)' : ''}...`);

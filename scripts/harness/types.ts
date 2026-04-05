@@ -288,6 +288,12 @@ export interface ImproveConfig {
   maxCandidates: number;
   maxLines: number;
   dryRun: boolean;
+  /** Continuous mode: re-run after each accepted improvement (default: 1 = single pass) */
+  maxIterations?: number;
+  /** Path to directive file that guides improvement priorities (default: improve-directive.md) */
+  directivePath?: string;
+  /** Enable prompt surface optimization — tune LLM prompts inside gates (default: false) */
+  promptSurface?: boolean;
 }
 
 export type LLMCallFn = (

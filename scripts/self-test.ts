@@ -14,6 +14,16 @@
  *   bun run packages/verify/scripts/self-test.ts --improve --llm=gemini --api-key=AIza...
  *   bun run packages/verify/scripts/self-test.ts --improve --dry-run --llm=gemini --api-key=AIza...
  *   bun run packages/verify/scripts/self-test.ts --improve --llm=ollama --ollama-model=qwen3:4b
+ *
+ * Continuous mode (AutoAgent-inspired hill climbing):
+ *   bun run packages/verify/scripts/self-test.ts --improve --continuous --llm=claude
+ *   bun run packages/verify/scripts/self-test.ts --improve --max-iterations=5 --llm=gemini --api-key=AIza...
+ *
+ * Directive-driven improvement:
+ *   bun run packages/verify/scripts/self-test.ts --improve --directive=improve-directive.md --llm=claude
+ *
+ * Prompt surface optimization:
+ *   bun run packages/verify/scripts/self-test.ts --improve --prompt-surface --llm=claude
  */
 
 import { resolve, join } from 'path';
@@ -45,6 +55,9 @@ function parseArgs(args: string[]): ParsedArgs {
   let maxCandidates = 3;
   let maxLines = 30;
   let dryRun = false;
+  let maxIterations = 1;
+  let directivePath: string | undefined;
+  let promptSurface = false;
 
   for (const arg of args) {
     if (arg.startsWith('--appDir=') || arg.startsWith('--app-dir=')) {
@@ -76,6 +89,14 @@ function parseArgs(args: string[]): ParsedArgs {
       maxLines = parseInt(arg.slice('--max-lines='.length), 10);
     } else if (arg === '--dry-run') {
       dryRun = true;
+    } else if (arg.startsWith('--max-iterations=')) {
+      maxIterations = parseInt(arg.slice('--max-iterations='.length), 10);
+    } else if (arg === '--continuous') {
+      maxIterations = 10; // sensible default for continuous mode
+    } else if (arg.startsWith('--directive=')) {
+      directivePath = arg.slice('--directive='.length);
+    } else if (arg === '--prompt-surface') {
+      promptSurface = true;
     } else if (arg === '--help' || arg === '-h') {
       console.log(`
   Verify Self-Test — Autonomous Bug Discovery + Improvement
@@ -101,6 +122,17 @@ function parseArgs(args: string[]): ParsedArgs {
     --max-lines=N      Max changed lines per strategy (default: 30)
     --dry-run          Evidence bundling + triage only, no fixes
 
+  Continuous Mode (AutoAgent-inspired):
+    --continuous       Re-run after each accepted improvement (default: 10 iterations)
+    --max-iterations=N Max improvement iterations (default: 1 = single pass)
+
+  Directive-Driven Improvement:
+    --directive=PATH   Path to improve-directive.md (default: improve-directive.md)
+                       Externalize improvement priorities without changing code
+
+  Prompt Surface Optimization:
+    --prompt-surface   Enable tuning of LLM prompts inside gates (vision, etc.)
+
   Families:
     A  Fingerprint collision detection
     B  K5 constraint learning
@@ -123,7 +155,7 @@ function parseArgs(args: string[]): ParsedArgs {
 
   const runConfig: RunConfig = { appDir, families, dockerEnabled, failOnBug, ledgerPath, scenarioIds };
   const improveConfig: ImproveConfig | null = improve
-    ? { llm, apiKey, ollamaModel, ollamaHost, maxCandidates, maxLines, dryRun }
+    ? { llm, apiKey, ollamaModel, ollamaHost, maxCandidates, maxLines, dryRun, maxIterations, directivePath, promptSurface }
     : null;
 
   return { runConfig, improveConfig };
