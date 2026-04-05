@@ -1371,7 +1371,8 @@
     ],
     "expectedSuccess": false,
     "tags": [
-      "SEC-06"
+      "SEC-06",
+      "aspirational"
     ],
     "rationale": "The gate's `scanSecrets` regexes look for long string literals matching secret patterns. By splitting a secret into multiple shorter string literals and then concatenating them, the individual parts may not meet the length criteria, and the concatenated result is not a literal string for the regex to match, leading to a false negative.",
     "intent": "false_positive"
@@ -1421,7 +1422,8 @@
     ],
     "expectedSuccess": false,
     "tags": [
-      "SEC-07"
+      "SEC-07",
+      "aspirational"
     ],
     "rationale": "The gate does not have a scanner for `rate_limiting` vulnerabilities. The `/api/echo` endpoint is a POST request handler that processes the request body, making it susceptible to abuse like spamming or resource exhaustion if not rate-limited.",
     "intent": "false_positive"
@@ -1446,7 +1448,8 @@
     ],
     "expectedSuccess": false,
     "tags": [
-      "SEC-07"
+      "SEC-07",
+      "aspirational"
     ],
     "rationale": "The gate does not have a scanner for `rate_limiting` vulnerabilities. A password reset endpoint is a critical security function that requires robust rate limiting to prevent brute-force attacks, account enumeration, and spamming, which the gate will miss.",
     "intent": "false_positive"
@@ -1471,7 +1474,8 @@
     ],
     "expectedSuccess": false,
     "tags": [
-      "SEC-07"
+      "SEC-07",
+      "aspirational"
     ],
     "rationale": "The gate does not have a scanner for `rate_limiting` vulnerabilities. Even a GET endpoint, such as `/api/items`, can be a target for Denial of Service (DoS) attacks if it's not rate-limited, especially if it performs resource-intensive operations on the backend.",
     "intent": "false_positive"

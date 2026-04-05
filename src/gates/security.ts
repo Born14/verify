@@ -99,14 +99,15 @@ function scanXSS(files: Array<{ relativePath: string; content: string }>): Secur
 function scanSQLInjection(files: Array<{ relativePath: string; content: string }>): SecurityFinding[] {
   const findings: SecurityFinding[] = [];
   const patterns = [
-    { regex: /(?:query|execute|run)\s*\(\s*[`'"].*\$\{/g, detail: 'Template literal in SQL query (potential injection)' },
-    { regex: /(?:query|execute|run)\s*\(\s*['"].*\+/g, detail: 'String concatenation in SQL query (potential injection)' },
-    { regex: /(?:SELECT|INSERT|UPDATE|DELETE|DROP)\s.*\+\s*(?:req\.|params\.|body\.|query\.)/gi, detail: 'User input concatenated into SQL' },
+    { regex: /(?:query|execute|run|fetch|prepare|raw)\s*\(\s*[`'"].*\$\{/g, detail: 'Template literal in SQL query (potential injection)' },
+    { regex: /(?:query|execute|run|fetch|prepare|raw)\s*\(\s*['"].*\+/g, detail: 'String concatenation in SQL query (potential injection)' },
+    { regex: /(?:SELECT|INSERT|UPDATE|DELETE|DROP)\s.*\+\s*(?:req\.|params\.|body\.|query\.|headers\[)/gi, detail: 'User input concatenated into SQL' },
+    { regex: /(?:SELECT|INSERT|UPDATE|DELETE|DROP)\s.*\.join\s*\(/gi, detail: 'Array join in SQL construction (potential injection)' },
   ];
   // Multi-line patterns: query call on one line, template literal with interpolation on next
   const multiLinePatterns = [
-    { regex: /(?:query|execute|run)\s*\(\s*\n\s*`[^`]*\$\{/g, detail: 'Template literal in SQL query (potential injection)' },
-    { regex: /(?:query|execute|run)\s*\(\s*\n\s*['"][^'"]*\+/g, detail: 'String concatenation in SQL query (potential injection)' },
+    { regex: /(?:query|execute|run|fetch|prepare|raw)\s*\(\s*\n\s*`[^`]*\$\{/g, detail: 'Template literal in SQL query (potential injection)' },
+    { regex: /(?:query|execute|run|fetch|prepare|raw)\s*\(\s*\n\s*['"][^'"]*\+/g, detail: 'String concatenation in SQL query (potential injection)' },
   ];
 
   for (const file of files) {
@@ -143,6 +144,7 @@ function scanSecrets(files: Array<{ relativePath: string; content: string }>): S
     { regex: /(?:secret|token)\s*[:=]\s*['"][A-Za-z0-9+/=]{20,}['"]/gi, detail: 'Hardcoded secret/token' },
     { regex: /(?:AWS_ACCESS_KEY_ID|AWS_SECRET_ACCESS_KEY)\s*=\s*['"]?[A-Z0-9]{16,}['"]?/g, detail: 'Hardcoded AWS credential' },
     { regex: /-----BEGIN\s+(?:RSA\s+)?PRIVATE\s+KEY-----/g, detail: 'Private key in source code' },
+    { regex: /process\.env\.(?:SECRET|KEY|TOKEN|PASSWORD|PRIVATE)/gi, detail: 'Sensitive env var accessed in code (potential exposure)' },
   ];
 
   for (const file of files) {
@@ -289,6 +291,10 @@ function scanOpenRedirect(files: Array<{ relativePath: string; content: string }
   const patterns = [
     { regex: /(?:redirect|location)\s*(?:=|\()\s*(?:req\.|params\.|body\.|query\.)/g, detail: 'User input in redirect (open redirect risk)' },
     { regex: /res\.redirect\s*\(\s*(?:req\.|params\.|query\.)/g, detail: 'Express redirect with user input' },
+    { regex: /Location['"]\s*:\s*(?:req\.|params\.|query\.|body\.|\w+\s*\+)/g, detail: 'User input in Location header (open redirect risk)' },
+    { regex: /window\.location\s*=\s*[`'"].*\$\{/g, detail: 'Template literal in window.location (client-side redirect)' },
+    { regex: /window\.location\s*=\s*['"].*\+/g, detail: 'String concat in window.location (client-side redirect)' },
+    { regex: /['"]Location['"]\s*:\s*['"].*\+\s*\w+/g, detail: 'Variable in Location header (open redirect risk)' },
   ];
   for (const file of files) {
     const lines = file.content.split('\n');
@@ -313,12 +319,11 @@ function scanRateLimiting(files: Array<{ relativePath: string; content: string }
     /rate.?limit/i.test(f.content) || /express-rate-limit/i.test(f.content) || /throttle/i.test(f.content)
   );
   if (!hasRateLimit) {
-    // Check if auth endpoints exist
     for (const file of files) {
       const lines = file.content.split('\n');
       for (let i = 0; i < lines.length; i++) {
-        if (/(?:post|app\.post)\s*\(\s*['"]\/(?:auth|login|signin|register)/i.test(lines[i])) {
-          findings.push({ check: 'rate_limiting', file: file.relativePath, line: i + 1, detail: 'Auth endpoint without rate limiting', severity: 'medium' });
+        if (/(?:post|app\.post)\s*\(\s*['"]\/(?:auth|login|signin|register|reset|password|verify|confirm)/i.test(lines[i])) {
+          findings.push({ check: 'rate_limiting', file: file.relativePath, line: i + 1, detail: 'Auth/sensitive endpoint without rate limiting', severity: 'medium' });
         }
       }
     }
