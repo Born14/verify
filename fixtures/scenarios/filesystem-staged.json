@@ -265,7 +265,7 @@
       {
         "type": "filesystem_unchanged",
         "file": "config.json",
-        "hash": "2937cf6d9bd7155b92003b846dbfb4f68bc530603f3df347ada174d7f09d6a95"
+        "hash": "87a24bfafefab74d9d7f0e5335abcc69c9ab1bc467576f3272b402a8bfe2b2e4"
       }
     ],
     "expectedSuccess": true,
@@ -284,7 +284,7 @@
       {
         "type": "filesystem_unchanged",
         "file": "init.sql",
-        "hash": "73a4590975666dbef9cb2addda027aa5a5b73df540d74d5c7a606abc886e5e6b"
+        "hash": "0498ec4d3d8b772b7a16f649349ee8d0c99d5944f31bde77c9c14cdd718f8b93"
       }
     ],
     "expectedSuccess": true,
@@ -303,7 +303,7 @@
       {
         "type": "filesystem_unchanged",
         "file": ".env",
-        "hash": "81e7a8eeeef74a6abc309a644c0b575091b0c45bccdb6ee5a2891e4a6bb68d5b"
+        "hash": "0840d25fee0c56f1c894b77d6659bab35143389a7c1bb14bb7c64665503062d0"
       }
     ],
     "expectedSuccess": true,
@@ -328,7 +328,7 @@
       {
         "type": "filesystem_unchanged",
         "file": "config.json",
-        "hash": "2937cf6d9bd7155b92003b846dbfb4f68bc530603f3df347ada174d7f09d6a95"
+        "hash": "87a24bfafefab74d9d7f0e5335abcc69c9ab1bc467576f3272b402a8bfe2b2e4"
       }
     ],
     "expectedSuccess": false,
@@ -456,7 +456,7 @@
       {
         "type": "filesystem_unchanged",
         "file": "config.json",
-        "hash": "2937cf6d9bd7155b92003b846dbfb4f68bc530603f3df347ada174d7f09d6a95"
+        "hash": "87a24bfafefab74d9d7f0e5335abcc69c9ab1bc467576f3272b402a8bfe2b2e4"
       }
     ],
     "expectedSuccess": true,

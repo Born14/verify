@@ -1199,7 +1199,7 @@
       "SEC-02"
     ],
     "rationale": "The gate's SQL injection scanner looks for `query|execute|run` methods and direct concatenation of `req.|params.|body.|query.` into SQL. This scenario uses a `db.fetch` method, which is not in the regex, and assigns `req.query.id` to a variable first, bypassing the direct user input source check.",
-    "intent": "false_negative"
+    "intent": "false_positive"
   },
   {
     "id": "adv-sec-02-fn-2",
@@ -1224,7 +1224,7 @@
       "SEC-02"
     ],
     "rationale": "The gate's SQL injection scanner specifically looks for user input from `req.`, `params.`, `body.`, or `query.`. It does not include `req.headers`, `req.cookies`, or other less common input sources, leading to a false negative.",
-    "intent": "false_negative"
+    "intent": "false_positive"
   },
   {
     "id": "adv-sec-02-fn-3",
@@ -1249,7 +1249,7 @@
       "SEC-02"
     ],
     "rationale": "The gate's SQL injection scanner primarily targets string concatenation using the `+` operator or template literals (`${...}`). Using `array.join('')` to construct the SQL query bypasses these specific regex patterns, resulting in a false negative.",
-    "intent": "false_negative"
+    "intent": "false_positive"
   },
   {
     "id": "adv-sec-03-fn-1",
@@ -1274,7 +1274,7 @@
       "SEC-03"
     ],
     "rationale": "The gate does not include a specific scanner for 'open_redirect' vulnerabilities. This scenario introduces a classic server-side open redirect using `res.writeHead` and the `Location` header, which the gate will consequently miss.",
-    "intent": "false_negative"
+    "intent": "false_positive"
   },
   {
     "id": "adv-sec-03-fn-2",
@@ -1299,7 +1299,7 @@
       "SEC-03"
     ],
     "rationale": "The gate lacks a specific scanner for 'open_redirect'. Additionally, its XSS scanner focuses on `innerHTML`, `document.write`, `eval`, and `dangerouslySetInnerHTML`, but does not explicitly check for `window.location` assignments, allowing this client-side redirect to be missed.",
-    "intent": "false_negative"
+    "intent": "false_positive"
   },
   {
     "id": "adv-sec-03-fn-3",
@@ -1324,7 +1324,7 @@
       "SEC-03"
     ],
     "rationale": "The gate lacks a specific scanner for 'open_redirect'. This scenario demonstrates a common pattern where a user-controlled path segment is concatenated into a redirect URL, which can be exploited for open redirect if the path is crafted (e.g., `//evil.com`). The gate will not detect this.",
-    "intent": "false_negative"
+    "intent": "false_positive"
   },
   {
     "id": "adv-sec-06-fn-1",
@@ -1349,7 +1349,7 @@
       "SEC-06"
     ],
     "rationale": "The `scanSecrets` function explicitly skips `.env` files, assuming they are for configuration and not direct code leaks. It also performs static analysis, so it cannot detect secrets being read from environment variables at runtime and then exposed in an API response body.",
-    "intent": "false_negative"
+    "intent": "false_positive"
   },
   {
     "id": "adv-sec-06-fn-2",
@@ -1374,7 +1374,7 @@
       "SEC-06"
     ],
     "rationale": "The gate's `scanSecrets` regexes look for long string literals matching secret patterns. By splitting a secret into multiple shorter string literals and then concatenating them, the individual parts may not meet the length criteria, and the concatenated result is not a literal string for the regex to match, leading to a false negative.",
-    "intent": "false_negative"
+    "intent": "false_positive"
   },
   {
     "id": "adv-sec-06-fp-1",
@@ -1424,7 +1424,7 @@
       "SEC-07"
     ],
     "rationale": "The gate does not have a scanner for `rate_limiting` vulnerabilities. The `/api/echo` endpoint is a POST request handler that processes the request body, making it susceptible to abuse like spamming or resource exhaustion if not rate-limited.",
-    "intent": "false_negative"
+    "intent": "false_positive"
   },
   {
     "id": "adv-sec-07-fn-2",
@@ -1449,7 +1449,7 @@
       "SEC-07"
     ],
     "rationale": "The gate does not have a scanner for `rate_limiting` vulnerabilities. A password reset endpoint is a critical security function that requires robust rate limiting to prevent brute-force attacks, account enumeration, and spamming, which the gate will miss.",
-    "intent": "false_negative"
+    "intent": "false_positive"
   },
   {
     "id": "adv-sec-07-fn-3",
@@ -1474,6 +1474,6 @@
       "SEC-07"
     ],
     "rationale": "The gate does not have a scanner for `rate_limiting` vulnerabilities. Even a GET endpoint, such as `/api/items`, can be a target for Denial of Service (DoS) attacks if it's not rate-limited, especially if it performs resource-intensive operations on the backend.",
-    "intent": "false_negative"
+    "intent": "false_positive"
   }
 ]

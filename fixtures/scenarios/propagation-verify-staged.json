@@ -182,7 +182,7 @@
       {
         "type": "filesystem_unchanged",
         "file": "config.json",
-        "hash": "2937cf6d9bd7155b92003b846dbfb4f68bc530603f3df347ada174d7f09d6a95"
+        "hash": "87a24bfafefab74d9d7f0e5335abcc69c9ab1bc467576f3272b402a8bfe2b2e4"
       }
     ],
     "expectedSuccess": false,

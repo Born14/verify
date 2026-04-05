@@ -38,7 +38,8 @@
     "expectedSuccess": true,
     "tags": [
       "security",
-      "xss"
+      "xss",
+      "aspirational"
     ],
     "rationale": "Scanner scans source files not staging edits; original source has no innerHTML",
     "intent": "false_negative"
@@ -126,7 +127,8 @@
     "expectedSuccess": true,
     "tags": [
       "security",
-      "secrets_in_code"
+      "secrets_in_code",
+      "aspirational"
     ],
     "rationale": "Scanner scans source files not staging edits; original source has no hardcoded secrets",
     "intent": "false_negative"
@@ -208,7 +210,8 @@
     "expectedSuccess": true,
     "tags": [
       "security",
-      "eval_usage"
+      "eval_usage",
+      "aspirational"
     ],
     "rationale": "Scanner scans source files not staging edits; original source has no eval()",
     "intent": "false_negative"
@@ -252,7 +255,8 @@
     "expectedSuccess": true,
     "tags": [
       "security",
-      "prototype_pollution"
+      "prototype_pollution",
+      "aspirational"
     ],
     "rationale": "Scanner scans source files not staging edits; original source has no __proto__",
     "intent": "false_negative"
@@ -296,7 +300,8 @@
     "expectedSuccess": true,
     "tags": [
       "security",
-      "path_traversal"
+      "path_traversal",
+      "aspirational"
     ],
     "rationale": "Scanner scans source files not staging edits; original source has no file reads",
     "intent": "false_negative"
