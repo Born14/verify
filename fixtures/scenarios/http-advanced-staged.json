@@ -106,7 +106,8 @@
     "tags": [
       "http",
       "cookie_handling",
-      "P-14"
+      "P-14",
+      "aspirational"
     ],
     "rationale": "Set-Cookie in header; body still contains \"ok\" — passes",
     "intent": "false_negative"
@@ -1869,7 +1870,8 @@
     "tags": [
       "http",
       "etag_304",
-      "P-46"
+      "P-46",
+      "aspirational"
     ],
     "rationale": "ETag header added; response body unchanged — passes",
     "intent": "false_negative"
@@ -2536,7 +2538,8 @@
     "tags": [
       "http",
       "cdn_injection",
-      "P-54"
+      "P-54",
+      "aspirational"
     ],
     "rationale": "CDN header in response headers; body still has \"ok\" — passes",
     "intent": "false_negative"

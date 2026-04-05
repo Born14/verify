@@ -507,7 +507,8 @@
       "harvest",
       "edit_failure",
       "valid",
-      "should_pass"
+      "should_pass",
+      "aspirational"
     ],
     "rationale": "Exact multi-line match in items array — should succeed",
     "intent": "false_negative"
@@ -534,7 +535,8 @@
       "harvest",
       "edit_failure",
       "valid",
-      "should_pass"
+      "should_pass",
+      "aspirational"
     ],
     "rationale": "Anchor string is unique, new route inserted before health endpoint",
     "intent": "false_negative"
@@ -1512,7 +1514,8 @@
       "harvest",
       "health_check",
       "valid",
-      "should_pass"
+      "should_pass",
+      "aspirational"
     ],
     "rationale": "JSON health response contains \"ok\" — bodyContains check passes",
     "intent": "false_negative"
@@ -1539,7 +1542,8 @@
       "harvest",
       "health_check",
       "valid",
-      "should_pass"
+      "should_pass",
+      "aspirational"
     ],
     "rationale": "New endpoint added at unique anchor point — does not break health",
     "intent": "false_negative"
@@ -1828,7 +1832,8 @@
       "harvest",
       "cascade_failure",
       "cross_route",
-      "should_pass"
+      "should_pass",
+      "aspirational"
     ],
     "rationale": "display:none is CSS — HTTP response still contains About text, bodyContains passes",
     "intent": "false_negative"
@@ -2013,7 +2018,8 @@
       "harvest",
       "cascade_failure",
       "valid",
-      "should_pass"
+      "should_pass",
+      "aspirational"
     ],
     "rationale": "New route at unique anchor + valid JSON addition — both files valid",
     "intent": "false_negative"

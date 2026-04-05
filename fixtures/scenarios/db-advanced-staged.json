@@ -84,7 +84,8 @@
     "tags": [
       "db",
       "generated_columns",
-      "D-24"
+      "D-24",
+      "aspirational"
     ],
     "rationale": "Migration adds a GENERATED ALWAYS column; predicate should find it in modified init.sql",
     "intent": "false_negative"
@@ -1034,7 +1035,8 @@
     "tags": [
       "db",
       "timezone",
-      "D-35"
+      "D-35",
+      "aspirational"
     ],
     "rationale": "Edit changes type to TIMESTAMPTZ — predicate now matches",
     "intent": "false_negative"

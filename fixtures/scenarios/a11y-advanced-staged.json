@@ -95,7 +95,8 @@
     "tags": [
       "a11y",
       "color_contrast",
-      "A11Y-04"
+      "A11Y-04",
+      "aspirational"
     ],
     "intent": "false_negative"
   },

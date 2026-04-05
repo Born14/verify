@@ -2566,7 +2566,8 @@
     "tags": [
       "db",
       "multi_table",
-      "DB-10"
+      "DB-10",
+      "aspirational"
     ],
     "intent": "false_negative"
   },

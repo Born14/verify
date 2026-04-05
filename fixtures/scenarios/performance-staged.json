@@ -429,7 +429,8 @@
     "tags": [
       "performance",
       "render_blocking",
-      "edit_pass"
+      "edit_pass",
+      "aspirational"
     ],
     "rationale": "Add inline script, check render_blocking",
     "intent": "false_negative"
@@ -480,7 +481,8 @@
     "tags": [
       "performance",
       "bundle_size",
-      "edit_pass"
+      "edit_pass",
+      "aspirational"
     ],
     "rationale": "Add large inline CSS, check bundle_size (still small)",
     "intent": "false_negative"
