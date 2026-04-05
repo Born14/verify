@@ -1063,7 +1063,7 @@
       {
         "file": "server.js",
         "search": "<footer>About page footer</footer>",
-        "replace": "<img src=\"x.jpg\" alt=\"Photo\"><button>Click</button>\n<footer>About page footer</footer>"
+        "replace": "<img src=\"x.jpg\" alt=\"Team photo from the 2024 company retreat\"><button>Click</button>\n<footer>About page footer</footer>"
       }
     ],
     "predicates": [

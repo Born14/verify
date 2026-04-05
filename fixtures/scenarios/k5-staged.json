@@ -1129,7 +1129,10 @@
         "expiresAt": 1774475291151
       }
     ],
-    "intent": "false_positive"
+    "intent": "false_positive",
+    "gates": {
+      "temporal": false
+    }
   },
   {
     "id": "k5-multi-023",

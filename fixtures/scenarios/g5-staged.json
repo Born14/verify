@@ -517,7 +517,10 @@
       "scaffolding": 1,
       "unexplained": 1
     },
-    "intent": "false_negative"
+    "intent": "false_negative",
+    "gates": {
+      "temporal": false
+    }
   },
   {
     "id": "g5-mixed-015",

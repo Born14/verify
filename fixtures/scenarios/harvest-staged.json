@@ -1983,7 +1983,10 @@
       "should_pass"
     ],
     "rationale": "EXPOSE is cosmetic, PORT still 3000 — app works but documentation misleading",
-    "intent": "false_negative"
+    "intent": "false_negative",
+    "gates": {
+      "temporal": false
+    }
   },
   {
     "id": "harvest-cascade-compose-env-vs-server",

@@ -2213,7 +2213,10 @@
       "R17"
     ],
     "rationale": "R17 (Checksum error) — checksum function exists after edit",
-    "intent": "false_negative"
+    "intent": "false_negative",
+    "gates": {
+      "contention": false
+    }
   },
   {
     "id": "heroku-095",

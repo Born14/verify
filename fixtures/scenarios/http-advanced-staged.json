@@ -991,7 +991,10 @@
       "P-18"
     ],
     "rationale": "Env vars added but server.js logic unchanged — HTTP health passes",
-    "intent": "false_negative"
+    "intent": "false_negative",
+    "gates": {
+      "access": false
+    }
   },
   {
     "id": "http-adv-033",
