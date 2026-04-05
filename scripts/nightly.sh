@@ -11,11 +11,8 @@ cd "$(dirname "$0")/.."
 export PATH="$HOME/.bun/bin:$PATH"
 export GEMINI_API_KEY="$(grep GEMINI_API_KEY "$HOME/sovereign/.env" | cut -d= -f2)"
 
-# Layer 8: Model rotation for improve loop (review always uses 3.1-pro)
-DAY=$(date -u +%d)
-MODELS=("gemini-2.5-flash" "gemini-2.5-pro" "gemini-3.1-pro-preview")
-MODEL_INDEX=$((10#$DAY % 3))
-export GEMINI_MODEL="${MODELS[$MODEL_INDEX]}"
+# Fixed model — same as GitHub Actions for consistent comparison
+export GEMINI_MODEL="gemini-2.5-flash"
 
 LOG_DIR="data/nightly-logs"
 mkdir -p "$LOG_DIR"
