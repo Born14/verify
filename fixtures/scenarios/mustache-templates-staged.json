@@ -15,7 +15,8 @@
     "tags": [
       "template",
       "comments",
-      "TMPL-01"
+      "TMPL-01",
+      "aspirational"
     ],
     "rationale": "Mustache comment tag exists in template source",
     "intent": "false_negative"
@@ -37,7 +38,8 @@
     "tags": [
       "template",
       "comments",
-      "TMPL-01"
+      "TMPL-01",
+      "aspirational"
     ],
     "rationale": "Multiline comment not present in template — fabricated pattern",
     "intent": "false_positive"
@@ -59,7 +61,8 @@
     "tags": [
       "template",
       "comments",
-      "TMPL-01"
+      "TMPL-01",
+      "aspirational"
     ],
     "rationale": "Padded comment does not exist in source",
     "intent": "false_positive"
@@ -81,7 +84,8 @@
     "tags": [
       "template",
       "comments",
-      "TMPL-01"
+      "TMPL-01",
+      "aspirational"
     ],
     "rationale": "Standalone comment with indentation — fabricated",
     "intent": "false_positive"
@@ -103,7 +107,8 @@
     "tags": [
       "template",
       "comments",
-      "TMPL-01"
+      "TMPL-01",
+      "aspirational"
     ],
     "rationale": "Comment embedded in HTML — pattern not in source",
     "intent": "false_positive"
@@ -125,7 +130,8 @@
     "tags": [
       "template",
       "comments",
-      "TMPL-01"
+      "TMPL-01",
+      "aspirational"
     ],
     "rationale": "Empty comment tag not present",
     "intent": "false_positive"
@@ -147,7 +153,8 @@
     "tags": [
       "template",
       "comments",
-      "TMPL-01"
+      "TMPL-01",
+      "aspirational"
     ],
     "rationale": "Comment containing HTML/script — fabricated",
     "intent": "false_positive"
@@ -168,7 +175,8 @@
     "tags": [
       "template",
       "comments",
-      "TMPL-01"
+      "TMPL-01",
+      "aspirational"
     ],
     "rationale": "The word comment may appear in helper code discussing rendering",
     "intent": "false_negative"
@@ -190,7 +198,8 @@
     "tags": [
       "template",
       "comments",
-      "TMPL-01"
+      "TMPL-01",
+      "aspirational"
     ],
     "rationale": "Adjacent comment tags — fabricated pattern",
     "intent": "false_positive"
@@ -212,7 +221,8 @@
     "tags": [
       "template",
       "comments",
-      "TMPL-01"
+      "TMPL-01",
+      "aspirational"
     ],
     "rationale": "Nested mustache in comment — fabricated",
     "intent": "false_positive"
@@ -234,7 +244,8 @@
     "tags": [
       "template",
       "delimiters",
-      "TMPL-02"
+      "TMPL-02",
+      "aspirational"
     ],
     "rationale": "Custom delimiter syntax — not present in standard template",
     "intent": "false_positive"
@@ -256,7 +267,8 @@
     "tags": [
       "template",
       "delimiters",
-      "TMPL-02"
+      "TMPL-02",
+      "aspirational"
     ],
     "rationale": "ERB-style tag after delimiter change — fabricated",
     "intent": "false_positive"
@@ -278,7 +290,8 @@
     "tags": [
       "template",
       "delimiters",
-      "TMPL-02"
+      "TMPL-02",
+      "aspirational"
     ],
     "rationale": "Delimiter reset from ERB back to mustache — fabricated",
     "intent": "false_positive"
@@ -300,7 +313,8 @@
     "tags": [
       "template",
       "delimiters",
-      "TMPL-02"
+      "TMPL-02",
+      "aspirational"
     ],
     "rationale": "Pipe delimiters — fabricated",
     "intent": "false_positive"
@@ -322,7 +336,8 @@
     "tags": [
       "template",
       "delimiters",
-      "TMPL-02"
+      "TMPL-02",
+      "aspirational"
     ],
     "rationale": "Unescaped with custom delimiters — fabricated",
     "intent": "false_positive"
@@ -344,7 +359,8 @@
     "tags": [
       "template",
       "delimiters",
-      "TMPL-02"
+      "TMPL-02",
+      "aspirational"
     ],
     "rationale": "Section using ERB delimiters — fabricated",
     "intent": "false_positive"
@@ -366,7 +382,8 @@
     "tags": [
       "template",
       "delimiters",
-      "TMPL-02"
+      "TMPL-02",
+      "aspirational"
     ],
     "rationale": "Standalone angle bracket delimiters — fabricated",
     "intent": "false_positive"
@@ -388,7 +405,8 @@
     "tags": [
       "template",
       "delimiters",
-      "TMPL-02"
+      "TMPL-02",
+      "aspirational"
     ],
     "rationale": "Inverted section with ERB delimiters — fabricated",
     "intent": "false_positive"
@@ -410,7 +428,8 @@
     "tags": [
       "template",
       "delimiters",
-      "TMPL-02"
+      "TMPL-02",
+      "aspirational"
     ],
     "rationale": "Partial include with custom delimiters — fabricated",
     "intent": "false_positive"
@@ -432,7 +451,8 @@
     "tags": [
       "template",
       "delimiters",
-      "TMPL-02"
+      "TMPL-02",
+      "aspirational"
     ],
     "rationale": "Comment with custom delimiters — fabricated",
     "intent": "false_positive"
@@ -453,7 +473,8 @@
     "tags": [
       "template",
       "interpolation",
-      "TMPL-03"
+      "TMPL-03",
+      "aspirational"
     ],
     "rationale": "Basic mustache variable tag likely present in template",
     "intent": "false_negative"
@@ -475,7 +496,8 @@
     "tags": [
       "template",
       "interpolation",
-      "TMPL-03"
+      "TMPL-03",
+      "aspirational"
     ],
     "rationale": "Triple mustache for unescaped HTML — fabricated variable name",
     "intent": "false_positive"
@@ -497,7 +519,8 @@
     "tags": [
       "template",
       "interpolation",
-      "TMPL-03"
+      "TMPL-03",
+      "aspirational"
     ],
     "rationale": "Ampersand unescaped syntax — fabricated variable",
     "intent": "false_positive"
@@ -519,7 +542,8 @@
     "tags": [
       "template",
       "interpolation",
-      "TMPL-03"
+      "TMPL-03",
+      "aspirational"
     ],
     "rationale": "Dot notation access — fabricated nested variable",
     "intent": "false_positive"
@@ -541,7 +565,8 @@
     "tags": [
       "template",
       "interpolation",
-      "TMPL-03"
+      "TMPL-03",
+      "aspirational"
     ],
     "rationale": "Integer in data context — fabricated data file content",
     "intent": "false_positive"
@@ -563,7 +588,8 @@
     "tags": [
       "template",
       "interpolation",
-      "TMPL-03"
+      "TMPL-03",
+      "aspirational"
     ],
     "rationale": "Decimal in data — fabricated",
     "intent": "false_positive"
@@ -585,7 +611,8 @@
     "tags": [
       "template",
       "interpolation",
-      "TMPL-03"
+      "TMPL-03",
+      "aspirational"
     ],
     "rationale": "Null in data — fabricated",
     "intent": "false_positive"
@@ -607,7 +634,8 @@
     "tags": [
       "template",
       "interpolation",
-      "TMPL-03"
+      "TMPL-03",
+      "aspirational"
     ],
     "rationale": "HTML entity escape reference — not in helper source",
     "intent": "false_positive"
@@ -629,7 +657,8 @@
     "tags": [
       "template",
       "interpolation",
-      "TMPL-03"
+      "TMPL-03",
+      "aspirational"
     ],
     "rationale": "Variable that does not exist in any context — fabricated",
     "intent": "false_positive"
@@ -651,7 +680,8 @@
     "tags": [
       "template",
       "interpolation",
-      "TMPL-03"
+      "TMPL-03",
+      "aspirational"
     ],
     "rationale": "Interpolation with surrounding pipes — fabricated pattern",
     "intent": "false_positive"
@@ -673,7 +703,8 @@
     "tags": [
       "template",
       "interpolation",
-      "TMPL-03"
+      "TMPL-03",
+      "aspirational"
     ],
     "rationale": "Standalone interpolation with indent — fabricated",
     "intent": "false_positive"
@@ -695,7 +726,8 @@
     "tags": [
       "template",
       "interpolation",
-      "TMPL-03"
+      "TMPL-03",
+      "aspirational"
     ],
     "rationale": "Two variables on one line — fabricated",
     "intent": "false_positive"
@@ -717,7 +749,8 @@
     "tags": [
       "template",
       "interpolation",
-      "TMPL-03"
+      "TMPL-03",
+      "aspirational"
     ],
     "rationale": "Five-level deep dot notation — fabricated",
     "intent": "false_positive"
@@ -739,7 +772,8 @@
     "tags": [
       "template",
       "interpolation",
-      "TMPL-03"
+      "TMPL-03",
+      "aspirational"
     ],
     "rationale": "Implicit iterator (dot) — fabricated",
     "intent": "false_positive"
@@ -761,7 +795,8 @@
     "tags": [
       "template",
       "interpolation",
-      "TMPL-03"
+      "TMPL-03",
+      "aspirational"
     ],
     "rationale": "escapeHtml function reference — fabricated helper",
     "intent": "false_positive"
@@ -783,7 +818,8 @@
     "tags": [
       "template",
       "sections",
-      "TMPL-04"
+      "TMPL-04",
+      "aspirational"
     ],
     "rationale": "Truthy section tag — fabricated",
     "intent": "false_positive"
@@ -805,7 +841,8 @@
     "tags": [
       "template",
       "sections",
-      "TMPL-04"
+      "TMPL-04",
+      "aspirational"
     ],
     "rationale": "Section closing tag — fabricated",
     "intent": "false_positive"
@@ -827,7 +864,8 @@
     "tags": [
       "template",
       "sections",
-      "TMPL-04"
+      "TMPL-04",
+      "aspirational"
     ],
     "rationale": "List iteration pattern — fabricated",
     "intent": "false_positive"
@@ -849,7 +887,8 @@
     "tags": [
       "template",
       "sections",
-      "TMPL-04"
+      "TMPL-04",
+      "aspirational"
     ],
     "rationale": "Nested context pushing — fabricated",
     "intent": "false_positive"
@@ -871,7 +910,8 @@
     "tags": [
       "template",
       "sections",
-      "TMPL-04"
+      "TMPL-04",
+      "aspirational"
     ],
     "rationale": "Falsy boolean in data — fabricated",
     "intent": "false_positive"
@@ -893,7 +933,8 @@
     "tags": [
       "template",
       "sections",
-      "TMPL-04"
+      "TMPL-04",
+      "aspirational"
     ],
     "rationale": "Empty array in data — fabricated",
     "intent": "false_positive"
@@ -915,7 +956,8 @@
     "tags": [
       "template",
       "sections",
-      "TMPL-04"
+      "TMPL-04",
+      "aspirational"
     ],
     "rationale": "Implicit iterator in list — fabricated",
     "intent": "false_positive"
@@ -937,7 +979,8 @@
     "tags": [
       "template",
       "sections",
-      "TMPL-04"
+      "TMPL-04",
+      "aspirational"
     ],
     "rationale": "Doubled section — fabricated",
     "intent": "false_positive"
@@ -959,7 +1002,8 @@
     "tags": [
       "template",
       "sections",
-      "TMPL-04"
+      "TMPL-04",
+      "aspirational"
     ],
     "rationale": "Three-level nested sections — fabricated",
     "intent": "false_positive"
@@ -981,7 +1025,8 @@
     "tags": [
       "template",
       "sections",
-      "TMPL-04"
+      "TMPL-04",
+      "aspirational"
     ],
     "rationale": "Parent context resolution — fabricated",
     "intent": "false_positive"
@@ -1003,7 +1048,8 @@
     "tags": [
       "template",
       "sections",
-      "TMPL-04"
+      "TMPL-04",
+      "aspirational"
     ],
     "rationale": "Standalone section on own lines — fabricated multiline",
     "intent": "false_positive"
@@ -1025,7 +1071,8 @@
     "tags": [
       "template",
       "sections",
-      "TMPL-04"
+      "TMPL-04",
+      "aspirational"
     ],
     "rationale": "Indented standalone section — fabricated",
     "intent": "false_positive"
@@ -1047,7 +1094,8 @@
     "tags": [
       "template",
       "sections",
-      "TMPL-04"
+      "TMPL-04",
+      "aspirational"
     ],
     "rationale": "Section with padded tag names — fabricated",
     "intent": "false_positive"
@@ -1069,7 +1117,8 @@
     "tags": [
       "template",
       "sections",
-      "TMPL-04"
+      "TMPL-04",
+      "aspirational"
     ],
     "rationale": "List rendering with HTML — fabricated",
     "intent": "false_positive"
@@ -1091,7 +1140,8 @@
     "tags": [
       "template",
       "inverted",
-      "TMPL-05"
+      "TMPL-05",
+      "aspirational"
     ],
     "rationale": "Inverted section tag — fabricated",
     "intent": "false_positive"
@@ -1113,7 +1163,8 @@
     "tags": [
       "template",
       "inverted",
-      "TMPL-05"
+      "TMPL-05",
+      "aspirational"
     ],
     "rationale": "Inverted section closing — fabricated",
     "intent": "false_positive"
@@ -1135,7 +1186,8 @@
     "tags": [
       "template",
       "inverted",
-      "TMPL-05"
+      "TMPL-05",
+      "aspirational"
     ],
     "rationale": "Inverted with false value — fabricated",
     "intent": "false_positive"
@@ -1157,7 +1209,8 @@
     "tags": [
       "template",
       "inverted",
-      "TMPL-05"
+      "TMPL-05",
+      "aspirational"
     ],
     "rationale": "Inverted with null — fabricated",
     "intent": "false_positive"
@@ -1179,7 +1232,8 @@
     "tags": [
       "template",
       "inverted",
-      "TMPL-05"
+      "TMPL-05",
+      "aspirational"
     ],
     "rationale": "Inverted with empty list — fabricated",
     "intent": "false_positive"
@@ -1201,7 +1255,8 @@
     "tags": [
       "template",
       "inverted",
-      "TMPL-05"
+      "TMPL-05",
+      "aspirational"
     ],
     "rationale": "Truthy boolean hiding inverted section — fabricated data",
     "intent": "false_positive"
@@ -1223,7 +1278,8 @@
     "tags": [
       "template",
       "inverted",
-      "TMPL-05"
+      "TMPL-05",
+      "aspirational"
     ],
     "rationale": "Non-empty list hiding inverted — fabricated data",
     "intent": "false_positive"
@@ -1245,7 +1301,8 @@
     "tags": [
       "template",
       "inverted",
-      "TMPL-05"
+      "TMPL-05",
+      "aspirational"
     ],
     "rationale": "Standalone inverted on own lines — fabricated",
     "intent": "false_positive"
@@ -1267,7 +1324,8 @@
     "tags": [
       "template",
       "inverted",
-      "TMPL-05"
+      "TMPL-05",
+      "aspirational"
     ],
     "rationale": "Normal + inverted combo — fabricated",
     "intent": "false_positive"
@@ -1289,7 +1347,8 @@
     "tags": [
       "template",
       "inverted",
-      "TMPL-05"
+      "TMPL-05",
+      "aspirational"
     ],
     "rationale": "Inverted section for undefined key — fabricated",
     "intent": "false_positive"
@@ -1311,7 +1370,8 @@
     "tags": [
       "template",
       "inverted",
-      "TMPL-05"
+      "TMPL-05",
+      "aspirational"
     ],
     "rationale": "Two consecutive inverted sections — fabricated",
     "intent": "false_positive"
@@ -1333,7 +1393,8 @@
     "tags": [
       "template",
       "inverted",
-      "TMPL-05"
+      "TMPL-05",
+      "aspirational"
     ],
     "rationale": "Indented inverted — fabricated",
     "intent": "false_positive"
@@ -1355,7 +1416,8 @@
     "tags": [
       "template",
       "partials",
-      "TMPL-06"
+      "TMPL-06",
+      "aspirational"
     ],
     "rationale": "Partial include tag — fabricated",
     "intent": "false_positive"
@@ -1377,7 +1439,8 @@
     "tags": [
       "template",
       "partials",
-      "TMPL-06"
+      "TMPL-06",
+      "aspirational"
     ],
     "rationale": "Indented partial — fabricated",
     "intent": "false_positive"
@@ -1399,7 +1462,8 @@
     "tags": [
       "template",
       "partials",
-      "TMPL-06"
+      "TMPL-06",
+      "aspirational"
     ],
     "rationale": "Partial with parent context access — fabricated partial file",
     "intent": "false_positive"
@@ -1421,7 +1485,8 @@
     "tags": [
       "template",
       "partials",
-      "TMPL-06"
+      "TMPL-06",
+      "aspirational"
     ],
     "rationale": "Partial including another partial — fabricated",
     "intent": "false_positive"
@@ -1443,7 +1508,8 @@
     "tags": [
       "template",
       "partials",
-      "TMPL-06"
+      "TMPL-06",
+      "aspirational"
     ],
     "rationale": "Standalone partial — fabricated",
     "intent": "false_positive"
@@ -1465,7 +1531,8 @@
     "tags": [
       "template",
       "partials",
-      "TMPL-06"
+      "TMPL-06",
+      "aspirational"
     ],
     "rationale": "Padded partial with indentation inheritance — fabricated",
     "intent": "false_positive"
@@ -1487,7 +1554,8 @@
     "tags": [
       "template",
       "partials",
-      "TMPL-06"
+      "TMPL-06",
+      "aspirational"
     ],
     "rationale": "Partial inside section — fabricated",
     "intent": "false_positive"
@@ -1509,7 +1577,8 @@
     "tags": [
       "template",
       "partials",
-      "TMPL-06"
+      "TMPL-06",
+      "aspirational"
     ],
     "rationale": "Missing partial tag — fabricated",
     "intent": "false_positive"
@@ -1531,7 +1600,8 @@
     "tags": [
       "template",
       "partials",
-      "TMPL-06"
+      "TMPL-06",
+      "aspirational"
     ],
     "rationale": "Navigation markup in partial — fabricated",
     "intent": "false_positive"
@@ -1553,7 +1623,8 @@
     "tags": [
       "template",
       "partials",
-      "TMPL-06"
+      "TMPL-06",
+      "aspirational"
     ],
     "rationale": "Path-style partial name — fabricated",
     "intent": "false_positive"
@@ -1575,7 +1646,8 @@
     "tags": [
       "template",
       "partials",
-      "TMPL-06"
+      "TMPL-06",
+      "aspirational"
     ],
     "rationale": "Handlebars-style registerPartial — not mustache spec, fabricated",
     "intent": "false_positive"
@@ -1597,7 +1669,8 @@
     "tags": [
       "template",
       "lambdas",
-      "TMPL-07"
+      "TMPL-07",
+      "aspirational"
     ],
     "rationale": "Lambda function in helper — fabricated",
     "intent": "false_positive"
@@ -1619,7 +1692,8 @@
     "tags": [
       "template",
       "lambdas",
-      "TMPL-07"
+      "TMPL-07",
+      "aspirational"
     ],
     "rationale": "Lambda with text parameter — fabricated",
     "intent": "false_positive"
@@ -1641,7 +1715,8 @@
     "tags": [
       "template",
       "lambdas",
-      "TMPL-07"
+      "TMPL-07",
+      "aspirational"
     ],
     "rationale": "Section lambda with render callback — fabricated",
     "intent": "false_positive"
@@ -1663,7 +1738,8 @@
     "tags": [
       "template",
       "lambdas",
-      "TMPL-07"
+      "TMPL-07",
+      "aspirational"
     ],
     "rationale": "Dynamic lambda — fabricated",
     "intent": "false_positive"
@@ -1685,7 +1761,8 @@
     "tags": [
       "template",
       "lambdas",
-      "TMPL-07"
+      "TMPL-07",
+      "aspirational"
     ],
     "rationale": "Lambda section in template — fabricated",
     "intent": "false_positive"
@@ -1707,7 +1784,8 @@
     "tags": [
       "template",
       "lambdas",
-      "TMPL-07"
+      "TMPL-07",
+      "aspirational"
     ],
     "rationale": "Lambda interpolation — fabricated variable name",
     "intent": "false_positive"
@@ -1729,7 +1807,8 @@
     "tags": [
       "template",
       "lambdas",
-      "TMPL-07"
+      "TMPL-07",
+      "aspirational"
     ],
     "rationale": "Lambda returning mustache syntax — fabricated",
     "intent": "false_positive"
@@ -1751,7 +1830,8 @@
     "tags": [
       "template",
       "lambdas",
-      "TMPL-07"
+      "TMPL-07",
+      "aspirational"
     ],
     "rationale": "Lambda wrapping text in HTML — fabricated",
     "intent": "false_positive"
@@ -1773,7 +1853,8 @@
     "tags": [
       "template",
       "lambdas",
-      "TMPL-07"
+      "TMPL-07",
+      "aspirational"
     ],
     "rationale": "Non-callable in data — fabricated",
     "intent": "false_positive"
@@ -1795,7 +1876,8 @@
     "tags": [
       "template",
       "lambdas",
-      "TMPL-07"
+      "TMPL-07",
+      "aspirational"
     ],
     "rationale": "Lambda call counting — fabricated",
     "intent": "false_positive"
@@ -1817,7 +1899,8 @@
     "tags": [
       "template",
       "escaping",
-      "TMPL-08"
+      "TMPL-08",
+      "aspirational"
     ],
     "rationale": "Ampersand entity — fabricated",
     "intent": "false_positive"
@@ -1839,7 +1922,8 @@
     "tags": [
       "template",
       "escaping",
-      "TMPL-08"
+      "TMPL-08",
+      "aspirational"
     ],
     "rationale": "Less-than entity — fabricated",
     "intent": "false_positive"
@@ -1861,7 +1945,8 @@
     "tags": [
       "template",
       "escaping",
-      "TMPL-08"
+      "TMPL-08",
+      "aspirational"
     ],
     "rationale": "Greater-than entity — fabricated",
     "intent": "false_positive"
@@ -1883,7 +1968,8 @@
     "tags": [
       "template",
       "escaping",
-      "TMPL-08"
+      "TMPL-08",
+      "aspirational"
     ],
     "rationale": "Quote entity — fabricated",
     "intent": "false_positive"
@@ -1905,7 +1991,8 @@
     "tags": [
       "template",
       "escaping",
-      "TMPL-08"
+      "TMPL-08",
+      "aspirational"
     ],
     "rationale": "Triple mustache unescaped — fabricated variable",
     "intent": "false_positive"
@@ -1927,7 +2014,8 @@
     "tags": [
       "template",
       "escaping",
-      "TMPL-08"
+      "TMPL-08",
+      "aspirational"
     ],
     "rationale": "Ampersand unescaped syntax — fabricated variable",
     "intent": "false_positive"
@@ -1949,7 +2037,8 @@
     "tags": [
       "template",
       "escaping",
-      "TMPL-08"
+      "TMPL-08",
+      "aspirational"
     ],
     "rationale": "XSS payload in data — fabricated",
     "intent": "false_positive"
@@ -1971,7 +2060,8 @@
     "tags": [
       "template",
       "escaping",
-      "TMPL-08"
+      "TMPL-08",
+      "aspirational"
     ],
     "rationale": "Single quote entity — fabricated",
     "intent": "false_positive"
@@ -1993,7 +2083,8 @@
     "tags": [
       "template",
       "whitespace",
-      "TMPL-09"
+      "TMPL-09",
+      "aspirational"
     ],
     "rationale": "Standalone comment line removal — fabricated pattern",
     "intent": "false_positive"
@@ -2015,7 +2106,8 @@
     "tags": [
       "template",
       "whitespace",
-      "TMPL-09"
+      "TMPL-09",
+      "aspirational"
     ],
     "rationale": "Standalone section tag — fabricated pattern",
     "intent": "false_positive"
@@ -2037,7 +2129,8 @@
     "tags": [
       "template",
       "whitespace",
-      "TMPL-09"
+      "TMPL-09",
+      "aspirational"
     ],
     "rationale": "Inline tag with spaces — fabricated pattern",
     "intent": "false_positive"
@@ -2059,7 +2152,8 @@
     "tags": [
       "template",
       "whitespace",
-      "TMPL-09"
+      "TMPL-09",
+      "aspirational"
     ],
     "rationale": "Triple-space indented partial — fabricated",
     "intent": "false_positive"
@@ -2081,7 +2175,8 @@
     "tags": [
       "template",
       "whitespace",
-      "TMPL-09"
+      "TMPL-09",
+      "aspirational"
     ],
     "rationale": "Comment between text is inline, not standalone — fabricated",
     "intent": "false_positive"
@@ -2103,7 +2198,8 @@
     "tags": [
       "template",
       "whitespace",
-      "TMPL-09"
+      "TMPL-09",
+      "aspirational"
     ],
     "rationale": "Tab-indented standalone section — fabricated",
     "intent": "false_positive"
@@ -2125,7 +2221,8 @@
     "tags": [
       "template",
       "whitespace",
-      "TMPL-09"
+      "TMPL-09",
+      "aspirational"
     ],
     "rationale": "Newlines around interpolation — fabricated",
     "intent": "false_positive"
@@ -2147,7 +2244,8 @@
     "tags": [
       "template",
       "whitespace",
-      "TMPL-09"
+      "TMPL-09",
+      "aspirational"
     ],
     "rationale": "Trailing newline after interpolation — fabricated",
     "intent": "false_positive"
@@ -2169,7 +2267,8 @@
     "tags": [
       "template",
       "nested",
-      "TMPL-10"
+      "TMPL-10",
+      "aspirational"
     ],
     "rationale": "Dot notation single level — fabricated",
     "intent": "false_positive"
@@ -2191,7 +2290,8 @@
     "tags": [
       "template",
       "nested",
-      "TMPL-10"
+      "TMPL-10",
+      "aspirational"
     ],
     "rationale": "Two-level dot notation — fabricated",
     "intent": "false_positive"
@@ -2213,7 +2313,8 @@
     "tags": [
       "template",
       "nested",
-      "TMPL-10"
+      "TMPL-10",
+      "aspirational"
     ],
     "rationale": "Section context push — fabricated",
     "intent": "false_positive"
@@ -2235,7 +2336,8 @@
     "tags": [
       "template",
       "nested",
-      "TMPL-10"
+      "TMPL-10",
+      "aspirational"
     ],
     "rationale": "Parent variable in child section — fabricated",
     "intent": "false_positive"
@@ -2257,7 +2359,8 @@
     "tags": [
       "template",
       "nested",
-      "TMPL-10"
+      "TMPL-10",
+      "aspirational"
     ],
     "rationale": "Deeply nested JSON — fabricated data",
     "intent": "false_positive"
@@ -2279,7 +2382,8 @@
     "tags": [
       "template",
       "nested",
-      "TMPL-10"
+      "TMPL-10",
+      "aspirational"
     ],
     "rationale": "Nested array item — fabricated data",
     "intent": "false_positive"
@@ -2301,7 +2405,8 @@
     "tags": [
       "template",
       "nested",
-      "TMPL-10"
+      "TMPL-10",
+      "aspirational"
     ],
     "rationale": "Deep context miss — fabricated",
     "intent": "false_positive"
@@ -2323,7 +2428,8 @@
     "tags": [
       "template",
       "nested",
-      "TMPL-10"
+      "TMPL-10",
+      "aspirational"
     ],
     "rationale": "Context shadowing via section — fabricated",
     "intent": "false_positive"
@@ -2345,7 +2451,8 @@
     "tags": [
       "template",
       "edge",
-      "TMPL-11"
+      "TMPL-11",
+      "aspirational"
     ],
     "rationale": "Empty pattern — should fail grounding (no pattern field)",
     "intent": "false_positive"
@@ -2367,7 +2474,8 @@
     "tags": [
       "template",
       "edge",
-      "TMPL-11"
+      "TMPL-11",
+      "aspirational"
     ],
     "rationale": "Static HTML only — fabricated",
     "intent": "false_positive"
@@ -2389,7 +2497,8 @@
     "tags": [
       "template",
       "edge",
-      "TMPL-11"
+      "TMPL-11",
+      "aspirational"
     ],
     "rationale": "Mismatched open/close tags — fabricated",
     "intent": "false_positive"
@@ -2411,7 +2520,8 @@
     "tags": [
       "template",
       "edge",
-      "TMPL-11"
+      "TMPL-11",
+      "aspirational"
     ],
     "rationale": "Closing tag without opener — fabricated",
     "intent": "false_positive"
@@ -2433,7 +2543,8 @@
     "tags": [
       "template",
       "edge",
-      "TMPL-11"
+      "TMPL-11",
+      "aspirational"
     ],
     "rationale": "Single curly braces — fabricated",
     "intent": "false_positive"
@@ -2455,7 +2566,8 @@
     "tags": [
       "template",
       "edge",
-      "TMPL-11"
+      "TMPL-11",
+      "aspirational"
     ],
     "rationale": "Quadruple braces — fabricated",
     "intent": "false_positive"
@@ -2477,7 +2589,8 @@
     "tags": [
       "template",
       "edge",
-      "TMPL-11"
+      "TMPL-11",
+      "aspirational"
     ],
     "rationale": "Whitespace-only variable name — fabricated",
     "intent": "false_positive"
@@ -2499,7 +2612,8 @@
     "tags": [
       "template",
       "edge",
-      "TMPL-11"
+      "TMPL-11",
+      "aspirational"
     ],
     "rationale": "Boolean false in data — fabricated",
     "intent": "false_positive"
@@ -2521,7 +2635,8 @@
     "tags": [
       "template",
       "edge",
-      "TMPL-11"
+      "TMPL-11",
+      "aspirational"
     ],
     "rationale": "Zero value in data — fabricated",
     "intent": "false_positive"
@@ -2543,7 +2658,8 @@
     "tags": [
       "template",
       "edge",
-      "TMPL-11"
+      "TMPL-11",
+      "aspirational"
     ],
     "rationale": "Empty string in data — fabricated",
     "intent": "false_positive"
@@ -2565,7 +2681,8 @@
     "tags": [
       "template",
       "edge",
-      "TMPL-11"
+      "TMPL-11",
+      "aspirational"
     ],
     "rationale": "Non-English variable name — fabricated",
     "intent": "false_positive"
@@ -2587,7 +2704,8 @@
     "tags": [
       "template",
       "edge",
-      "TMPL-11"
+      "TMPL-11",
+      "aspirational"
     ],
     "rationale": "Hyphenated variable name — fabricated",
     "intent": "false_positive"
@@ -2609,7 +2727,8 @@
     "tags": [
       "template",
       "edge",
-      "TMPL-11"
+      "TMPL-11",
+      "aspirational"
     ],
     "rationale": "Underscored variable name — fabricated",
     "intent": "false_positive"
@@ -2631,7 +2750,8 @@
     "tags": [
       "template",
       "edge",
-      "TMPL-11"
+      "TMPL-11",
+      "aspirational"
     ],
     "rationale": "Three consecutive tags — fabricated",
     "intent": "false_positive"

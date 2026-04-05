@@ -15,7 +15,8 @@
     "tags": [
       "css_rendering",
       "box_model",
-      "WPT-01"
+      "WPT-01",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -36,7 +37,8 @@
     "tags": [
       "css_rendering",
       "box_model",
-      "WPT-01"
+      "WPT-01",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -57,7 +59,8 @@
     "tags": [
       "css_rendering",
       "box_model",
-      "WPT-01"
+      "WPT-01",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -84,7 +87,8 @@
     "tags": [
       "css_rendering",
       "box_model",
-      "WPT-01"
+      "WPT-01",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -104,7 +108,8 @@
     "tags": [
       "css_rendering",
       "box_model",
-      "WPT-01"
+      "WPT-01",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -126,7 +131,8 @@
     "tags": [
       "css_rendering",
       "box_model",
-      "WPT-01"
+      "WPT-01",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -148,7 +154,8 @@
     "tags": [
       "css_rendering",
       "box_model",
-      "WPT-01"
+      "WPT-01",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -169,7 +176,8 @@
     "tags": [
       "css_rendering",
       "box_model",
-      "WPT-01"
+      "WPT-01",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -190,7 +198,8 @@
     "tags": [
       "css_rendering",
       "box_model",
-      "WPT-01"
+      "WPT-01",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -212,7 +221,8 @@
     "tags": [
       "css_rendering",
       "box_model",
-      "WPT-01"
+      "WPT-01",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -233,7 +243,8 @@
     "tags": [
       "css_rendering",
       "box_model",
-      "WPT-01"
+      "WPT-01",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -255,7 +266,8 @@
     "tags": [
       "css_rendering",
       "flexbox",
-      "WPT-02"
+      "WPT-02",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -276,7 +288,8 @@
     "tags": [
       "css_rendering",
       "flexbox",
-      "WPT-02"
+      "WPT-02",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -297,7 +310,8 @@
     "tags": [
       "css_rendering",
       "flexbox",
-      "WPT-02"
+      "WPT-02",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -324,7 +338,8 @@
     "tags": [
       "css_rendering",
       "flexbox",
-      "WPT-02"
+      "WPT-02",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -351,7 +366,8 @@
     "tags": [
       "css_rendering",
       "flexbox",
-      "WPT-02"
+      "WPT-02",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -372,7 +388,8 @@
     "tags": [
       "css_rendering",
       "flexbox",
-      "WPT-02"
+      "WPT-02",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -394,7 +411,8 @@
     "tags": [
       "css_rendering",
       "flexbox",
-      "WPT-02"
+      "WPT-02",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -416,7 +434,8 @@
     "tags": [
       "css_rendering",
       "flexbox",
-      "WPT-02"
+      "WPT-02",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -438,7 +457,8 @@
     "tags": [
       "css_rendering",
       "flexbox",
-      "WPT-02"
+      "WPT-02",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -460,7 +480,8 @@
     "tags": [
       "css_rendering",
       "flexbox",
-      "WPT-02"
+      "WPT-02",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -482,7 +503,8 @@
     "tags": [
       "css_rendering",
       "flexbox",
-      "WPT-02"
+      "WPT-02",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -504,7 +526,8 @@
     "tags": [
       "css_rendering",
       "flexbox",
-      "WPT-02"
+      "WPT-02",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -526,7 +549,8 @@
     "tags": [
       "css_rendering",
       "grid",
-      "WPT-03"
+      "WPT-03",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -547,7 +571,8 @@
     "tags": [
       "css_rendering",
       "grid",
-      "WPT-03"
+      "WPT-03",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -568,7 +593,8 @@
     "tags": [
       "css_rendering",
       "grid",
-      "WPT-03"
+      "WPT-03",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -595,7 +621,8 @@
     "tags": [
       "css_rendering",
       "grid",
-      "WPT-03"
+      "WPT-03",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -616,7 +643,8 @@
     "tags": [
       "css_rendering",
       "grid",
-      "WPT-03"
+      "WPT-03",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -638,7 +666,8 @@
     "tags": [
       "css_rendering",
       "grid",
-      "WPT-03"
+      "WPT-03",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -660,7 +689,8 @@
     "tags": [
       "css_rendering",
       "grid",
-      "WPT-03"
+      "WPT-03",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -682,7 +712,8 @@
     "tags": [
       "css_rendering",
       "grid",
-      "WPT-03"
+      "WPT-03",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -704,7 +735,8 @@
     "tags": [
       "css_rendering",
       "grid",
-      "WPT-03"
+      "WPT-03",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -726,7 +758,8 @@
     "tags": [
       "css_rendering",
       "grid",
-      "WPT-03"
+      "WPT-03",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -748,7 +781,8 @@
     "tags": [
       "css_rendering",
       "grid",
-      "WPT-03"
+      "WPT-03",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -770,7 +804,8 @@
     "tags": [
       "css_rendering",
       "positioning",
-      "WPT-04"
+      "WPT-04",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -791,7 +826,8 @@
     "tags": [
       "css_rendering",
       "positioning",
-      "WPT-04"
+      "WPT-04",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -818,7 +854,8 @@
     "tags": [
       "css_rendering",
       "positioning",
-      "WPT-04"
+      "WPT-04",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -845,7 +882,8 @@
     "tags": [
       "css_rendering",
       "positioning",
-      "WPT-04"
+      "WPT-04",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -866,7 +904,8 @@
     "tags": [
       "css_rendering",
       "positioning",
-      "WPT-04"
+      "WPT-04",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -888,7 +927,8 @@
     "tags": [
       "css_rendering",
       "positioning",
-      "WPT-04"
+      "WPT-04",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -910,7 +950,8 @@
     "tags": [
       "css_rendering",
       "positioning",
-      "WPT-04"
+      "WPT-04",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -931,7 +972,8 @@
     "tags": [
       "css_rendering",
       "positioning",
-      "WPT-04"
+      "WPT-04",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -952,7 +994,8 @@
     "tags": [
       "css_rendering",
       "positioning",
-      "WPT-04"
+      "WPT-04",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -974,7 +1017,8 @@
     "tags": [
       "css_rendering",
       "positioning",
-      "WPT-04"
+      "WPT-04",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -995,7 +1039,8 @@
     "tags": [
       "css_rendering",
       "positioning",
-      "WPT-04"
+      "WPT-04",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1016,7 +1061,8 @@
     "tags": [
       "css_rendering",
       "typography",
-      "WPT-05"
+      "WPT-05",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1036,7 +1082,8 @@
     "tags": [
       "css_rendering",
       "typography",
-      "WPT-05"
+      "WPT-05",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1056,7 +1103,8 @@
     "tags": [
       "css_rendering",
       "typography",
-      "WPT-05"
+      "WPT-05",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1077,7 +1125,8 @@
     "tags": [
       "css_rendering",
       "typography",
-      "WPT-05"
+      "WPT-05",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1103,7 +1152,8 @@
     "tags": [
       "css_rendering",
       "typography",
-      "WPT-05"
+      "WPT-05",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1123,7 +1173,8 @@
     "tags": [
       "css_rendering",
       "typography",
-      "WPT-05"
+      "WPT-05",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1144,7 +1195,8 @@
     "tags": [
       "css_rendering",
       "typography",
-      "WPT-05"
+      "WPT-05",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1166,7 +1218,8 @@
     "tags": [
       "css_rendering",
       "typography",
-      "WPT-05"
+      "WPT-05",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1187,7 +1240,8 @@
     "tags": [
       "css_rendering",
       "typography",
-      "WPT-05"
+      "WPT-05",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1208,7 +1262,8 @@
     "tags": [
       "css_rendering",
       "typography",
-      "WPT-05"
+      "WPT-05",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1229,7 +1284,8 @@
     "tags": [
       "css_rendering",
       "typography",
-      "WPT-05"
+      "WPT-05",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1251,7 +1307,8 @@
     "tags": [
       "css_rendering",
       "visual_effects",
-      "WPT-06"
+      "WPT-06",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1272,7 +1329,8 @@
     "tags": [
       "css_rendering",
       "visual_effects",
-      "WPT-06"
+      "WPT-06",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1293,7 +1351,8 @@
     "tags": [
       "css_rendering",
       "visual_effects",
-      "WPT-06"
+      "WPT-06",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1320,7 +1379,8 @@
     "tags": [
       "css_rendering",
       "visual_effects",
-      "WPT-06"
+      "WPT-06",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1341,7 +1401,8 @@
     "tags": [
       "css_rendering",
       "visual_effects",
-      "WPT-06"
+      "WPT-06",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1363,7 +1424,8 @@
     "tags": [
       "css_rendering",
       "visual_effects",
-      "WPT-06"
+      "WPT-06",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1385,7 +1447,8 @@
     "tags": [
       "css_rendering",
       "visual_effects",
-      "WPT-06"
+      "WPT-06",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1407,7 +1470,8 @@
     "tags": [
       "css_rendering",
       "visual_effects",
-      "WPT-06"
+      "WPT-06",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1428,7 +1492,8 @@
     "tags": [
       "css_rendering",
       "visual_effects",
-      "WPT-06"
+      "WPT-06",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1450,7 +1515,8 @@
     "tags": [
       "css_rendering",
       "visual_effects",
-      "WPT-06"
+      "WPT-06",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1472,7 +1538,8 @@
     "tags": [
       "css_rendering",
       "visual_effects",
-      "WPT-06"
+      "WPT-06",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1500,7 +1567,8 @@
     "tags": [
       "css_rendering",
       "transforms",
-      "WPT-07"
+      "WPT-07",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1527,7 +1595,8 @@
     "tags": [
       "css_rendering",
       "transforms",
-      "WPT-07"
+      "WPT-07",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1554,7 +1623,8 @@
     "tags": [
       "css_rendering",
       "transforms",
-      "WPT-07"
+      "WPT-07",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1581,7 +1651,8 @@
     "tags": [
       "css_rendering",
       "transforms",
-      "WPT-07"
+      "WPT-07",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1602,7 +1673,8 @@
     "tags": [
       "css_rendering",
       "transforms",
-      "WPT-07"
+      "WPT-07",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1624,7 +1696,8 @@
     "tags": [
       "css_rendering",
       "transforms",
-      "WPT-07"
+      "WPT-07",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1646,7 +1719,8 @@
     "tags": [
       "css_rendering",
       "transforms",
-      "WPT-07"
+      "WPT-07",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1668,7 +1742,8 @@
     "tags": [
       "css_rendering",
       "transforms",
-      "WPT-07"
+      "WPT-07",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1689,7 +1764,8 @@
     "tags": [
       "css_rendering",
       "transforms",
-      "WPT-07"
+      "WPT-07",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1711,7 +1787,8 @@
     "tags": [
       "css_rendering",
       "transforms",
-      "WPT-07"
+      "WPT-07",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1733,7 +1810,8 @@
     "tags": [
       "css_rendering",
       "transforms",
-      "WPT-07"
+      "WPT-07",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1755,7 +1833,8 @@
     "tags": [
       "css_rendering",
       "animations",
-      "WPT-08"
+      "WPT-08",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1776,7 +1855,8 @@
     "tags": [
       "css_rendering",
       "animations",
-      "WPT-08"
+      "WPT-08",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1795,7 +1875,8 @@
     "tags": [
       "css_rendering",
       "animations",
-      "WPT-08"
+      "WPT-08",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1821,7 +1902,8 @@
     "tags": [
       "css_rendering",
       "animations",
-      "WPT-08"
+      "WPT-08",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1842,7 +1924,8 @@
     "tags": [
       "css_rendering",
       "animations",
-      "WPT-08"
+      "WPT-08",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1864,7 +1947,8 @@
     "tags": [
       "css_rendering",
       "animations",
-      "WPT-08"
+      "WPT-08",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1884,7 +1968,8 @@
     "tags": [
       "css_rendering",
       "animations",
-      "WPT-08"
+      "WPT-08",
+      "aspirational"
     ],
     "expectedFailedGate": "content",
     "intent": "false_positive"
@@ -1906,7 +1991,8 @@
     "tags": [
       "css_rendering",
       "animations",
-      "WPT-08"
+      "WPT-08",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1927,7 +2013,8 @@
     "tags": [
       "css_rendering",
       "animations",
-      "WPT-08"
+      "WPT-08",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1949,7 +2036,8 @@
     "tags": [
       "css_rendering",
       "animations",
-      "WPT-08"
+      "WPT-08",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1971,7 +2059,8 @@
     "tags": [
       "css_rendering",
       "animations",
-      "WPT-08"
+      "WPT-08",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1993,7 +2082,8 @@
     "tags": [
       "css_rendering",
       "overflow",
-      "WPT-09"
+      "WPT-09",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2014,7 +2104,8 @@
     "tags": [
       "css_rendering",
       "overflow",
-      "WPT-09"
+      "WPT-09",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2035,7 +2126,8 @@
     "tags": [
       "css_rendering",
       "overflow",
-      "WPT-09"
+      "WPT-09",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2061,7 +2153,8 @@
     "tags": [
       "css_rendering",
       "overflow",
-      "WPT-09"
+      "WPT-09",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2082,7 +2175,8 @@
     "tags": [
       "css_rendering",
       "overflow",
-      "WPT-09"
+      "WPT-09",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -2104,7 +2198,8 @@
     "tags": [
       "css_rendering",
       "overflow",
-      "WPT-09"
+      "WPT-09",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -2126,7 +2221,8 @@
     "tags": [
       "css_rendering",
       "overflow",
-      "WPT-09"
+      "WPT-09",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -2147,7 +2243,8 @@
     "tags": [
       "css_rendering",
       "overflow",
-      "WPT-09"
+      "WPT-09",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -2169,7 +2266,8 @@
     "tags": [
       "css_rendering",
       "overflow",
-      "WPT-09"
+      "WPT-09",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -2191,7 +2289,8 @@
     "tags": [
       "css_rendering",
       "overflow",
-      "WPT-09"
+      "WPT-09",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -2212,7 +2311,8 @@
     "tags": [
       "css_rendering",
       "overflow",
-      "WPT-09"
+      "WPT-09",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -2234,7 +2334,8 @@
     "tags": [
       "css_rendering",
       "selectors",
-      "WPT-10"
+      "WPT-10",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2255,7 +2356,8 @@
     "tags": [
       "css_rendering",
       "selectors",
-      "WPT-10"
+      "WPT-10",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2276,7 +2378,8 @@
     "tags": [
       "css_rendering",
       "selectors",
-      "WPT-10"
+      "WPT-10",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2297,7 +2400,8 @@
     "tags": [
       "css_rendering",
       "selectors",
-      "WPT-10"
+      "WPT-10",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2318,7 +2422,8 @@
     "tags": [
       "css_rendering",
       "selectors",
-      "WPT-10"
+      "WPT-10",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2339,7 +2444,8 @@
     "tags": [
       "css_rendering",
       "selectors",
-      "WPT-10"
+      "WPT-10",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -2361,7 +2467,8 @@
     "tags": [
       "css_rendering",
       "selectors",
-      "WPT-10"
+      "WPT-10",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -2383,7 +2490,8 @@
     "tags": [
       "css_rendering",
       "selectors",
-      "WPT-10"
+      "WPT-10",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -2405,7 +2513,8 @@
     "tags": [
       "css_rendering",
       "selectors",
-      "WPT-10"
+      "WPT-10",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -2427,7 +2536,8 @@
     "tags": [
       "css_rendering",
       "selectors",
-      "WPT-10"
+      "WPT-10",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -2449,7 +2559,8 @@
     "tags": [
       "css_rendering",
       "selectors",
-      "WPT-10"
+      "WPT-10",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -2471,7 +2582,8 @@
     "tags": [
       "css_rendering",
       "selectors",
-      "WPT-10"
+      "WPT-10",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -2492,7 +2604,8 @@
     "tags": [
       "css_rendering",
       "html_existence",
-      "WPT-01"
+      "WPT-01",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2512,7 +2625,8 @@
     "tags": [
       "css_rendering",
       "html_existence",
-      "WPT-01"
+      "WPT-01",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2532,7 +2646,8 @@
     "tags": [
       "css_rendering",
       "html_existence",
-      "WPT-08"
+      "WPT-08",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2552,7 +2667,8 @@
     "tags": [
       "css_rendering",
       "html_existence",
-      "WPT-03"
+      "WPT-03",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2571,7 +2687,8 @@
     "tags": [
       "css_rendering",
       "html_existence",
-      "WPT-04"
+      "WPT-04",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -2591,7 +2708,8 @@
     "tags": [
       "css_rendering",
       "html_existence",
-      "WPT-06"
+      "WPT-06",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -2611,7 +2729,8 @@
     "tags": [
       "css_rendering",
       "content_check",
-      "WPT-02"
+      "WPT-02",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2630,7 +2749,8 @@
     "tags": [
       "css_rendering",
       "content_check",
-      "WPT-03"
+      "WPT-03",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2649,7 +2769,8 @@
     "tags": [
       "css_rendering",
       "content_check",
-      "WPT-03"
+      "WPT-03",
+      "aspirational"
     ],
     "expectedFailedGate": "content",
     "intent": "false_positive"
@@ -2669,7 +2790,8 @@
     "tags": [
       "css_rendering",
       "content_check",
-      "WPT-09"
+      "WPT-09",
+      "aspirational"
     ],
     "expectedFailedGate": "content",
     "intent": "false_positive"

@@ -15,7 +15,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "flexbox"
+      "flexbox",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -35,7 +36,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "flexbox"
+      "flexbox",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -55,7 +57,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "flexbox_fallback"
+      "flexbox_fallback",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -75,7 +78,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "grid"
+      "grid",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -95,7 +99,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "grid_auto_fill"
+      "grid_auto_fill",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -115,7 +120,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "grid_auto_fit"
+      "grid_auto_fit",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -135,7 +141,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "grid"
+      "grid",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -156,7 +163,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "subgrid"
+      "subgrid",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -175,7 +183,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "subgrid_fallback"
+      "subgrid_fallback",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -195,7 +204,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "container_queries"
+      "container_queries",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -215,7 +225,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "container_queries"
+      "container_queries",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -235,7 +246,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "container_queries"
+      "container_queries",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -256,7 +268,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "aspect_ratio"
+      "aspect_ratio",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -276,7 +289,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "aspect_ratio"
+      "aspect_ratio",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -296,7 +310,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "aspect_ratio_fallback"
+      "aspect_ratio_fallback",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -316,7 +331,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "gap"
+      "gap",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -336,7 +352,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "gap"
+      "gap",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -356,7 +373,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "gap"
+      "gap",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -377,7 +395,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "place_items"
+      "place_items",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -397,7 +416,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "place_items"
+      "place_items",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -417,7 +437,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "clamp"
+      "clamp",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -437,7 +458,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "min_max"
+      "min_max",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -457,7 +479,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "min_max"
+      "min_max",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -477,7 +500,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "fit_content"
+      "fit_content",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -497,7 +521,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "fit_content"
+      "fit_content",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -516,7 +541,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "fit_content_fallback"
+      "fit_content_fallback",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -536,7 +562,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "logical_properties"
+      "logical_properties",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -556,7 +583,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "logical_properties"
+      "logical_properties",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -576,7 +604,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "logical_properties"
+      "logical_properties",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -596,7 +625,8 @@
     "tags": [
       "caniuse",
       "colors",
-      "oklch"
+      "oklch",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -616,7 +646,8 @@
     "tags": [
       "caniuse",
       "colors",
-      "oklch"
+      "oklch",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -636,7 +667,8 @@
     "tags": [
       "caniuse",
       "colors",
-      "oklch_fallback"
+      "oklch_fallback",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -656,7 +688,8 @@
     "tags": [
       "caniuse",
       "colors",
-      "lch"
+      "lch",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -676,7 +709,8 @@
     "tags": [
       "caniuse",
       "colors",
-      "lch"
+      "lch",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -697,7 +731,8 @@
     "tags": [
       "caniuse",
       "colors",
-      "color_mix"
+      "color_mix",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -717,7 +752,8 @@
     "tags": [
       "caniuse",
       "colors",
-      "color_mix"
+      "color_mix",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -737,7 +773,8 @@
     "tags": [
       "caniuse",
       "colors",
-      "color_mix"
+      "color_mix",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -758,7 +795,8 @@
     "tags": [
       "caniuse",
       "colors",
-      "relative_color"
+      "relative_color",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -778,7 +816,8 @@
     "tags": [
       "caniuse",
       "colors",
-      "relative_color"
+      "relative_color",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -798,7 +837,8 @@
     "tags": [
       "caniuse",
       "colors",
-      "color_function"
+      "color_function",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -818,7 +858,8 @@
     "tags": [
       "caniuse",
       "colors",
-      "color_function"
+      "color_function",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -838,7 +879,8 @@
     "tags": [
       "caniuse",
       "colors",
-      "forced_colors"
+      "forced_colors",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -858,7 +900,8 @@
     "tags": [
       "caniuse",
       "colors",
-      "light_dark"
+      "light_dark",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -878,7 +921,8 @@
     "tags": [
       "caniuse",
       "colors",
-      "accent_color"
+      "accent_color",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -898,7 +942,8 @@
     "tags": [
       "caniuse",
       "colors",
-      "accent_color"
+      "accent_color",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -918,7 +963,8 @@
     "tags": [
       "caniuse",
       "colors",
-      "color_scheme"
+      "color_scheme",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -938,7 +984,8 @@
     "tags": [
       "caniuse",
       "colors",
-      "color_scheme"
+      "color_scheme",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -958,7 +1005,8 @@
     "tags": [
       "caniuse",
       "colors",
-      "color_scheme_fallback"
+      "color_scheme_fallback",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -978,7 +1026,8 @@
     "tags": [
       "caniuse",
       "typography",
-      "variable_fonts"
+      "variable_fonts",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -997,7 +1046,8 @@
     "tags": [
       "caniuse",
       "typography",
-      "variable_fonts"
+      "variable_fonts",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1017,7 +1067,8 @@
     "tags": [
       "caniuse",
       "typography",
-      "variable_fonts"
+      "variable_fonts",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1037,7 +1088,8 @@
     "tags": [
       "caniuse",
       "typography",
-      "font_display"
+      "font_display",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1056,7 +1108,8 @@
     "tags": [
       "caniuse",
       "typography",
-      "font_display"
+      "font_display",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1076,7 +1129,8 @@
     "tags": [
       "caniuse",
       "typography",
-      "text_wrap"
+      "text_wrap",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1096,7 +1150,8 @@
     "tags": [
       "caniuse",
       "typography",
-      "text_wrap"
+      "text_wrap",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1116,7 +1171,8 @@
     "tags": [
       "caniuse",
       "typography",
-      "text_wrap"
+      "text_wrap",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1137,7 +1193,8 @@
     "tags": [
       "caniuse",
       "typography",
-      "hanging_punctuation"
+      "hanging_punctuation",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1157,7 +1214,8 @@
     "tags": [
       "caniuse",
       "typography",
-      "hanging_punctuation"
+      "hanging_punctuation",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1177,7 +1235,8 @@
     "tags": [
       "caniuse",
       "typography",
-      "initial_letter"
+      "initial_letter",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1197,7 +1256,8 @@
     "tags": [
       "caniuse",
       "typography",
-      "initial_letter"
+      "initial_letter",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1217,7 +1277,8 @@
     "tags": [
       "caniuse",
       "typography",
-      "text_decoration_thickness"
+      "text_decoration_thickness",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1237,7 +1298,8 @@
     "tags": [
       "caniuse",
       "typography",
-      "text_decoration_thickness"
+      "text_decoration_thickness",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1257,7 +1319,8 @@
     "tags": [
       "caniuse",
       "typography",
-      "text_decoration_thickness"
+      "text_decoration_thickness",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1276,7 +1339,8 @@
     "tags": [
       "caniuse",
       "selectors",
-      "has"
+      "has",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1296,7 +1360,8 @@
     "tags": [
       "caniuse",
       "selectors",
-      "has"
+      "has",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1316,7 +1381,8 @@
     "tags": [
       "caniuse",
       "selectors",
-      "has"
+      "has",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1336,7 +1402,8 @@
     "tags": [
       "caniuse",
       "selectors",
-      "is"
+      "is",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1355,7 +1422,8 @@
     "tags": [
       "caniuse",
       "selectors",
-      "where"
+      "where",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1375,7 +1443,8 @@
     "tags": [
       "caniuse",
       "selectors",
-      "is"
+      "is",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1395,7 +1464,8 @@
     "tags": [
       "caniuse",
       "selectors",
-      "not_multi"
+      "not_multi",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1414,7 +1484,8 @@
     "tags": [
       "caniuse",
       "selectors",
-      "nth_child_of"
+      "nth_child_of",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1434,7 +1505,8 @@
     "tags": [
       "caniuse",
       "selectors",
-      "focus_visible"
+      "focus_visible",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1453,7 +1525,8 @@
     "tags": [
       "caniuse",
       "selectors",
-      "focus_visible_fallback"
+      "focus_visible_fallback",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1472,7 +1545,8 @@
     "tags": [
       "caniuse",
       "selectors",
-      "dir"
+      "dir",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1491,7 +1565,8 @@
     "tags": [
       "caniuse",
       "selectors",
-      "lang"
+      "lang",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1511,7 +1586,8 @@
     "tags": [
       "caniuse",
       "selectors",
-      "backdrop"
+      "backdrop",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1531,7 +1607,8 @@
     "tags": [
       "caniuse",
       "selectors",
-      "marker"
+      "marker",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1551,7 +1628,8 @@
     "tags": [
       "caniuse",
       "selectors",
-      "marker"
+      "marker",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1571,7 +1649,8 @@
     "tags": [
       "caniuse",
       "selectors",
-      "selection"
+      "selection",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1591,7 +1670,8 @@
     "tags": [
       "caniuse",
       "selectors",
-      "placeholder"
+      "placeholder",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1610,7 +1690,8 @@
     "tags": [
       "caniuse",
       "selectors",
-      "placeholder_prefixed"
+      "placeholder_prefixed",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1629,7 +1710,8 @@
     "tags": [
       "caniuse",
       "selectors",
-      "placeholder_prefixed"
+      "placeholder_prefixed",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1649,7 +1731,8 @@
     "tags": [
       "caniuse",
       "animations",
-      "scroll_driven"
+      "scroll_driven",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1669,7 +1752,8 @@
     "tags": [
       "caniuse",
       "animations",
-      "scroll_driven"
+      "scroll_driven",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1688,7 +1772,8 @@
     "tags": [
       "caniuse",
       "animations",
-      "scroll_driven_fallback"
+      "scroll_driven_fallback",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1708,7 +1793,8 @@
     "tags": [
       "caniuse",
       "animations",
-      "scroll_driven"
+      "scroll_driven",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1728,7 +1814,8 @@
     "tags": [
       "caniuse",
       "animations",
-      "view_transitions"
+      "view_transitions",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1747,7 +1834,8 @@
     "tags": [
       "caniuse",
       "animations",
-      "view_transitions"
+      "view_transitions",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1766,7 +1854,8 @@
     "tags": [
       "caniuse",
       "animations",
-      "view_transitions"
+      "view_transitions",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1786,7 +1875,8 @@
     "tags": [
       "caniuse",
       "animations",
-      "discrete"
+      "discrete",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1805,7 +1895,8 @@
     "tags": [
       "caniuse",
       "animations",
-      "discrete_starting_style"
+      "discrete_starting_style",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1825,7 +1916,8 @@
     "tags": [
       "caniuse",
       "animations",
-      "discrete"
+      "discrete",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1846,7 +1938,8 @@
     "tags": [
       "caniuse",
       "visual",
-      "backdrop_filter"
+      "backdrop_filter",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1865,7 +1958,8 @@
     "tags": [
       "caniuse",
       "visual",
-      "backdrop_filter_prefixed"
+      "backdrop_filter_prefixed",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1885,7 +1979,8 @@
     "tags": [
       "caniuse",
       "visual",
-      "backdrop_filter"
+      "backdrop_filter",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1906,7 +2001,8 @@
     "tags": [
       "caniuse",
       "visual",
-      "mix_blend_mode"
+      "mix_blend_mode",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1926,7 +2022,8 @@
     "tags": [
       "caniuse",
       "visual",
-      "mix_blend_mode"
+      "mix_blend_mode",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -1947,7 +2044,8 @@
     "tags": [
       "caniuse",
       "visual",
-      "clip_path"
+      "clip_path",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1967,7 +2065,8 @@
     "tags": [
       "caniuse",
       "visual",
-      "clip_path"
+      "clip_path",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -1987,7 +2086,8 @@
     "tags": [
       "caniuse",
       "visual",
-      "mask_image"
+      "mask_image",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2006,7 +2106,8 @@
     "tags": [
       "caniuse",
       "visual",
-      "mask_image_prefixed"
+      "mask_image_prefixed",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2026,7 +2127,8 @@
     "tags": [
       "caniuse",
       "visual",
-      "filter"
+      "filter",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2046,7 +2148,8 @@
     "tags": [
       "caniuse",
       "visual",
-      "object_fit"
+      "object_fit",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2066,7 +2169,8 @@
     "tags": [
       "caniuse",
       "visual",
-      "object_position"
+      "object_position",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2085,7 +2189,8 @@
     "tags": [
       "caniuse",
       "visual",
-      "image_set"
+      "image_set",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2105,7 +2210,8 @@
     "tags": [
       "caniuse",
       "visual",
-      "content_visibility"
+      "content_visibility",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2125,7 +2231,8 @@
     "tags": [
       "caniuse",
       "visual",
-      "content_visibility"
+      "content_visibility",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2144,7 +2251,8 @@
     "tags": [
       "caniuse",
       "modern",
-      "layer"
+      "layer",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2163,7 +2271,8 @@
     "tags": [
       "caniuse",
       "modern",
-      "layer"
+      "layer",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2182,7 +2291,8 @@
     "tags": [
       "caniuse",
       "modern",
-      "property"
+      "property",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2201,7 +2311,8 @@
     "tags": [
       "caniuse",
       "modern",
-      "property"
+      "property",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2220,7 +2331,8 @@
     "tags": [
       "caniuse",
       "modern",
-      "scope"
+      "scope",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2239,7 +2351,8 @@
     "tags": [
       "caniuse",
       "modern",
-      "scope"
+      "scope",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2258,7 +2371,8 @@
     "tags": [
       "caniuse",
       "modern",
-      "starting_style"
+      "starting_style",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2277,7 +2391,8 @@
     "tags": [
       "caniuse",
       "modern",
-      "supports"
+      "supports",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2296,7 +2411,8 @@
     "tags": [
       "caniuse",
       "modern",
-      "supports"
+      "supports",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2315,7 +2431,8 @@
     "tags": [
       "caniuse",
       "modern",
-      "container"
+      "container",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2335,7 +2452,8 @@
     "tags": [
       "caniuse",
       "modern",
-      "popover"
+      "popover",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2354,7 +2472,8 @@
     "tags": [
       "caniuse",
       "modern",
-      "popover"
+      "popover",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2374,7 +2493,8 @@
     "tags": [
       "caniuse",
       "modern",
-      "anchor_positioning"
+      "anchor_positioning",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2394,7 +2514,8 @@
     "tags": [
       "caniuse",
       "modern",
-      "anchor_positioning"
+      "anchor_positioning",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2413,7 +2534,8 @@
     "tags": [
       "caniuse",
       "modern",
-      "nesting"
+      "nesting",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2433,7 +2555,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "scroll_snap"
+      "scroll_snap",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2453,7 +2576,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "scroll_snap"
+      "scroll_snap",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2473,7 +2597,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "scroll_snap"
+      "scroll_snap",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -2494,7 +2619,8 @@
     "tags": [
       "caniuse",
       "layout",
-      "overscroll_behavior"
+      "overscroll_behavior",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2514,7 +2640,8 @@
     "tags": [
       "caniuse",
       "typography",
-      "writing_mode"
+      "writing_mode",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2534,7 +2661,8 @@
     "tags": [
       "caniuse",
       "typography",
-      "hyphens"
+      "hyphens",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2554,7 +2682,8 @@
     "tags": [
       "caniuse",
       "typography",
-      "font_palette"
+      "font_palette",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2574,7 +2703,8 @@
     "tags": [
       "caniuse",
       "visual",
-      "touch_action"
+      "touch_action",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2594,7 +2724,8 @@
     "tags": [
       "caniuse",
       "visual",
-      "will_change"
+      "will_change",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2614,7 +2745,8 @@
     "tags": [
       "caniuse",
       "visual",
-      "contain"
+      "contain",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2633,7 +2765,8 @@
     "tags": [
       "caniuse",
       "animations",
-      "prefers_reduced_motion"
+      "prefers_reduced_motion",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2652,7 +2785,8 @@
     "tags": [
       "caniuse",
       "colors",
-      "prefers_contrast"
+      "prefers_contrast",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2671,7 +2805,8 @@
     "tags": [
       "caniuse",
       "colors",
-      "color_gamut"
+      "color_gamut",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2690,7 +2825,8 @@
     "tags": [
       "caniuse",
       "modern",
-      "inert"
+      "inert",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2709,7 +2845,8 @@
     "tags": [
       "caniuse",
       "modern",
-      "dialog"
+      "dialog",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2728,7 +2865,8 @@
     "tags": [
       "caniuse",
       "modern",
-      "details_name"
+      "details_name",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2748,7 +2886,8 @@
     "tags": [
       "caniuse",
       "animations",
-      "individual_transforms"
+      "individual_transforms",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2768,7 +2907,8 @@
     "tags": [
       "caniuse",
       "animations",
-      "individual_transforms"
+      "individual_transforms",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2788,7 +2928,8 @@
     "tags": [
       "caniuse",
       "animations",
-      "individual_transforms"
+      "individual_transforms",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2808,7 +2949,8 @@
     "tags": [
       "caniuse",
       "cross_cutting",
-      "webkit_prefix"
+      "webkit_prefix",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2828,7 +2970,8 @@
     "tags": [
       "caniuse",
       "cross_cutting",
-      "webkit_prefix"
+      "webkit_prefix",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2848,7 +2991,8 @@
     "tags": [
       "caniuse",
       "cross_cutting",
-      "moz_prefix"
+      "moz_prefix",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2868,7 +3012,8 @@
     "tags": [
       "caniuse",
       "cross_cutting",
-      "css_variables"
+      "css_variables",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2888,7 +3033,8 @@
     "tags": [
       "caniuse",
       "cross_cutting",
-      "css_variables"
+      "css_variables",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2908,7 +3054,8 @@
     "tags": [
       "caniuse",
       "cross_cutting",
-      "css_variables"
+      "css_variables",
+      "aspirational"
     ],
     "expectedFailedGate": "grounding",
     "intent": "false_positive"
@@ -2929,7 +3076,8 @@
     "tags": [
       "caniuse",
       "cross_cutting",
-      "calc"
+      "calc",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2949,7 +3097,8 @@
     "tags": [
       "caniuse",
       "cross_cutting",
-      "calc"
+      "calc",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2969,7 +3118,8 @@
     "tags": [
       "caniuse",
       "cross_cutting",
-      "env_function"
+      "env_function",
+      "aspirational"
     ],
     "intent": "false_negative"
   },
@@ -2989,7 +3139,8 @@
     "tags": [
       "caniuse",
       "cross_cutting",
-      "round_function"
+      "round_function",
+      "aspirational"
     ],
     "intent": "false_negative"
   }
