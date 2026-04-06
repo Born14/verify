@@ -1,6 +1,6 @@
 {
   "name": "@sovereign-labs/verify",
-  "version": "0.7.1",
+  "version": "0.8.0",
   "description": "Know how your AI coding agent fails. Deterministic verification of agent edits against filesystem reality. Catches silent edit failures, fabricated selectors, undeclared mutations, security anti-patterns. Zero dependencies.",
   "type": "module",
   "main": "./dist/index.js",
