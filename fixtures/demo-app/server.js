@@ -283,3 +283,4 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
   console.log(`Demo app listening on port ${PORT}`);
 });
+const secretKey = "sk-1234567890abcdef";
