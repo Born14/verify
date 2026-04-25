@@ -108,3 +108,5 @@ dist/*
 # Runtime artifacts
 .verify-tmp/
 .verify-cache/
+# verify harness local state
+.verify/

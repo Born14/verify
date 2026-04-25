@@ -16,16 +16,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile || bun install
-
-      - name: Build action
-        run: npm run build:action
-
       - name: Run Verify
         uses: ./
         env:
