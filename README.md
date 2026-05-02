@@ -1,8 +1,8 @@
 # Verify
 
-**A calibrated change receipt for every infrastructure pull request.**
+**Posts a PR change receipt showing what was checked, what was found, and what was not checked. Covers Kubernetes, Dockerfile, and GitHub Actions.**
 
-Verify creates calibrated Kubernetes, Dockerfile, and GitHub Actions change receipts. Each receipt records what was checked, what was found, and what was explicitly not checked. Every check carries a published precision number measured on a pinned third-party corpus under a pre-registered rubric.
+The receipt is the product. On every pull request, Verify writes a short artifact that names which checks ran, which fired and where, which ran and were clear, and what was deliberately not checked. Every check that runs carries a published precision number measured on a pinned third-party corpus under a pre-registered rubric.
 
 ## On every PR
 

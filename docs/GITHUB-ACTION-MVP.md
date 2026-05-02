@@ -2,7 +2,7 @@
 
 ## What the Action does
 
-It posts a **calibrated change receipt** on every pull request. The receipt is a single artifact -- a markdown PR comment, plus `.json` and `.md` files -- that records:
+It posts a **PR change receipt** showing what was checked, what was found, and what was not checked. The receipt is a single artifact -- a markdown PR comment, plus `.json` and `.md` files -- that records:
 
 - which calibrated checks ran
 - which fired and where

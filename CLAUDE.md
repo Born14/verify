@@ -16,7 +16,7 @@ That is the entire surface. If something else is here, it is either build output
 
 ## What the Action does
 
-It posts a calibrated change receipt on every pull request. The receipt names what was checked, what was found, what was clear, and what was explicitly not checked, and pins the result to a SHA-256 digest. Seven calibrated checks at the moment, covering Kubernetes manifests, Dockerfiles, and GitHub Actions workflows. The full list lives in [README.md](README.md) and ships in every receipt.
+It posts a PR change receipt showing what was checked, what was found, and what was not checked. The receipt also pins the result to a SHA-256 digest. Coverage is Kubernetes, Dockerfile, and GitHub Actions; seven checks at the moment, each one calibrated against a pinned third-party corpus. The full list lives in [README.md](README.md) and ships in every receipt.
 
 ## Where the work happens
 
