@@ -1,9 +1,9 @@
 name: 'Verify by Born14'
-description: 'Catches unsafe database migrations before they hit production. Deterministic. No LLM in the check path.'
+description: 'Posts a calibrated Kubernetes / Dockerfile / GitHub Actions change receipt on every pull request.'
 author: 'Born14'
 
 branding:
-  icon: 'database'
+  icon: 'file-text'
   color: 'orange'
 
 inputs:
@@ -11,20 +11,16 @@ inputs:
     description: 'GitHub token with pull-requests: write and contents: read'
     required: false
     default: ${{ github.token }}
-  fail-on:
-    description: 'Which severity fails the check: "error" (default), "warning", or "none"'
+  scan-root:
+    description: 'Directory to scan. Default is the repo root.'
     required: false
-    default: 'error'
-  comment:
-    description: 'Post results as a PR comment (default: true)'
-    required: false
-    default: 'true'
+    default: '.'
 
 outputs:
-  success:
-    description: 'Whether all checks passed (true/false)'
-  summary:
-    description: 'One-line summary of results'
+  result:
+    description: 'CLEAR or N FINDINGS, mirroring the receipt'
+  digest:
+    description: 'SHA-256 packet digest of the receipt'
 
 runs:
   using: 'node24'

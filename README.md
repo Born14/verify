@@ -1,135 +1,81 @@
 # Verify
 
-**Catches unsafe database migrations before they hit production.**
+**A calibrated change receipt for every infrastructure pull request.**
 
-Deterministic. No LLM in the check path. The answer is not "probably."
+Verify creates calibrated Kubernetes, Dockerfile, and GitHub Actions change receipts. Each receipt records what was checked, what was found, and what was explicitly not checked. Every check carries a published precision number measured on a pinned third-party corpus under a pre-registered rubric.
 
-## What it catches
+## On every PR
 
-**DM-18: ADD COLUMN NOT NULL without DEFAULT**
+A markdown PR comment plus three workflow artifacts:
 
-When an AI agent (or a human) writes a migration like this:
-
-```sql
-ALTER TABLE "users" ADD COLUMN "company" TEXT NOT NULL;
+```
+.verify/
+  verify-receipt.json             machine-readable receipt
+  verify-receipt.md               human-readable receipt
+  verify-receipt.pr-comment.md    body posted as the PR comment
 ```
 
-That migration will fail on any non-empty table. The database tries to apply `NOT NULL` to every existing row, finds no value (no default was provided), and rejects the operation. Your deploy breaks at 3am.
+The PR comment summarizes scope, findings, no-finding checks, an explicit Not-Checked block, and a SHA-256 digest. See [VERIFY-RECEIPT-SAMPLE.md](./docs/VERIFY-RECEIPT-SAMPLE.md) for the annotated full sample.
 
-Verify catches it before it merges.
-
-**Measured precision:** 19 true positives, 0 false positives across 761 production migrations from [cal.com](https://github.com/calcom/cal.com), [formbricks](https://github.com/formbricks/formbricks), and [supabase](https://github.com/supabase/supabase). See [MEASURED-CLAIMS.md](scripts/mvp-migration/MEASURED-CLAIMS.md) for full methodology and reproducibility steps.
-
-**Scope note on DEFAULT:** DM-18 fires on `NOT NULL` *without* `DEFAULT` — the structural case where no value exists to satisfy the constraint. The adjacent concern of *table-rewrite cost* for `ADD COLUMN NOT NULL DEFAULT` on large tables is a different shape. Since Postgres 11, a non-volatile DEFAULT (a constant like `'member'` or `true`) is stored in the table's metadata and does not rewrite rows ([see Postgres docs, Notes section](https://www.postgresql.org/docs/current/sql-altertable.html)), so the migration is fast regardless of row count. Volatile DEFAULTs (`now()`, `gen_random_uuid()`, subqueries) DO force a rewrite. Verify does not currently distinguish volatile from non-volatile DEFAULTs at PR time — that's a future shape, not part of DM-18's claim. Thanks to [u/tswaters on r/PostgreSQL](https://www.reddit.com/r/PostgreSQL/comments/1snmdsf/) for pointing at the exact docs section.
-
-**DM-28: Historical deploy-window context (info-only)**
-
-A related failure mode: a migration adds a NOT NULL constraint that executes cleanly but breaks writes from application code running a pre-migration revision. Verify detects the historical pattern of this incident — SET NOT NULL in one migration, DROP NOT NULL reverting it in a later one — and surfaces past occurrences in your repo's migration history as a separate "Historical context" section in the PR comment.
-
-This detector is **informational**: it does not fail the check, and it does not claim to predict deploy-window races on the PR you're currently authoring. What it does is tell your team "this codebase has had deploy-coordination issues before; here is the pattern." No other migration linter surfaces this.
-
-The detector is **uncalibrated** — first calibration attempt measured 28.6% precision (4 TP / 10 FP / 1 ambiguous on 15 findings across 1,764 migrations), held-to-bar under the published [classification rubric](https://github.com/Born14/verify-engine/blob/main/calibration/dm28-classification-rubric.md). Because it's info-severity, it doesn't need to clear the calibration bar to ship — but the uncalibrated status is disclosed on every PR comment that contains DM-28 output.
-
-A prospective per-file detector (fires on risky patterns as they are introduced, not on retrospective reverts) is in development and will ship at warning severity when calibrated.
-
-## Install (60 seconds)
-
-Add this to `.github/workflows/verify.yml`:
+## Install
 
 ```yaml
-name: Verify Migrations
-on:
-  pull_request:
-    types: [opened, synchronize]
-
-permissions:
-  pull-requests: write
-  contents: read
-
+# .github/workflows/verify.yml
+name: Verify
+on: pull_request
 jobs:
   verify:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
       - uses: Born14/verify@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-That's it. When a PR contains `.sql` migration files, Verify parses them, replays prior schema state from your base branch, and checks each migration for unsafe patterns. Results appear as a PR comment.
+## What gets checked (Gate A)
 
-## What it does NOT check
+Seven calibrated checks. Each links to a calibration ledger entry that supports the published precision.
 
-- Application code (JavaScript, Python, Ruby, etc.)
-- Security vulnerabilities or secrets
-- Code style or formatting
-- Anything that requires an LLM to evaluate
+| Shape | Surface | Calibrated precision | Risk family |
+|---|---|---|---|
+| `CONTAINER-ROOT-01` | Dockerfile | 85.71% / 23 | unsafe runtime |
+| `K8S-MISSING-LIMITS-01` | Kubernetes | 100.00% / 149 | reliability |
+| `K8S-MISSING-PROBES-01` | Kubernetes | 100.00% / 41 + 52.00% / 25 | reliability |
+| `K8S-MISSING-SECURITY-CONTEXT-01` | Kubernetes | 100.00% / 14 | unsafe runtime |
+| `K8S-IMAGE-TAG-LATEST-01` | Kubernetes | 100.00% / 62 | supply-chain drift |
+| `GHA-SHA-PIN-01` | GitHub Actions | 75.00% / 20 + 69.44% / 37 | supply-chain drift |
+| `DOCKERFILE-BASE-IMAGE-DIGEST-UNPINNED-01` | Dockerfile | 100.00% / 30 + 100.00% / 14 | supply-chain drift |
 
-Verify runs two things on your PR today. It blocks on NOT NULL without DEFAULT (DM-18, calibrated at 19/0 precision). It surfaces historical deploy-window patterns from your repo's migration history (DM-28, info-only). It does not check application code, security, or style.
+The supporting calibration evidence (rubric, classifier output, per-finding evidence) is public at [Born14/verify-engine/calibration/](https://github.com/Born14/verify-engine/tree/main/calibration).
 
-## Suppressing a finding
+## What is not checked
 
-If Verify flags a migration you've reviewed and determined is safe (for example, the table is known to be empty):
+This list ships in the receipt itself on every PR. Excerpted here so it's visible before install:
 
-```sql
--- verify: ack DM-18 table is empty at this point in the deploy
-ALTER TABLE "users" ADD COLUMN "company" TEXT NOT NULL;
+- Terraform .tf files are not parsed.
+- CloudFormation templates are not parsed.
+- Helm-templated YAML (`{{ ... }}` expressions) is skipped at detector level.
+- Kustomize overlays are not resolved.
+- Runtime cloud state (deployed IAM, running pods, attached security groups) is not consulted.
+- Business logic, intent, recall, and uncalibrated detectors are out of scope.
+
+## Reproducing a receipt locally
+
+```
+git clone <repo> && cd <repo> && git checkout <commit>
+bun scripts/iac/change-receipt/cli.ts . \
+  --out .verify --repo owner/name --pr 123 --source-commit <sha>
 ```
 
-The `-- verify: ack` comment tells Verify you've reviewed the finding. It will still appear in the PR comment as acknowledged, but it won't block merge.
+Identical inputs produce a byte-identical receipt.
 
-## Scope and honesty
+## Status
 
-- **Database support:** PostgreSQL only.
-- **Migration formats:** Prisma-generated SQL and hand-written `.sql` files.
-- **One calibrated blocking rule, one info-only historical scan.** DM-18 is measured against 761 production migrations with published precision and blocks unsafe NOT NULL migrations before merge. DM-28 runs at PR time as an info-severity historical scan — it surfaces past deploy-window revert patterns in your repo's migration history but does not block. Additional detectors (FK-dependent drops, narrowing type changes, prospective deploy-window warning) are in development.
-- **No runtime knowledge:** Verify parses SQL statically. It doesn't know your table has zero rows. It flags the structural risk regardless.
-- **Deterministic:** Every finding is reproducible. Same migration in, same result out. No probabilities.
+Free during the design-partner phase.
 
-## How is this different from Squawk?
+Terraform support is paused on public-corpus availability; the receipt's Not Checked block names that boundary explicitly until a Terraform check calibrates.
 
-[Squawk](https://squawkhq.com) is an established Postgres migration linter with 30+ rules. If you're already using Squawk, you're well-covered.
-
-Verify's differences:
-
-- **Progressive schema replay.** Verify replays your prior migrations from the base branch to build the schema state at the point of each new migration. This means it knows whether a column is currently nullable before checking a SET NOT NULL — it's not just pattern-matching the SQL in isolation.
-- **Published calibration data.** Every rule has a measured precision number against a named corpus. Failed calibration attempts are published too. See [METHODOLOGY.md](METHODOLOGY.md).
-- **One rule, deeply measured, vs. many rules without published precision.** Verify currently catches less than Squawk. What it catches, it measures.
-
-If you need broad coverage today, use Squawk. If you want calibrated precision with schema-aware detection, try Verify. They can run side by side.
-
-## How it works
-
-Verify uses [libpg-query](https://github.com/pganalyze/libpg-query) (PostgreSQL's actual parser, compiled to WASM) to parse migration SQL into an AST. It replays prior migrations from your base branch to build the schema state at the point of each new migration, then runs shape detectors against each operation.
-
-The detector source is readable: [safety-gate.ts](scripts/mvp-migration/safety-gate.ts), [schema-loader.ts](scripts/mvp-migration/schema-loader.ts).
-
-## Calibration and trust
-
-Every rule in Verify goes through a tier lifecycle:
-
-1. **Observed** — a failure pattern has been identified
-2. **Shipped** — a detector exists and runs as a warning
-3. **Calibrated** — the detector has been measured against a real-world corpus with published precision
-
-Only calibrated rules block merges. The calibration registry is public so claims are falsifiable:
-
-- [shapes.json](calibration/shapes.json) — every rule, its tier, its detector status
-- [corpora.json](calibration/corpora.json) — every corpus, its sources, its limitations
-- [attempts.jsonl](calibration/attempts.jsonl) — every calibration attempt, including failures and held-to-bar negatives
-
-See [METHODOLOGY.md](METHODOLOGY.md) for the full calibration discipline.
-
-## What's coming
-
-- DM-28 prospective: a per-file deploy-window warning that fires on risky patterns as they are introduced (complementing the current info-only historical scan)
-- More migration detectors (FK-dependent drops, narrowing type changes)
-- Django migration support
-- More framework parsers (Rails, Alembic)
-
-## License
-
-MIT. See [LICENSE](LICENSE).
-
-## Contact
-
-Built by [@Born14](https://github.com/Born14). Questions, bug reports, or "verify caught a real bug" stories: [open an issue](https://github.com/Born14/verify/issues).
+The detector source, every calibration rubric, and the public ledger live at [Born14/verify-engine](https://github.com/Born14/verify-engine).
