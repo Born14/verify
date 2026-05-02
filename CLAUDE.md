@@ -1,43 +1,49 @@
-# CLAUDE.md — verify (public product surface)
+# CLAUDE.md — Born14/verify (public release)
 
-Orientation for any Claude session opening this repo.
+Orientation for any Claude session that opens this repo. Read this before changing anything.
 
 ## What this repo is
 
-This is the **public product surface** for verify. It contains:
+This is the **public release** of the Verify GitHub Action. It is a product surface, not a development workspace.
 
-- The shipped GitHub Action (`dist/action/index.cjs`)
-- The Action's manifest (`action.yml`)
-- The README and methodology documentation
-- The published calibration registry (`calibration/shapes.json`, `calibration/corpora.json`, `calibration/attempts.jsonl`)
-- Published calibration evidence (`scripts/mvp-migration/reports/calibration-postfix-2026-04-12.jsonl` — the 19 DM-18 findings)
-- Readable detector source (the key files that back the shipped precision claim)
+Everything here is one of three things:
 
-## Where development happens
+- The Action itself: [action.yml](action.yml) and the bundled runtime at [dist/action/index.cjs](dist/action/index.cjs).
+- User-facing docs: [README.md](README.md), [METHODOLOGY.md](METHODOLOGY.md), [docs/GITHUB-ACTION-MVP.md](docs/GITHUB-ACTION-MVP.md), [docs/VERIFY-RECEIPT-SAMPLE.md](docs/VERIFY-RECEIPT-SAMPLE.md).
+- The public calibration ledger: [calibration/shapes.json](calibration/shapes.json), [calibration/attempts.jsonl](calibration/attempts.jsonl), [calibration/corpora.json](calibration/corpora.json).
 
-**Development does NOT happen here.** All substrate work — new detectors, corpus scanning, experiments, planning, harness work — lives in the private `Born14/verify-engine` repo at `c:/Users/mccar/verify-engine`.
+That is the entire surface. If something else is here, it is either build output or a leftover from a previous era and should be cleaned up rather than extended.
 
-The flow is: build and test in verify-engine → rebuild the Action bundle → copy `dist/action/index.cjs` here → update README / registry entries if the user-visible surface changed → commit and push both repos → move `v1` tag in this repo when a user-facing change ships.
+## What the Action does
 
-If a future Claude session lands here and is asked to add a detector, implement a feature, run tests, or do calibration work, the correct response is: **switch to the verify-engine repo.** This repo should only receive: the Action bundle after rebuild, README/docs updates, calibration registry entries for newly-calibrated shapes, and published evidence artifacts.
+It posts a calibrated change receipt on every pull request. The receipt names what was checked, what was found, what was clear, and what was explicitly not checked, and pins the result to a SHA-256 digest. Seven calibrated checks at the moment, covering Kubernetes manifests, Dockerfiles, and GitHub Actions workflows. The full list lives in [README.md](README.md) and ships in every receipt.
 
-## What verify is (brief)
+## Where the work happens
 
-Verify is a **harness for agent output** with a published calibrated taxonomy of failure shapes. It currently deploys as:
+Development does not happen in this repo. The detectors, calibration corpora, rubrics, and experiments live in a separate private repo (`Born14/verify-engine`) on the operator's machine. When a new shape calibrates or the Action's behaviour changes, the flow is:
 
-1. A GitHub Action that runs on every PR touching SQL migration files. Shipped.
-2. A Claude Code CLI hook (in development, v0 being built). Not yet shipped as of 2026-04-17.
+1. Build and test in the engine repo.
+2. Rebuild the Action bundle there.
+3. Copy the new bundle and the slim calibration files into this repo.
+4. Update the README and the public ledger if user-visible behaviour changed.
+5. Commit and push. Move the `v1` tag only after the new bundle has been smoke-tested on a real PR.
 
-The shipped shape is DM-18 (NOT NULL without DEFAULT), calibrated at 19 TP / 0 FP / 0 ambiguous on 761 production migrations. Evidence JSONL is published at `scripts/mvp-migration/reports/calibration-postfix-2026-04-12.jsonl` and is independently verifiable.
+If a Claude session lands in this repo and is asked to write a detector, run a calibration, or add a feature: the right answer is to switch to the engine repo. This repo only receives finished, calibrated output.
 
-DM-28 (deploy-window race) runs at INFO severity in the Action — it surfaces past revert patterns in the repo's migration history as a "Historical context" section in the PR comment. Never blocks. Uncalibrated; first calibration attempt held-to-bar at 28.6%.
+## What you can safely do here
 
-## Load-bearing conventions
+- Edit user-facing documentation (README, METHODOLOGY, the docs/ files) for clarity.
+- Update copy in [action.yml](action.yml).
+- Replace the Action bundle when the engine ships a new build.
+- Refresh [calibration/](calibration/) when a new attempt ratifies in the engine.
 
-- **The calibration ledger is the primary asset.** Every shape has honest status (calibrated / held-to-bar / shipped / designed). Held-to-bar negatives are recorded as prominently as promotions.
-- **Deterministic, not LLM-as-judge.** No LLM runs in the check path.
-- **Documentation stance.** Posts to public channels are timestamps on work, not pitches. Don't add "marketing"-style copy to the README or `action.yml`. Match the tone of the existing files: honest, specific, falsifiable.
+## What you should not do here
 
-## If in doubt
+- Add new detectors, gates, or runtime logic.
+- Run calibration measurements.
+- Restore or reintroduce files from earlier eras (DM-18 migration detector, 26-gate pipeline, harness, etc.). Those have moved out of this repo intentionally.
+- Make claims in the README or `action.yml` that are not backed by a row in [calibration/attempts.jsonl](calibration/attempts.jsonl). Every precision number in user-facing copy must trace to a ledger row.
 
-Open `c:/Users/mccar/verify-engine/CLAUDE.md` for the full development context. Most work doesn't belong in this repo.
+## Tone
+
+Plain, specific, falsifiable. Match the existing copy. The product's promise is that every claim is checkable; the docs need to honour that. No marketing voice, no comparative jabs, no claims that go beyond what the ledger supports.

@@ -2,275 +2,412 @@
   "schema_version": 1,
   "shapes": [
     {
-      "id": "DM-01",
-      "vertical": "migration",
-      "category": "grounding",
-      "title": "Target table not found",
-      "description": "ADD COLUMN, ALTER COLUMN, DROP COLUMN, or similar operation references a table that does not exist in the replayed schema state.",
+      "id": "CONTAINER-ROOT-01",
+      "vertical": "infrastructure-as-code",
+      "category": "container-runs-as-root",
+      "title": "Dockerfile declares an image whose effective final USER is root",
+      "description": "A Dockerfile (matching name 'Dockerfile' or 'Dockerfile.<name>') in production-context path declares a runtime stage whose effective final USER is root, with no explicit USER directive transitioning to a non-root user before CMD/ENTRYPOINT execution. The shape catches the failure mode where a container is deployed running as root (UID 0) in production, bypassing the principle of least privilege. First calibrated shape in verify's infrastructure-as-code vertical and the first calibrated shape outside the code-failure domain — proves the methodology generalizes to declarative-IaC analysis. Multi-stage Dockerfiles are handled per pre-reg §2.3 (only runtime stage's USER configuration is evaluated). Production-context filter (§2.4) suppresses files in test/, examples/, fixtures/, samples/, docs/ paths and Dockerfiles with .test/.example/.dev/.local/.debug suffixes. Base-image default-user lookup uses a frozen v1 allowlist of known-root-default images (alpine, ubuntu, debian, python, golang, etc.) and known-non-root-default images (node, jenkins). Private-registry / unknown base images route to AMB.c.",
       "implementation": {
-        "gate_file": "scripts/mvp-migration/grounding-gate.ts",
-        "function": "runGroundingGate"
-      },
-      "current_tier": "shipped",
-      "current_severity": "error",
-      "ci_behavior": "blocking",
-      "promoted_attempts": [],
-      "tier_history": [
-        {"tier": "shipped", "at": "b7b509c", "reason": "initial sync from sovereign monorepo", "date": "2026-04-12"}
-      ],
-      "corpus_suitability": [
-        {"corpus_id": "prisma-production-v1", "fires": false, "reason": "Production-merged filters out hallucinated table references"}
-      ]
-    },
-    {
-      "id": "DM-02",
-      "vertical": "migration",
-      "category": "grounding",
-      "title": "Target column not found",
-      "description": "Operation references a column that does not exist on the target table in the replayed schema state.",
-      "implementation": {
-        "gate_file": "scripts/mvp-migration/grounding-gate.ts",
-        "function": "runGroundingGate"
-      },
-      "current_tier": "shipped",
-      "current_severity": "error",
-      "ci_behavior": "blocking",
-      "promoted_attempts": [],
-      "tier_history": [
-        {"tier": "shipped", "at": "b7b509c", "reason": "initial sync from sovereign monorepo", "date": "2026-04-12"}
-      ],
-      "corpus_suitability": [
-        {"corpus_id": "prisma-production-v1", "fires": false, "reason": "Production-merged filters out hallucinated column references"}
-      ]
-    },
-    {
-      "id": "DM-03",
-      "vertical": "migration",
-      "category": "grounding",
-      "title": "Foreign key references unknown table or column",
-      "description": "FK constraint references a table or column that does not exist in the replayed schema state.",
-      "implementation": {
-        "gate_file": "scripts/mvp-migration/grounding-gate.ts",
-        "function": "runGroundingGate"
-      },
-      "current_tier": "shipped",
-      "current_severity": "error",
-      "ci_behavior": "blocking",
-      "promoted_attempts": [],
-      "tier_history": [
-        {"tier": "shipped", "at": "b7b509c", "reason": "initial sync from sovereign monorepo", "date": "2026-04-12"}
-      ],
-      "corpus_suitability": [
-        {"corpus_id": "prisma-production-v1", "fires": false, "reason": "Production-merged filters out unknown FK targets"}
-      ]
-    },
-    {
-      "id": "DM-04",
-      "vertical": "migration",
-      "category": "grounding",
-      "title": "Create target already exists",
-      "description": "CREATE TABLE or CREATE INDEX targets a name that already exists in the replayed schema state.",
-      "implementation": {
-        "gate_file": "scripts/mvp-migration/grounding-gate.ts",
-        "function": "runGroundingGate"
-      },
-      "current_tier": "shipped",
-      "current_severity": "error",
-      "ci_behavior": "blocking",
-      "promoted_attempts": [],
-      "tier_history": [
-        {"tier": "shipped", "at": "b7b509c", "reason": "initial sync from sovereign monorepo", "date": "2026-04-12"}
-      ],
-      "corpus_suitability": [
-        {"corpus_id": "prisma-production-v1", "fires": false, "reason": "Production-merged filters out duplicate create attempts"}
-      ]
-    },
-    {
-      "id": "DM-05",
-      "vertical": "migration",
-      "category": "grounding",
-      "title": "Rename source missing or target conflict",
-      "description": "RENAME TABLE or RENAME COLUMN source does not exist, or the target name already exists.",
-      "implementation": {
-        "gate_file": "scripts/mvp-migration/grounding-gate.ts",
-        "function": "runGroundingGate"
-      },
-      "current_tier": "shipped",
-      "current_severity": "error",
-      "ci_behavior": "blocking",
-      "promoted_attempts": [],
-      "tier_history": [
-        {"tier": "shipped", "at": "b7b509c", "reason": "initial sync from sovereign monorepo", "date": "2026-04-12"}
-      ],
-      "corpus_suitability": [
-        {"corpus_id": "prisma-production-v1", "fires": false, "reason": "Production-merged filters out broken rename operations"}
-      ]
-    },
-    {
-      "id": "DM-15",
-      "vertical": "migration",
-      "category": "safety",
-      "title": "DROP COLUMN with FK dependents",
-      "description": "DROP COLUMN targets a column that has incoming foreign key references from other tables, which will cascade or fail at runtime.",
-      "implementation": {
-        "gate_file": "scripts/mvp-migration/safety-gate.ts",
-        "function": "checkDropColumnSafety"
-      },
-      "current_tier": "shipped",
-      "current_severity": "warning",
-      "ci_behavior": "warning-only",
-      "promoted_attempts": [],
-      "held_attempts": ["dm15-prisma-production-v1-2026-04-12", "dm15-django-readthedocs-v1-2026-04-14"],
-      "tier_history": [
-        {"tier": "shipped", "at": "b7b509c", "reason": "initial sync from sovereign monorepo", "date": "2026-04-12"},
-        {"tier": "shipped", "at": "19b56b1", "reason": "calibration attempted, produced 0 findings on prisma-production-v1, below 10-finding floor", "date": "2026-04-12"},
-        {"tier": "shipped", "at": "49b7614", "reason": "calibration attempted on django-readthedocs-v1 via new Django AST parser, produced 0 canonical incoming-FK findings and 4 outgoing-FK-sub-case findings (all FP due to parser not modeling Django's implicit DROP CONSTRAINT before DROP COLUMN); 4 below the 10-finding floor", "date": "2026-04-14"}
-      ],
-      "corpus_suitability": [
-        {"corpus_id": "prisma-production-v1", "fires": false, "reason": "Prisma migration generator emits DROP CONSTRAINT before DROP COLUMN, so by the time DROP COLUMN runs the FK is already gone"},
-        {"corpus_id": "django-readthedocs-v1", "fires": false, "reason": "Canonical DM-15 sub-case (incoming-FK dependents) produced 0 findings across 345 migrations; 72 RemoveField operations exist but none target a column with live incoming FK references at drop time. Outgoing-FK warning sub-case fires 4 times but all are parser-modeling artifacts, not true DM-15 failures — see attempt dm15-django-readthedocs-v1-2026-04-14 in attempts.jsonl."}
-      ]
-    },
-    {
-      "id": "DM-16",
-      "vertical": "migration",
-      "category": "safety",
-      "title": "DROP TABLE with FK dependents",
-      "description": "DROP TABLE targets a table that has incoming foreign key references from other tables.",
-      "implementation": {
-        "gate_file": "scripts/mvp-migration/safety-gate.ts",
-        "function": "checkDropTableSafety"
-      },
-      "current_tier": "shipped",
-      "current_severity": "warning",
-      "ci_behavior": "warning-only",
-      "promoted_attempts": [],
-      "held_attempts": ["dm16-prisma-production-v1-2026-04-12"],
-      "tier_history": [
-        {"tier": "shipped", "at": "b7b509c", "reason": "initial sync from sovereign monorepo", "date": "2026-04-12"},
-        {"tier": "shipped", "at": "19b56b1", "reason": "calibration attempted, produced 0 findings on prisma-production-v1, below 10-finding floor", "date": "2026-04-12"}
-      ],
-      "corpus_suitability": [
-        {"corpus_id": "prisma-production-v1", "fires": false, "reason": "Prisma migration generator drops FK constraints before DROP TABLE, same defensive sequence as DM-15"}
-      ]
-    },
-    {
-      "id": "DM-17",
-      "vertical": "migration",
-      "category": "safety",
-      "title": "Column type change is narrowing",
-      "description": "ALTER COLUMN TYPE converts to a narrower type, causing potential data loss (BIGINT to INT, TEXT to VARCHAR(N), TIMESTAMPTZ to DATE, NUMERIC to FLOAT4).",
-      "implementation": {
-        "gate_file": "scripts/mvp-migration/safety-gate.ts",
-        "function": "checkNarrowingType"
-      },
-      "current_tier": "shipped",
-      "current_severity": "warning",
-      "ci_behavior": "warning-only",
-      "promoted_attempts": [],
-      "tier_history": [
-        {"tier": "shipped", "at": "b7b509c", "reason": "initial sync from sovereign monorepo", "date": "2026-04-12"}
-      ],
-      "corpus_suitability": [
-        {"corpus_id": "prisma-production-v1", "fires": false, "reason": "Prisma computes type changes through intermediate columns rather than direct narrowings"}
-      ],
-      "known_issues": [
-        "Hardcoded narrowing-types table is incomplete. Needs expansion before calibration on any corpus."
-      ]
-    },
-    {
-      "id": "DM-18",
-      "vertical": "migration",
-      "category": "safety",
-      "title": "NOT NULL without safe preconditions",
-      "description": "ADD COLUMN x NOT NULL without DEFAULT, or ALTER COLUMN x SET NOT NULL where x is currently nullable and has no default. Will fail on any non-empty table at runtime. Scope note: DM-18 fires on the *structural* missing-value case only. It does NOT fire on ADD COLUMN NOT NULL WITH DEFAULT — since Postgres 11, non-volatile DEFAULTs are stored in table metadata without rewriting rows, so the migration is fast and structurally safe. Volatile DEFAULTs (now(), gen_random_uuid(), subqueries) still force a table rewrite, but that's a separate shape concern (table-rewrite cost) not covered by DM-18. Reference: https://www.postgresql.org/docs/current/sql-altertable.html notes section.",
-      "implementation": {
-        "gate_file": "scripts/mvp-migration/safety-gate.ts",
-        "function": "checkNotNullSafety"
+        "gate_file": "scripts/iac/container-root-01-detector.ts",
+        "function": "runContainerRoot01"
       },
       "current_tier": "calibrated",
-      "current_severity": "error",
-      "ci_behavior": "blocking",
-      "promoted_attempts": ["dm18-prisma-production-v1-2026-04-12"],
-      "tier_history": [
-        {"tier": "shipped", "at": "b7b509c", "reason": "initial sync from sovereign monorepo", "date": "2026-04-12"},
-        {"tier": "calibrated", "at": "dad8a42", "reason": "19/0 precision on prisma-production-v1, clears 80% blocking threshold and 10-finding sample floor", "date": "2026-04-12"}
-      ],
-      "corpus_suitability": [
-        {"corpus_id": "prisma-production-v1", "fires": true, "reason": "NOT NULL without DEFAULT is a runtime data failure that no generator can pre-empt and code review cannot catch without knowing row counts. Fired on 19 of 761 migrations (2.5% base rate)."}
-      ],
-      "provenance_notes": [
-        "DM-18's classification work (recorded in dad8a42 at 09:29 on 2026-04-12) predates the formal calibration bar commit (2b5d1fb at 17:20 on 2026-04-12) by approximately seven hours and fifty-one minutes. DM-18 is therefore calibrated under a retroactively-formalized bar. The promotion decision matches what the bar would have required (19/19 = 100% clears every threshold), but the procedural pre-registration requirement of Component 1 was not satisfied for this specific claim. This gap is acknowledged in commit 51d767d (2026-04-13). The first shape measured under a fully pre-registered bar is DM-15."
-      ]
-    },
-    {
-      "id": "DM-19",
-      "vertical": "migration",
-      "category": "safety",
-      "title": "DROP INDEX backing a constraint",
-      "description": "DROP INDEX targets an index that is the backing index for a UNIQUE or PRIMARY KEY constraint, which would break the constraint invariant.",
-      "implementation": {
-        "gate_file": "scripts/mvp-migration/safety-gate.ts",
-        "function": "checkDropIndexSafety"
-      },
-      "current_tier": "shipped",
       "current_severity": "warning",
       "ci_behavior": "warning-only",
-      "promoted_attempts": [],
+      "promoted_attempts": [
+        "container-root-01-v2-iac-grafana-v1-2026-04-28-ratified"
+      ],
+      "held_attempts": [
+        "container-root-01-v1-iac-kubernetes-v1-2026-04-28",
+        "container-root-01-v1-iac-grafana-v1-2026-04-28",
+        "container-root-01-v2-iac-airflow-v1-2026-04-28"
+      ],
       "tier_history": [
-        {"tier": "shipped", "at": "b7b509c", "reason": "initial sync from sovereign monorepo", "date": "2026-04-12"}
+        {
+          "tier": "shipped",
+          "at": "2026-04-28",
+          "reason": "Pre-registration committed at 5514a59 binding the rubric: Dockerfile detection (§2.1), trigger predicate including base-image-default lookup (§2.2), multi-stage handling (§2.3), production-context filter (§2.4), six FP buckets (§4), nine AMB classes (§5), 5 binding fixtures + 7 spot tests (§10), append-by-default (§11). First methodology-extension cycle outside the code-failure domain.",
+          "date": "2026-04-28"
+        },
+        {
+          "tier": "calibrated",
+          "at": "10d2699",
+          "reason": "container-root-01-v2-iac-grafana-v1-2026-04-28-ratified: v2 cycle ratification under PROMOTION-DOCTRINE.md strong-single-corpus rule. Grafana cleared blocking-band precision (12 TP / 2 FP / 9 AMB on 23 findings = 85.71%) with 39.13% ambiguity (under 40% cap). Reproduced byte-identically across v1 and v2 cycles, proving §9 reproducibility. Tier shipped→calibrated, severity warning→warning per first-promotion lock. 13th calibrated shape overall, first calibrated shape in infrastructure-as-code vertical, first calibrated shape outside code-failure domain. Methodology applied without amendment — same 8-phase cycle, same pre-registration structure, same classifier-consistency check, same provenance-digest discipline as the 12 prior code-failure cycles.",
+          "date": "2026-04-28"
+        }
       ],
       "corpus_suitability": [
-        {"corpus_id": "prisma-production-v1", "fires": false, "reason": "Prisma manages indexes through named constraint definitions, so DROP INDEX on a constraint-backing index is pre-empted"}
+        {
+          "corpus_id": "iac-grafana-v1",
+          "fires": true,
+          "reason": "Cleared blocking-band precision twice (v1 cycle and v2 cycle re-measurement). Public-base-image distribution (alpine, ubuntu, debian, golang) maps to v1 detector's allowlist. 12 TP / 2 FP / 9 AMB on 23 findings, 85.71% precision."
+        },
+        {
+          "corpus_id": "iac-kubernetes-v1",
+          "fires": true,
+          "reason": "Held v1 on private-registry AMB.c saturation. 8 of 12 findings used registry.k8s.io/* base images that v1 allowlist does not recognize. Real ambiguity, correctly routed by classifier. Future v2 detector with kubernetes-private-registry resolution would convert most AMB.c to TP/explicit-non-root suppression."
+        },
+        {
+          "corpus_id": "iac-airflow-v1",
+          "fires": true,
+          "reason": "Held v2 with same private-registry pattern as kubernetes (apache/airflow internal base images dominate AMB.c). 9 of 12 findings AMB.c. Confirms the private-registry pattern is structural across orchestration / workflow infrastructure projects."
+        }
       ],
       "known_issues": [
-        "Index-name matching is fragile. Needs hardening before calibration on any corpus."
+        "v1 base-image allowlist is frozen at the project's known-root-default list. Private-registry images (registry.k8s.io/*, gcr.io/*, quay.io/<org>/*, GitHub-org-published images, etc.) route to AMB.c when the runtime stage has no USER directive. This is a real ambiguity, not a defect — the detector correctly does not assume privacy-registry images run as root.",
+        "Multi-stage Dockerfiles where the runtime stage USES a stage-alias FROM (e.g., FROM build AS final) are handled by walking the alias chain; circular FROM AS chains are disallowed by Docker.",
+        "FROM scratch with runtime instructions but no USER routes to AMB.h. The scratch image has no documented default user; ambiguous.",
+        "ONBUILD USER directives route to AMB.g (rare; v1 doesn't model ONBUILD).",
+        "Build-arg-driven USER (USER ${RUNUSER}) routes to AMB.a.",
+        "Path-based FP heuristics (FP.a build-tooling, FP.d privileged-by-design, FP.f vendor) are heuristic and may misclassify edge cases. v2 may add Dockerfile-comment-based annotation parsing.",
+        "Containerfile (Podman alternative) is deferred to v2.",
+        "v1 corpus-pair attempts surfaced a pattern: orchestration/observability projects publish their own base images, which dominates AMB.c. End-user OSS apps that use public base images (grafana, alpine-based services) are the structurally-cleanest corpora for this shape under v1 doctrine."
       ]
     },
     {
-      "id": "DM-28",
-      "vertical": "migration",
-      "category": "deploy-window",
-      "title": "SET NOT NULL without application-compatibility window (deploy-window race)",
-      "description": "SET NOT NULL (or ADD COLUMN ... NOT NULL with DEFAULT) on an existing table where application code does not yet tolerate the invariant. The migration completes successfully and existing rows satisfy the constraint, but new writes from application code still running a pre-migration revision fail because they do not provide a value for the column. Distinct from DM-18 (which fires on migrations that cannot even execute against non-empty tables) — DM-28 fires on migrations that execute cleanly and then break writes during the deploy window between migration completion and application code rollout.",
+      "id": "K8S-MISSING-LIMITS-01",
+      "vertical": "infrastructure-as-code",
+      "category": "k8s-missing-resource-limits",
+      "title": "Kubernetes manifest container missing resources.limits",
+      "description": "A Kubernetes manifest YAML in production-context path declares a workload (Pod, Deployment, DaemonSet, StatefulSet, Job, CronJob, ReplicaSet, or ReplicationController) where a container in the relevant container path (containers, initContainers, ephemeralContainers, including under template.spec and jobTemplate.spec.template.spec) does not declare resources.limits with at least one of cpu or memory. The shape catches the failure mode where a container deployed without resource limits causes cluster-stability failures: noisy-neighbor resource starvation, OOM-kill cascades, and scheduler inability to apply QoS guarantees. Production-context filter (§2.4, inherited from K8S-PRIVILEGED-01) suppresses files in test/, examples/, fixtures/, samples/, docs/ paths and YAML files with .test/.example/.dev/.local/.debug suffixes. Helm Go-template files are skipped at detector level (would route AMB.a if classified). v1 is permissive on incomplete limits — cpu OR memory present is sufficient, since the failure mode is 'no limits at all' not 'incomplete limits'. v1 detector emits per-container findings: a manifest with N containers where M lack limits produces M findings.",
       "implementation": {
-        "gate_file": "scripts/mvp-migration/deploy-window-gate.ts",
-        "function": "runDeployWindowGate",
-        "form": "retrospective-sequence-level",
-        "notes": "Not a per-file CI gate. Takes a whole MigrationSequence, extracts SET NOT NULL and ADD COLUMN NOT NULL DEFAULT events, and scans forward up to 30 migrations for DROP NOT NULL reverts on the same table.column. Only fires on confirmed revert pairs. A static per-file heuristic form for speculative DM-28 risk is not implemented and is not part of this shape's current form."
+        "gate_file": "scripts/iac/k8s-missing-limits-01-detector.ts",
+        "function": "runK8sMissingLimits01"
       },
-      "current_tier": "shipped",
+      "current_tier": "calibrated",
       "current_severity": "warning",
-      "ci_behavior": "retrospective-audit-only",
-      "calibration_status": "uncalibrated",
-      "promoted_attempts": [],
-      "tier_history": [
-        {"tier": "designed", "at": "fc2d72e", "reason": "Promoted from prose-only to designed-tier after Path B full-corpus revert discovery scan cleared the pre-locked DM-28 threshold from path-b-scoping-draft.md (two independent incidents of the safe-then-reverted deploy-window shape).", "date": "2026-04-14"},
-        {"tier": "shipped", "at": "e97a07a", "reason": "Registry honesty: detector implemented in scripts/mvp-migration/deploy-window-gate.ts and re-derived both cited incidents plus one sibling denormalized-table case (3 findings / 210 SET-NOT-NULL events on the 761-migration Prisma corpus, 1.4% retrospective base rate). Moved from designed to shipped so the registry reflects code reality. Explicitly uncalibrated: 3 findings is below the 10-finding sample-size floor and no precision number is claimed. Severity stays warning; CI behavior stays retrospective-audit-only, not a default warning gate.", "date": "2026-04-14"}
+      "ci_behavior": "warning-only",
+      "promoted_attempts": [
+        "k8s-missing-limits-01-v1-iac-argo-cd-v1-2026-04-29"
       ],
-      "corpus_suitability": [],
-      "evidence": [
+      "held_attempts": [
+        "k8s-missing-limits-01-v1-iac-k8s-manifests-v1-2026-04-29"
+      ],
+      "tier_history": [
         {
-          "incident": "cal.com RoutingForms.uuid",
-          "original_migration": "packages/prisma/migrations/20250618151833_add_uuid_to_app_routingforms_formresponse/migration.sql",
-          "revert_migration": "packages/prisma/migrations/20250626092518_app_routing_forms_form_response_uuid_nullable/migration.sql",
-          "pattern": "set_not_null then drop_not_null_revert (gap 1 migration, ~8 days)",
-          "notes": "Original DM-28 hypothesis incident from Path C. Team added NOT NULL to uuid column using a safe three-step pattern, then reverted NOT NULL in a follow-up migration while keeping the column and backfilled data. Revert signature is consistent with new writes from pre-migration application code failing during the deploy window."
+          "tier": "shipped",
+          "at": "2026-04-29",
+          "reason": "Pre-registration committed at fa340d4 binding the rubric: YAML manifest detection (§2.1), trigger predicate (§2.2 — no resources / no limits / empty limits / cpu+memory both absent), multi-document handling (§2.3), production-context filter (§2.4), six FP buckets (§4), nine AMB classes (§5), 5 binding fixtures + 7 spot tests (§10), §13 deterministic-remediation declared true with canonical fix specified, append-by-default (§11). Third k8s shape after K8S-PRIVILEGED-01 and CONTAINER-ROOT-01 v3; reuses YAML parser + container-traversal pattern unchanged. Sprint 2 of the IaC depth bet, pivoted from Terraform shapes after corpus-density finding.",
+          "date": "2026-04-29"
         },
         {
-          "incident": "cal.com Team.slug",
-          "original_migration": "packages/prisma/migrations/20221011001632_make_team_name_slug_required/migration.sql",
-          "revert_migration": "packages/prisma/migrations/20221107201132_add_team_subscription_cols/migration.sql",
-          "pattern": "set_not_null then drop_not_null_revert (gap 5 migrations, 27 days)",
-          "notes": "Second independent incident found by Path B on 2026-04-14. Different table, different feature area (teams vs routing forms), different time period (2022-10 vs 2025-06) from the first incident. Original migration carried a Prisma 'This step will fail if there are existing NULL values' warning and was shipped anyway; 27 days later a revert dropped NOT NULL on slug while the migration's stated purpose was to add unrelated subscription columns (createdAt, metadata). The revert being buried in an unrelated-purpose migration is the production-pressure-fix signature (not a same-day developer hotfix, not a years-later planned refactor, but the characteristic 'lived in prod for a few weeks, caused write failures, got quietly patched in the next touching migration' window)."
+          "tier": "calibrated",
+          "at": "30fd3cf",
+          "reason": "k8s-missing-limits-01-v1-iac-argo-cd-v1-2026-04-29: ratification under PROMOTION-DOCTRINE.md strong-single-corpus rule. argo-cd cleared the strong-single-corpus bar overwhelmingly: 149 TP / 0 FP / 0 AMB on 149-finding clean denominator = 100.00% precision, 0.00% ambiguity. argo-cd's manifests/ tree is the project's canonical install-manifest set (install.yaml, core-install.yaml, HA variants, ApplicationSet, redis HA, namespace-install). The project ships unbounded by design — operators are expected to add limits per cluster sizing — making 100% of production manifests genuine TPs under the predicate. Tier shipped→calibrated, severity uncalibrated→warning per first-promotion lock. Fourth IaC vertical calibration cycle, third k8s shape, validates that methodology generalizes through three k8s shapes with no rubric pollution. Companion corpus iac-k8s-manifests-v1 (kubernetes/kubernetes) held-to-bar with substrate-finding documentation: 53.57% precision is corpus-modeling failure (production-context filter §2.4 did not enumerate kubernetes monorepo test-artifact paths under staging/src/k8s.io/<component>/artifacts/), not shape precision failure.",
+          "date": "2026-04-29"
         }
       ],
-      "distinction_from_dm25": "DM-25 (designed, not yet promoted here) covers SET NOT NULL failures that manifest at migration execution time on non-empty tables without defaults. DM-28 covers SET NOT NULL that executes cleanly (either the column was nullable-to-NOT NULL with a completed backfill, or ADD COLUMN ... NOT NULL DEFAULT with a working default) but breaks new writes during the deploy window because application code running an older revision does not yet provide the value. DM-25 is a migration-execution failure; DM-28 is a deploy-coordination failure. A single migration can satisfy DM-25 without being vulnerable to DM-28 (if application code is simultaneously updated), and a single migration can be vulnerable to DM-28 without triggering DM-25 (if the column has a safe backfill but the application deploy lags).",
-      "distinction_from_dm18": "DM-18 (calibrated, shipped, error-severity) covers ADD COLUMN NOT NULL without DEFAULT and SET NOT NULL where the column has no default and is currently nullable — both of which will fail at migration execution time on a non-empty table. DM-28 covers the case where the migration succeeds. The failure mode is different (runtime writes failing post-migration vs the migration itself failing to execute) and the fix is different (coordinate application deploy vs add a default or backfill).",
+      "corpus_suitability": [
+        {
+          "corpus_id": "iac-argo-cd-v1",
+          "fires": true,
+          "reason": "Cleared strong-single-corpus bar at maximum precision: 149 TP / 0 FP / 0 AMB on 149-finding clean denominator = 100.00%. argo-cd manifests/ is the canonical OSS-published install tree shipping unbounded by design; every fire is a genuine TP under the predicate."
+        },
+        {
+          "corpus_id": "iac-k8s-manifests-v1",
+          "fires": true,
+          "reason": "Held v1 on corpus-modeling gap, not shape precision failure. 53.57% precision driven by 15 TPs that are kubernetes monorepo test artifacts under staging/src/k8s.io/<component>/artifacts/ paths the pre-reg §2.4 filter did not enumerate. Substrate-finding for v2 extracted-constraint move (METHODOLOGY-V2.md §8): expand production-context filter to recognize monorepo test-artifact path conventions."
+        }
+      ],
       "known_issues": [
-        "Not yet implemented. No gate file, no function. Designed-tier means the hypothesis is documented and the evidence meets the threshold; implementation and calibration are future work.",
-        "The detection signal requires looking forward from a migration to the application deploy window and backward from a revert to the originating migration — neither of which the existing single-file safety gates can do. A gate for DM-28 will need corpus-level or sequence-level analysis, not per-file checking.",
-        "Precision claims for DM-28 cannot come from production-merged corpora alone. The shape's suitable corpus class is revert-derived/pre-fix states where the 'broken deploy window was painful enough to trigger a revert' signal is on disk. The pre-fix pipeline v1 queued as follow-up work is the intended corpus class."
+        "v1 production-context filter §2.4 does not enumerate kubernetes monorepo test-artifact path conventions (staging/src/<repo>/<component>/artifacts/, staging/src/<repo>/<component>/<package>/<file>.yaml). Kubernetes/kubernetes corpus held-to-bar with this substrate-finding; v2 candidate is to expand the filter or adopt a stricter 'production manifest' predicate requiring deployment markers (replica counts, namespace bindings, label selectors).",
+        "v1 is permissive on incomplete limits: cpu-only or memory-only counts as 'has limits'. A v2 may tighten this if the ambiguity benefit outweighs the precision-loss risk.",
+        "Helm Go-template files skipped at detector level. Templated YAMLs that don't expand to literal limits are out-of-scope for v1.",
+        "Kustomize strategic-merge patches route to AMB.e (v1 does not resolve overlays).",
+        "YAML anchor / merge-key references on resources route to AMB.b (v1 does not resolve aliases).",
+        "Custom Resource Definitions where 'resources' is a string identifier (e.g., resources: medium) route to AMB.i.",
+        "Determinism check passed in both corpora (mismatch_count=0 on 28 + 149 classifications)."
+      ]
+    },
+    {
+      "id": "K8S-MISSING-PROBES-01",
+      "vertical": "infrastructure-as-code",
+      "category": "k8s-missing-liveness-readiness-probes",
+      "title": "Kubernetes manifest container missing both livenessProbe and readinessProbe",
+      "description": "A Kubernetes manifest YAML in production-context path declares a workload (Pod, Deployment, DaemonSet, StatefulSet, ReplicaSet, ReplicationController) where a container in spec.containers declares NEITHER livenessProbe NOR readinessProbe with at least one probe-action (httpGet, tcpSocket, exec, grpc) populated. The shape catches the failure mode where a container deployed without health probes blackholes traffic to dead replicas — kubelet cannot determine container liveness, kube-proxy cannot exclude unready containers from Service endpoints, and silent outages result. Production-context filter (§2.4, inherited from K8S-MISSING-LIMITS-01) suppresses files in test/, examples/, fixtures/, samples/, docs/ paths and YAML files with .test/.example/.dev/.local/.debug suffixes. Helm Go-template files are skipped at detector level. spec.initContainers and spec.ephemeralContainers are NOT walked (one-shot bootstrap/debug containers; probes don't apply by design per §2.5). Job and CronJob workload kinds are excluded at detector level (§2.2(d)) — one-shot containers exit on completion; probes are operationally meaningless. v1 detector emits per-container findings.",
+      "implementation": {
+        "gate_file": "scripts/iac/k8s-missing-probes-01-detector.ts",
+        "function": "runK8sMissingProbes01"
+      },
+      "current_tier": "calibrated",
+      "current_severity": "warning",
+      "ci_behavior": "warning-only",
+      "promoted_attempts": [
+        "k8s-missing-probes-01-v1-iac-argo-cd-v1-2026-04-29",
+        "k8s-missing-probes-01-v1-iac-k8s-manifests-v1-2026-04-29"
+      ],
+      "held_attempts": [],
+      "tier_history": [
+        {
+          "tier": "shipped",
+          "at": "2026-04-29",
+          "reason": "Pre-registration committed at b3feb96 binding the rubric: YAML manifest detection (§2.1), trigger predicate (§2.2 — no_probes if neither field declared, empty_probes if one or both declared but no probe-action populated), Job/CronJob exclusion at detector level (§2.2(d)), initContainers/ephemeralContainers exclusion (§2.2(c)), production-context filter (§2.4), six FP buckets (§4) including FP.d expanded for probe-by-design exclusions (metric exporters, log shippers), nine AMB classes (§5) with AMB.i routing for empty/no-action probes, 5 binding fixtures + 9 spot tests (§10), §13 deterministic-remediation declared FALSE (probe action varies fundamentally by workload), append-by-default (§11). Fifth IaC vertical cycle, fourth k8s shape, third under YAML parser primitive.",
+          "date": "2026-04-29"
+        },
+        {
+          "tier": "calibrated",
+          "at": "c5c521c",
+          "reason": "First two-corpus standard-path ratification of the IaC depth bet. PROMOTION-DOCTRINE.md two-corpus warning band: argo-cd 41 TP / 0 FP / 0 AMB on 41-finding clean denominator = 100.00% precision (blocking band) and kubernetes/kubernetes 13 TP / 12 FP / 0 AMB on 25-finding clean denominator = 52.00% precision (warning band, +2 percentage points above the 50% threshold). Both corpora cleared floor + warning + ambiguity cap independently. Two-corpus blocking unavailable because companion kubernetes precision (52%) below the ≥80% blocking threshold required of both. First-promotion lock to warning. Tier shipped→calibrated, severity uncalibrated→warning. Honest disclosure: kubernetes precision benefits from the §2.4 corpus-modeling gap (12 of 13 kubernetes TPs are monorepo test-artifact paths under staging/src/k8s.io/<component>/artifacts/ that the filter does not enumerate); v2 corpus-modeling fix would re-measure but the v1 result stands honestly as recorded under the v1 rubric. argo-cd 100% on 41 findings is the uncontested canonical signal of the shape's actual precision when the corpus has clean production-manifest separation. 15th calibrated shape overall, fourth k8s shape, fifth IaC vertical calibration cycle.",
+          "date": "2026-04-29"
+        }
+      ],
+      "corpus_suitability": [
+        {
+          "corpus_id": "iac-argo-cd-v1",
+          "fires": true,
+          "reason": "Cleared blocking band at 100% precision on 41-finding clean denominator. argo-cd manifests/ tree and gitops-engine agent ship without probes by design — operators expected to add probes per cluster sizing and observability stack. Every fire is a genuine TP under the predicate. Zero AMB.i empty_probes findings — every probe declaration has at least one probe-action populated."
+        },
+        {
+          "corpus_id": "iac-k8s-manifests-v1",
+          "fires": true,
+          "reason": "Cleared warning band at 52% precision on 25-finding clean denominator. Same substrate-finding as K8S-MISSING-LIMITS-01: 12 of 13 TPs are kubernetes monorepo test artifacts under staging/src/k8s.io/<component>/artifacts/ paths the §2.4 filter does not enumerate. 12 FPs cleanly classified by inherited rubric (7 FP.a cluster/addons/ build-tooling, 5 FP.d system-component workloads). v2 corpus-modeling fix would re-measure."
+        }
+      ],
+      "known_issues": [
+        "Same §2.4 corpus-modeling gap as K8S-MISSING-LIMITS-01: kubernetes monorepo test-artifact path convention (staging/src/<repo>/<component>/artifacts/) not enumerated. Inflates kubernetes corpus precision in v1; honest disclosure logged in v1 closeout.",
+        "v1 only walks spec.containers — initContainers and ephemeralContainers excluded by design per §2.2(c). v2 may add ephemeral-debug shape if substrate justifies.",
+        "Job and CronJob excluded at detector level. v2 may add a separate Job-failure shape (no restartPolicy, no activeDeadlineSeconds).",
+        "Probe action requirement (httpGet/tcpSocket/exec/grpc populated) is strict. Probes declared with only timing parameters route empty_probes → AMB.i. v2 may tighten to require initialDelaySeconds for slow-start workloads.",
+        "Helm Go-template files skipped at detector level. Templated YAMLs out-of-scope for v1.",
+        "Kustomize strategic-merge patches route to AMB.e.",
+        "YAML anchor / merge-key references on probe fields route to AMB.b.",
+        "Determinism check passed in both corpora (mismatch_count=0 on 41 + 25 classifications).",
+        "Cross-corpus aggregate precision (clean denom): 54 / 66 = 81.82%. Above blocking threshold in aggregate but two-corpus rule requires per-corpus ≥80%; not used for tier escalation."
+      ]
+    },
+    {
+      "id": "GHA-SHA-PIN-01",
+      "vertical": "infrastructure-as-code",
+      "category": "gha-third-party-action-tag-pin",
+      "title": "GitHub Actions workflow references third-party action by tag rather than commit SHA",
+      "description": "A GitHub Actions workflow file under .github/workflows/ references a third-party action (per first-party allowlist excluding actions/* and github/*) by tag (e.g., @v3, @v4.5.0) rather than by full 40-character commit SHA. The shape catches the supply-chain failure mode where a third-party action's tag is mutable; the action's owner can re-publish a tag pointing to compromised code, and downstream consumers running @v3 automatically pull and execute the compromised code with their secrets in scope (the 2025 tj-actions/changed-files compromise demonstrated this at scale). Production-context filter (§2.4) suppresses workflows with name field containing test/experimental/draft/playground tokens. Local references (./...), Docker image references (docker://...), first-party actions (actions/*, github/*), and SHA-pinned references are all excluded at detector level. v1 detector emits per-step findings with a ref_target_shape hint (tag/branch/short_sha/expression/matrix_ref) used by classifier for AMB routing. v2 classifier narrows the v1 AMB.a clause: major-version tags route TP rather than AMB.a, per industry consensus that tag-pinning is a real failure mode regardless of project release-policy claims.",
+      "implementation": {
+        "gate_file": "scripts/iac/gha-sha-pin-01-detector.ts",
+        "function": "runGhaShaPin01"
+      },
+      "current_tier": "calibrated",
+      "current_severity": "warning",
+      "ci_behavior": "warning-only",
+      "promoted_attempts": [
+        "gha-sha-pin-01-v2-gha-calcom-v1-2026-04-29",
+        "gha-sha-pin-01-v2-gha-triggerdev-v1-2026-04-29"
+      ],
+      "held_attempts": [
+        "gha-sha-pin-01-v1-gha-calcom-v1-2026-04-29",
+        "gha-sha-pin-01-v1-gha-triggerdev-v1-2026-04-29"
+      ],
+      "tier_history": [
+        {
+          "tier": "shipped",
+          "at": "2026-04-29",
+          "reason": "V1 pre-registration committed at f6cce9d. New parser primitive (GitHub Actions workflow YAML walker, distinct from k8s YAML and Dockerfile parsers). New role-tagged corpora gha-calcom-v1 + gha-triggerdev-v1. First cross-parser-family substrate test of the IaC vertical.",
+          "date": "2026-04-29"
+        },
+        {
+          "tier": "shipped",
+          "at": "5261cd9",
+          "reason": "V1 measurement held-to-bar with substrate finding: rubric §5 AMB.a clause swallowed the entire TP signal because the empirical OSS GHA tag-pinned population is uniformly @vN-shaped (Marketplace convention). 42 of 57 v1 findings routed AMB.a. Cal.com 0/4/16 (precision 0%, ambiguity 80%, denom 4 below floor); trigger.dev 0/11/26 (precision 0%, ambiguity 70.27%, denom 11 above floor). Held under all three thresholds. Honest-discipline preserved per METHODOLOGY-V2.md §3 frozen-rubric / §9 invalidation: no mid-run rubric expansion. V2 dispatched immediately.",
+          "date": "2026-04-29"
+        },
+        {
+          "tier": "calibrated",
+          "at": "999a2cc",
+          "reason": "V2 ratification under PROMOTION-DOCTRINE.md two-corpus standard-path warning band. Single-clause rubric narrowing per METHODOLOGY-V2.md §8 extracted-constraint pattern: v1 AMB.a major-version-tag clause removed; major-version tags route TP unless they hit FP.a (extended-trust publisher: docker/, aws-actions/, azure/, google-github-actions/, hashicorp/, pypa/) or AMB.e (Marketplace-verified-creator: codecov, snyk, sonarsource, slackapi, etc.). Cal.com 12/4/4 = 75.00% precision, 20.00% ambiguity. Trigger.dev 25/11/1 = 69.44% precision, 2.70% ambiguity. Both corpora cleared floor + warning + ambiguity cap independently. Two-corpus blocking unavailable (neither at 80%). First-promotion lock to warning. Tier shipped→calibrated, severity uncalibrated→warning. V1→V2 reproducibility check PASSED on both corpora: v2 findings.jsonl byte-identical to v1 findings.jsonl (positive determinism across rubric-narrowing boundary; detector code reused byte-identically; only classifier branched). 16th calibrated shape overall, sixth IaC vertical cycle, first cross-parser-family ratification.",
+          "date": "2026-04-29"
+        }
+      ],
+      "corpus_suitability": [
+        {
+          "corpus_id": "gha-calcom-v1",
+          "fires": true,
+          "reason": "Cleared warning band at 75% precision on 16-finding clean denominator. cal.com workflows (50 files, 194 uses, 7 SHA-pinned) provide high-density operator-deferred-decision signal. 12 TPs are major-version-tag references on non-allowlisted third-party publishers; 4 FP.a are extended-trust publishers (docker, hashicorp); 4 AMB.e are Marketplace-verified-creator publishers."
+        },
+        {
+          "corpus_id": "gha-triggerdev-v1",
+          "fires": true,
+          "reason": "Cleared warning band at 69.44% precision on 36-finding clean denominator. trigger.dev workflows (21 files, 115 uses, 2 SHA-pinned) provide companion-corpus signal. 25 TPs major-version-tag references; 11 FP.a extended-trust publishers; 1 AMB.e Marketplace-verified-creator."
+        }
+      ],
+      "known_issues": [
+        "v1 → v2 single-clause rubric evolution (within same session) demonstrates METHODOLOGY-V2.md §8 extracted-constraint pattern at its strongest. v1 honestly held; v2 ratified on a one-line classifier change with byte-identical detector reproducibility on findings.",
+        "Two-corpus blocking unavailable because neither corpus reached 80% precision. Cal.com 75% (4 FP.a extended-trust publishers limit precision); trigger.dev 69.44% (11 FP.a). A v3 cycle could narrow the extended-trust list (e.g., remove docker/* on the rationale that even Docker official actions have been compromised) but that's a separate substrate question.",
+        "First-party allowlist (§2.5) is conservative — actions/* and github/* only. Extended-trust list at FP.a (docker/, aws-actions/, azure/, google-github-actions/, hashicorp/, pypa/) is the v1 frozen scope; v2 may expand or contract based on threat-model evidence.",
+        "Marketplace-verified-creator allowlist at AMB.e is heuristic — v1 hard-codes a sample of widely-used verified creators (codecov, snyk, sonarsource, slackapi, gradle, jetbrains, cloudflare, goreleaser, softprops). v2 should query GitHub Marketplace API for canonical list (network call; would break determinism unless cached as a pinned snapshot dataset, similar to DEP-VULN-01's GHSA snapshot).",
+        "Branch references (@main, @master, @develop) route AMB.i — distinct from major-version-tag because branch is by-design mutable. v2 may route AMB.i as TP under a separate v3 cycle if substrate justifies.",
+        "Workflow-expression substitutions (${{ env.X }}) and matrix-strategy variables route AMB.c / AMB.d. v1 does not evaluate workflow expressions.",
+        "Composite action definitions (.github/actions/<name>/action.yml) and reusable workflow definitions are out of scope for v1.",
+        "Negative-control corpora documented for future v2 use: argo-cd 93% SHA-pinned (108/116), supabase 99% (163/164), sentry 80% (141/176), formbricks 81% (68/84). These corpora demonstrate the engine correctly stays quiet on disciplined supply chains.",
+        "Determinism: mismatch_count=0 on both corpora, both v1 and v2. v1→v2 findings.jsonl byte-equality check passed on both corpora — positive proof that rubric narrowing affected only classification, not detection."
+      ]
+    },
+    {
+      "id": "K8S-MISSING-SECURITY-CONTEXT-01",
+      "vertical": "infrastructure-as-code",
+      "category": "k8s-missing-non-root-enforcement",
+      "title": "Kubernetes manifest container has no effective non-root enforcement",
+      "description": "A Kubernetes manifest YAML in production-context path declares a workload (Pod, Deployment, DaemonSet, StatefulSet, ReplicaSet, ReplicationController) where a container in spec.containers has no effective non-root enforcement — meaning neither container-level nor inherited Pod-level securityContext provides runAsNonRoot:true OR runAsUser:<non-zero>. Detector walks Pod-level and container-level securityContext, resolves inheritance per Kubernetes semantics (container-level overrides Pod-level), and handles container-level explicit-opt-out cases (runAsNonRoot:false or runAsUser:0 blocks Pod-level inheritance). Three missing_shape categories emitted: no_security_context, no_non_root_fields, explicit_root. Production-context filter (§2.4, inherited) suppresses test/examples/fixtures paths. Helm Go-template files skipped at detector level. Job and CronJob excluded at detector level (out of v1 scope). FP.d clause is BROADER than prior k8s shapes: includes monitoring agents (datadog-agent, prometheus-node-exporter, fluentd, fluent-bit, logstash, filebeat, metricbeat, newrelic), security tooling (falco, tetragon, security-agent), CNI/CSI drivers (calico-node, cilium, flannel, weave, csi-*), system components (kube-proxy, kubelet, etcd, coredns, etc.), AND any container under Pod-level hostNetwork/hostPID/hostIPC/hostPath (by-design privileged context). Most structurally complex k8s detector to date.",
+      "implementation": {
+        "gate_file": "scripts/iac/k8s-missing-security-context-01-detector.ts",
+        "function": "runK8sMissingSecurityContext01"
+      },
+      "current_tier": "calibrated",
+      "current_severity": "warning",
+      "ci_behavior": "warning-only",
+      "promoted_attempts": [
+        "k8s-missing-security-context-01-v1-iac-argo-cd-v1-2026-04-29"
+      ],
+      "held_attempts": [
+        "k8s-missing-security-context-01-v1-iac-datadog-agent-v1-2026-04-29"
+      ],
+      "tier_history": [
+        {
+          "tier": "shipped",
+          "at": "2026-04-29",
+          "reason": "Pre-registration committed at d480f34. Multi-level securityContext walk + Pod-to-container inheritance + container-level override semantics + three missing_shape categories. Broader FP.d clause enumerated for monitoring-agent/security-tool/CNI populations. 5 binding fixtures + 15 spot tests; §13 deterministic-remediation declared TRUE. Seventh IaC vertical cycle, fifth k8s shape, first dispatch from corpus-expansion-sprint substrate pool (commit 75de434).",
+          "date": "2026-04-29"
+        },
+        {
+          "tier": "calibrated",
+          "at": "99617b5",
+          "reason": "Strong-single-corpus ratification per PROMOTION-DOCTRINE.md. argo-cd 14 TP / 0 FP / 0 AMB on 14-finding clean denominator = 100.00% precision, 0.00% ambiguity. Companion corpus iac-datadog-agent-v1 held-to-bar with substrate-finding documentation EXACTLY AS PREDICTED by pre-reg §7 (corpus selected because broader FP.d clause was load-bearing on monitoring-agent corpora; empirical 16 FP.d / 17 clean-denom matched prediction). First-promotion lock to warning. Tier shipped→calibrated, severity uncalibrated→warning. 17th calibrated shape overall, fifth IaC k8s shape. Third consecutive operator-deferred-decision shape to ratify at 100% on argo-cd (after MISSING-LIMITS 149/0/0 and MISSING-PROBES 41/0/0).",
+          "date": "2026-04-29"
+        }
+      ],
+      "corpus_suitability": [
+        {
+          "corpus_id": "iac-argo-cd-v1",
+          "fires": true,
+          "reason": "Cleared blocking band at 100% precision on 14-finding clean denominator. argo-cd manifests/ tree continues operator-deferred-decision pattern: containers ship without securityContext by design; operator is expected to apply Pod Security Standards or admission policies. Every fire is a genuine TP."
+        },
+        {
+          "corpus_id": "iac-datadog-agent-v1",
+          "fires": true,
+          "reason": "Held-to-bar at 5.88% precision with substrate-finding documentation. Corpus selected specifically because broader FP.d clause was load-bearing here; empirical 16 FP.d / 17 clean-denom confirms classifier correctly routes monitoring-agent containers (datadog-agent uses runAsUser:0 + hostPID:true legitimately). The 1 TP is a generic nginx HPA example without securityContext. This is the FP.d clause working as designed; held-row is honest substrate evidence, not failure."
+        }
+      ],
+      "known_issues": [
+        "Same §2.4 corpus-modeling gap as MISSING-LIMITS / MISSING-PROBES (kubernetes monorepo staging/src/.../artifacts/ paths). Documented; v2 candidate.",
+        "v1 only walks spec.containers per §2.2(c); initContainers/ephemeralContainers excluded.",
+        "Job and CronJob excluded at detector level.",
+        "Multi-field, multi-level predicate is the most structurally complex k8s detector to date. Container-level override semantics (runAsNonRoot:false OR runAsUser:0 blocks Pod-level inheritance) caught and fixed at fixture-time before measurement (real predicate-design bug surfaced through binding-fixture discipline).",
+        "FP.d clause is broader than MISSING-LIMITS/MISSING-PROBES because security-context predicate has wider by-design FP cluster. Enumerated explicitly in pre-reg §4. Heuristic; v2 may refine based on additional substrate.",
+        "AMB.i routes no_non_root_fields cases (operator declared securityContext but only set capabilities/allowPrivilegeEscalation/readOnlyRootFilesystem fields). 9 such findings on datadog-agent corpus.",
+        "Helm template skip; Kustomize → AMB.e; YAML anchor → AMB.b.",
+        "Determinism: mismatch_count=0 on both corpora.",
+        "explicit_root finding shape (runAsUser:0 or runAsNonRoot:false) treated equally with no_security_context for promotion (both represent same structural failure)."
+      ]
+    },
+    {
+      "id": "K8S-IMAGE-TAG-LATEST-01",
+      "vertical": "infrastructure-as-code",
+      "category": "k8s-image-tag-pinning",
+      "title": "Kubernetes Pod-template container uses :latest tag or no tag",
+      "description": "A Kubernetes manifest YAML in production-context path declares a workload (Pod, Deployment, DaemonSet, StatefulSet, ReplicaSet, ReplicationController) where a container in spec.containers references an image with `image: <repo>:latest` or `image: <repo>` (no tag, which Kubernetes implicit-defaults to :latest). The deployed container is whatever the registry's :latest tag points to at pull time, which can change between identical re-deploys. First k8s shape in verify substrate with string-pattern predicate (image tag check). Detector handles digest pinning (@sha256:...) as suppression, registry-with-port edge cases (registry.io:5000/org/repo:tag), and semantic version tags. Production-context filter (§2.4) suppresses test/examples/fixtures paths. Pre-reg explicitly enumerated FP.b cluster for argo-cd resource_customizations/*/health_test.yaml pattern (49 raw matches anticipated and handled). Job and CronJob excluded at detector level. FP.d narrowed to documentation/example workloads only (no by-design legitimate :latest production use case).",
+      "implementation": {
+        "gate_file": "scripts/iac/k8s-image-tag-latest-01-detector.ts",
+        "function": "runK8sImageTagLatest01"
+      },
+      "current_tier": "calibrated",
+      "current_severity": "warning",
+      "ci_behavior": "warning-only",
+      "promoted_attempts": [
+        "k8s-image-tag-latest-01-v1-iac-argo-cd-v1-2026-04-29"
+      ],
+      "held_attempts": [
+        "k8s-image-tag-latest-01-v1-iac-datadog-agent-v1-2026-04-29"
+      ],
+      "tier_history": [
+        {
+          "tier": "shipped",
+          "at": "2026-04-29",
+          "reason": "Pre-registration committed at 2a670a4. First k8s shape with string-pattern predicate (image tag check). FP buckets DELIBERATELY NARROW per pre-reg note (lesson from K8S-AUTOMOUNT-SA-TOKEN-01 v1): FP.b explicitly enumerates argo-cd resource_customizations test-data pattern; FP.d narrowed to documentation/example workloads only; AMB clauses limited to template/expression/anchor cases. 5 binding fixtures + 15 spot tests; §13 deterministic-remediation declared TRUE. Ninth IaC vertical cycle, sixth k8s shape, second dispatch from corpus-expansion-sprint substrate pool.",
+          "date": "2026-04-29"
+        },
+        {
+          "tier": "calibrated",
+          "at": "d46d426",
+          "reason": "Strong-single-corpus ratification per PROMOTION-DOCTRINE.md. argo-cd 62 TP / 0 FP / 0 AMB on 62-finding clean denominator = 100.00% precision, 0.00% ambiguity. CLEAREST IaC ratification of session in TP/FP/AMB distribution. Pre-reg FP.b enumeration empirically validated: anticipated 49 raw matches in resource_customizations/*/health_test.yaml were caught via testdata path + FP.b regex routing. Lessons from AUTOMOUNT v1 applied successfully — zero clause-swallow problem. Companion datadog-agent below floor (clean denom 1) but single finding correctly routed FP.d. Tier shipped→calibrated, severity uncalibrated→warning. 18th calibrated shape overall. FOURTH consecutive operator-deferred-decision shape to ratify at 100% on argo-cd (after MISSING-LIMITS 149/0/0, MISSING-PROBES 41/0/0, MISSING-SECURITY-CONTEXT 14/0/0).",
+          "date": "2026-04-29"
+        }
+      ],
+      "corpus_suitability": [
+        {
+          "corpus_id": "iac-argo-cd-v1",
+          "fires": true,
+          "reason": "Cleared blocking band at 100% precision on 62-finding clean denominator. argo-cd manifests/ and gitops-engine/agent/manifests/ trees ship with image: <repo>:latest because release process substitutes :vX.Y.Z at publish time. On the development SHA measured, every fire is a genuine TP under the predicate."
+        },
+        {
+          "corpus_id": "iac-datadog-agent-v1",
+          "fires": true,
+          "reason": "Held below floor (clean denom 1). The single finding (Dockerfiles/manifests/hpa-example/nginx.yaml) correctly routed FP.d. Pre-reg §7 predicted low-density companion (1-2 candidates); empirical 1 matched prediction exactly. datadog-agent uses pinned image tags throughout production manifests."
+        }
+      ],
+      "known_issues": [
+        "Same §2.4 corpus-modeling gap as MISSING-LIMITS / MISSING-PROBES / MISSING-SECURITY-CONTEXT (kubernetes monorepo staging/src/.../artifacts/ paths). Documented; v2 candidate.",
+        "v1 only walks spec.containers; initContainers/ephemeralContainers excluded.",
+        "Job and CronJob excluded at detector level.",
+        "String-pattern predicate handles standard image format [registry[:port]/]repo[:tag][@digest]. Unusual structures (multiple @ signs, multiple : after last /) route AMB.i defensively.",
+        "FP.d narrowed to documentation/example workloads only — no by-design legitimate :latest production use case.",
+        "FP.b explicitly enumerates argo-cd resource_customizations/*/(health_test|health_status|actions|wait_for|app_action).yaml pattern via regex (these files look like k8s manifests but are health-detection engine test data).",
+        "Helm template skip; Kustomize → AMB.e; YAML anchor → AMB.b.",
+        "Determinism: mismatch_count=0 on both corpora.",
+        "Pre-reg note explicitly references AUTOMOUNT v1 lesson and keeps FP/AMB clauses narrow. Empirical: zero clause-swallow."
+      ]
+    },
+    {
+      "id": "DOCKERFILE-BASE-IMAGE-DIGEST-UNPINNED-01",
+      "vertical": "infrastructure-as-code",
+      "category": "dockerfile-base-image-digest-unpinned",
+      "title": "Dockerfile FROM directive references an external image without a content-addressed digest pin",
+      "description": "A Dockerfile FROM directive references an external literal base image (not scratch, not a stage-alias, not ARG-driven) without a @sha256:<digest> content-addressed pin. The image can move behind the same Dockerfile, so the build is not byte-reproducible across re-pulls. v1 detector excludes ARG-driven FROMs at detector level (suppressed_arg_base counter) on substrate evidence from moby corpus where build-args dominate; classifier handles FP buckets including operator override comments, generated Dockerfiles, builder-only stages with digest-pinned runtime, and gcr.io/distroless nonroot tags. Risk family: supply-chain drift; pairs with GHA-SHA-PIN-01 which catches the same class in CI workflow YAML.",
+      "implementation": {
+        "gate_file": "scripts/iac/dockerfile-base-image-digest-unpinned-01-detector.ts",
+        "function": "runDockerfileBaseImageDigestUnpinned01"
+      },
+      "current_tier": "calibrated",
+      "current_severity": "warning",
+      "ci_behavior": "warning-only",
+      "promoted_attempts": [
+        "dockerfile-base-image-digest-unpinned-01-v1-iac-grafana-v1-2026-05-02",
+        "dockerfile-base-image-digest-unpinned-01-v1-iac-airflow-v1-2026-05-02"
+      ],
+      "tier_history": [
+        {
+          "tier": "shipped",
+          "at": "<pending>",
+          "reason": "Pre-registration committed binding the rubric: trigger predicate (S2.2 -- external + literal + missing @sha256 + production-context), detector-level scope for ARG / scratch / stage-alias / templated files (S2.6, NOT classifier ambiguity), six FP buckets (S4) including builder-only with digest-pinned runtime + distroless nonroot tags + operator overrides + generated Dockerfiles, six AMB classes (S5) with private-registry routing to AMB.a, 12 binding fixtures + 7 mechanical fixtures (S10), deterministic-remediation declared true (S13) with replace_literal + computed-digest template, append-by-default (S11). Eighth IaC vertical cycle, second Dockerfile-surface shape after CONTAINER-ROOT-01, selected by survey-iac-tier2-density.ts pivot from Tier 1 Terraform after Terraform corpus availability blocked Gate B.",
+          "date": "2026-05-02"
+        },
+        {
+          "tier": "calibrated",
+          "at": "<pending>",
+          "reason": "Two-corpus standard-path ratification. iac-grafana-v1 (primary): 30 TP / 0 FP / 0 AMB on 30-finding clean denominator = 100.00% precision, 0.00% ambiguity. iac-airflow-v1 (companion): 14 TP / 0 FP / 0 AMB on 14-finding clean denominator = 100.00% precision, 0.00% ambiguity. Both corpora cleared blocking-band precision (>=80%) and ambiguity cap (<=40%) independently. First-promotion lock applies: severity stays warning. Tier shipped -> calibrated, CI behavior not-yet-deployed -> warning-only. 12th IaC vertical promotion, second Dockerfile-surface promotion after CONTAINER-ROOT-01, first calibrated shape in the supply-chain drift risk family on the Dockerfile surface (pairs with GHA-SHA-PIN-01 which covers CI workflow YAML).",
+          "date": "2026-05-02"
+        }
+      ],
+      "corpus_suitability": [
+        {
+          "corpus_id": "iac-grafana-v1",
+          "fires": true,
+          "reason": "Survey 2026-05-02 returned lit_fire=30 / amb=7 (19% AMB), well under the 40% cap. Strong-single-corpus path is plausible if companion clears."
+        },
+        {
+          "corpus_id": "iac-airflow-v1",
+          "fires": true,
+          "reason": "Survey 2026-05-02 returned lit_fire=15 / amb=10 (40% AMB exactly at the cap). Threshold companion."
+        },
+        {
+          "corpus_id": "iac-moby-v1",
+          "fires": true,
+          "reason": "Held out of v1. Survey returned 80% AMB (40 of 50) driven by build-arg FROMs. v1 detector excludes ARG-driven FROMs at detector level (S2.6); a v2 cycle should re-measure moby once that suppression is confirmed against this corpus."
+        }
+      ],
+      "known_issues": [
+        "v1 FP.a internal-controlled-registry allowlist is empty by design; every private-registry FROM routes AMB.a unless an operator override comment is present. v2 may add audited registry+org combinations.",
+        "FP.e distroless nonroot/debug tags are classified as FP at v1 rather than detector-suppressed. Google documents these tag suffixes as effectively immutable; v2 audit may convert to detector-level suppression.",
+        "Multi-arch manifest list semantics are not modeled. A FROM with --platform= is parsed as a single image; cross-arch digest drift is out of v1 scope (AMB.d).",
+        "ONBUILD chain references in parent images are not resolved (AMB.e); v1 honors only the source text.",
+        "Project-documentation-declared immutability (e.g., README states tag stability) is not detected (AMB.f); only the per-FROM and file-level # verify:exception:digest-pin comment forms are honored."
       ]
     }
   ]

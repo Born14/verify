@@ -1,72 +1,74 @@
-# Verify Methodology
+# Verify methodology
 
-How Verify's claims are made and how you can check them.
+How Verify makes its claims, and how you can check them.
 
-## The problem
+## What Verify does
 
-AI agents and humans write database migrations that are syntactically valid but operationally unsafe. A migration that adds `NOT NULL` without a `DEFAULT` will succeed in development (empty table) and fail in production (millions of rows). No test suite catches this. No code reviewer sees it without knowing the production schema state.
+Verify reads the files changed by a pull request, runs a small set of structural checks against them, and posts a single receipt summarizing what it found. The receipt names:
 
-Verify catches these failures deterministically by parsing the migration SQL against the accumulated schema state from prior migrations.
+- which checks ran,
+- which fired and where,
+- which ran and were clear,
+- what was deliberately not checked, and
+- a SHA-256 digest pinning the result to a specific commit.
+
+The receipt is the product. Everything else is supporting evidence.
 
 ## Why deterministic
 
-A deterministic detector produces the same output for the same input, every time. No randomness, no model calls, no "confidence scores." When Verify says a migration is unsafe, the reason is a specific SQL pattern matched against a specific schema state. You can read the detector source, trace the logic, and agree or disagree.
+The checks are deterministic. Same files in, same receipt out, every time. No machine learning model in the check path, no random sampling, no "confidence score." When a check fires, the reason is a specific structural pattern in the file. You can read the detector source, trace the logic, and decide for yourself whether you agree.
 
-This property is what allows Verify to sit in a blocking CI gate. Probabilistic tools (LLM-based code review) produce false positives that vary between runs. Engineers disable them within a week. Deterministic tools produce consistent verdicts that engineers can evaluate once and trust going forward.
+That property is what allows the receipt to be useful in CI. Probabilistic tools produce different verdicts on different runs and engineers turn them off within a week. A deterministic receipt produces a verdict you can evaluate once and trust going forward.
 
-## The tier lifecycle
+## What "calibrated" means here
 
-Every failure shape in Verify's taxonomy has a tier that tells you how much to trust it.
+Every check Verify ships goes through the same pipeline before it lands in a receipt:
 
-### Observed
+1. **A pre-registered rubric** is written before any measurement runs. It says exactly what the check should fire on, what counts as a true positive, what counts as a false positive, and what counts as ambiguous. Once measurement starts, the rubric does not move.
+2. **A pinned third-party corpus** is selected. The corpus is a real open-source codebase frozen at a specific commit. Synthetic fixtures do not count.
+3. **The detector runs** against the corpus and emits findings.
+4. **Every finding is classified** against the rubric as true positive, false positive, or ambiguous.
+5. **A precision number is computed:** true positives divided by (true positives + false positives).
+6. **The attempt is recorded** in [calibration/attempts.jsonl](calibration/attempts.jsonl) — whether it promoted, whether it held to the bar, or whether it failed.
+7. **A check is promoted to "calibrated"** only if the precision clears a pre-set threshold on the corpus.
 
-A failure pattern has been identified and named. No detector exists yet. The shape lives in the taxonomy as a candidate for future development.
+Recording held-to-bar attempts as prominently as successful ones is the discipline that makes the ledger trustworthy. Anyone can publish wins. Publishing the misses is what proves the bar is real.
 
-### Shipped
+## The promotion paths
 
-A detector exists, has been tested against internal fixtures, and runs in the GitHub Action. Shipped shapes produce **warnings** in PR comments but do not block merges. They may produce false positives -- that's expected and acceptable at this tier.
+A check can promote in one of three ways. Each is defined before measurement; none is invented after the fact.
 
-### Calibrated
+- **Two-corpus standard.** The check clears the precision threshold on at least two independently-pinned corpora, with ambiguity below 50% on each. This is the default path; it shows the check generalizes.
+- **Strong-single-corpus.** The check clears the threshold on one corpus with at least 30 findings and ambiguity below 40%. This path exists for shapes whose base rate is naturally low across most corpora — rejecting them outright would hide real signals.
+- **Aggregate-rare-signal.** The check is summed across corpora with a tighter precision floor (95%) and a tighter ambiguity cap (25%). This path requires the rubric to declare aggregate evaluation in advance — it cannot be invoked after the data is in.
 
-The detector has been measured against a real-world corpus of production-merged migrations. The measurement produces a precision number (true positives vs false positives) and is published in the calibration registry. Only calibrated shapes with acceptable precision are promoted to **blocking** severity.
+## The published ledger
 
-Calibration is the gate for blocking merges. Nothing else.
+Three files in this repo:
 
-## The calibration bar
+- [calibration/shapes.json](calibration/shapes.json) — every shape Verify ships, its current tier, its severity in the receipt.
+- [calibration/corpora.json](calibration/corpora.json) — every corpus referenced by a calibration attempt, with the source repo and the pinned commit SHA.
+- [calibration/attempts.jsonl](calibration/attempts.jsonl) — every calibration attempt: shape, corpus, precision, ambiguity, disposition, and the reason for the disposition.
 
-To promote a shape from shipped to calibrated:
+Detector source and per-finding evidence stay private. The aggregate counts and dispositions are public so the receipt's claims are independently checkable from the ledger alone.
 
-1. **Pre-register the bar.** Before running the measurement, write down what precision is required for promotion. The bar does not move after the run.
-2. **Select a corpus.** The corpus must be production-merged migrations from real open-source projects. Synthetic fixtures do not count.
-3. **Run the detector against the corpus.** Record every finding.
-4. **Label every finding.** Each finding is manually reviewed and labeled true positive, false positive, or ambiguous by the author.
-5. **Compute precision.** True positives / (true positives + false positives).
-6. **Record the attempt.** The attempt is recorded in [attempts.jsonl](calibration/attempts.jsonl) regardless of outcome -- including failures and held-to-bar negatives.
-7. **Promote or hold.** If precision meets the pre-registered bar, the shape is promoted to calibrated and its severity changes to blocking. If not, the shape stays at shipped/warning and the held-to-bar negative is published.
+## Reproducing a receipt
 
-Publishing held-to-bar negatives is the discipline that makes the registry trustworthy. Anyone can publish successes. Publishing failures proves the bar is real.
+The receipt is byte-deterministic. Identical inputs (scan root, source commit, generated-at timestamp, Action bundle version) produce a byte-identical artifact.
 
-## The calibration registry
+```
+git clone <repo> && cd <repo> && git checkout <commit>
+bun scripts/iac/change-receipt/cli.ts . \
+  --out .verify --repo owner/name --pr 123 --source-commit <sha>
+```
 
-Three files, all public:
-
-- **[shapes.json](calibration/shapes.json)** -- every shape in the taxonomy, its current tier, its detector status, and its severity in the Action.
-- **[corpora.json](calibration/corpora.json)** -- every corpus used for calibration, its sources, its limitations, and its suitability for specific shapes. Includes commit SHAs for reproducibility.
-- **[attempts.jsonl](calibration/attempts.jsonl)** -- every calibration attempt. Each line records: the shape, the corpus, the date, the precision, the disposition (promoted or held-to-bar), and the reason.
-
-Per-finding evidence (individual TP/FP labels for each finding) is kept private. The aggregate counts and dispositions are public.
-
-## Reproducing a claim
-
-Every calibrated shape has a reproducibility section in [MEASURED-CLAIMS.md](scripts/mvp-migration/MEASURED-CLAIMS.md) that tells you how to re-run the measurement yourself. The corpus sources are public repositories. The detector source is readable. The schema replay logic is in [schema-loader.ts](scripts/mvp-migration/schema-loader.ts).
-
-If you get different numbers, [open an issue](https://github.com/Born14/verify/issues). The claim is falsifiable by design.
+If you get a different digest, the inputs differ — file an issue with what you changed.
 
 ## What Verify is not
 
-- **Not a security scanner.** Verify does not check for SQL injection, secrets, or vulnerabilities.
-- **Not a code reviewer.** Verify does not read application code or evaluate logic.
-- **Not a linter.** Verify does not check SQL style or formatting.
-- **Not a migration runner.** Verify does not execute migrations. It parses them statically.
+- Not a security scanner. Verify does not check for secrets, vulnerabilities, or runtime cloud state.
+- Not a code reviewer. Verify does not read application code or evaluate logic.
+- Not a linter. Verify does not check style.
+- Not a complete-coverage tool. Verify checks a small set of calibrated shapes and names everything else explicitly in the receipt's "Not checked" block.
 
-Verify checks one thing: whether a database migration is structurally safe to run against a production schema. It checks this deterministically, publishes its precision, and lets you verify the claim yourself.
+The product is the receipt: a short, honest record of what Verify did and didn't do, pinned to a digest you can verify yourself.
