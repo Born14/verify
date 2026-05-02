@@ -2,7 +2,7 @@
 
 ## What the Action does
 
-It posts a **calibrated change receipt** on every pull request. The receipt is a single artifact -- a markdown PR comment, plus `.json` and `.md` files -- that records:
+It posts a **PR change receipt** showing what was checked, what was found, and what was not checked. The receipt is a single artifact -- a markdown PR comment, plus `.json` and `.md` files -- that records:
 
 - which calibrated checks ran
 - which fired and where
@@ -69,7 +69,7 @@ Seven checks. Each row points at a calibration ledger entry that supports the pu
 | 6 | `GHA-SHA-PIN-01` | GitHub Actions | 75.00% on 20 / 69.44% on 37 |
 | 7 | `DOCKERFILE-BASE-IMAGE-DIGEST-UNPINNED-01` | Dockerfile | 100.00% on 30 / 100.00% on 14 |
 
-The supporting calibration evidence (rubric, classifier output, per-finding evidence) lives in the public ledger at `Born14/verify-engine` under `calibration/`.
+The public calibration ledger lives in this repo under [calibration/](../calibration/). Per-finding evidence and detector source stay private; the aggregate counts and dispositions are public so the receipt's claims are checkable from the ledger alone.
 
 ## What the Action emits
 
@@ -136,20 +136,11 @@ The `Not Checked` block ships in the receipt itself on every PR.
 - **completeness:recall** -- The receipt does not establish what verify missed. Calibration measures precision on pinned corpora, not recall on the inspected changeset.
 - **completeness:uncalibrated-shapes** -- Shipped-but-uncalibrated detectors are excluded from receipts until calibrated.
 
-## Reproducing a receipt locally
+## Reproducing a receipt
 
-```
-git clone <repo>
-cd <repo>
-git checkout <commit>
-bun scripts/iac/change-receipt/cli.ts . \
-  --out .verify \
-  --repo owner/name \
-  --pr 123 \
-  --source-commit <sha>
-```
+The receipt is byte-deterministic. Identical inputs (scan root, source commit, generated-at timestamp, Action bundle version) produce a byte-identical artifact and digest.
 
-Identical inputs (scan root, source commit, generated_at, engine commit) produce a byte-identical artifact.
+To reproduce a receipt for a given commit, install the Action on a repository and re-run the workflow against the same commit. The same Action bundle running against the same checkout will always produce the same digest. If you get a different digest from inputs you believe to be identical, please open an issue with the workflow run links and the receipt files.
 
 ## Versioning
 

@@ -1,8 +1,8 @@
 # Verify
 
-**A calibrated change receipt for every infrastructure pull request.**
+**Posts a PR change receipt showing what was checked, what was found, and what was not checked. Covers Kubernetes, Dockerfile, and GitHub Actions.**
 
-Verify creates calibrated Kubernetes, Dockerfile, and GitHub Actions change receipts. Each receipt records what was checked, what was found, and what was explicitly not checked. Every check carries a published precision number measured on a pinned third-party corpus under a pre-registered rubric.
+The receipt is the product. On every pull request, Verify writes a short artifact that names which checks ran, which fired and where, which ran and were clear, and what was deliberately not checked. Every check that runs carries a published precision number measured on a pinned third-party corpus under a pre-registered rubric.
 
 ## On every PR
 
@@ -49,7 +49,7 @@ Seven calibrated checks. Each links to a calibration ledger entry that supports 
 | `GHA-SHA-PIN-01` | GitHub Actions | 75.00% / 20 + 69.44% / 37 | supply-chain drift |
 | `DOCKERFILE-BASE-IMAGE-DIGEST-UNPINNED-01` | Dockerfile | 100.00% / 30 + 100.00% / 14 | supply-chain drift |
 
-The supporting calibration evidence (rubric, classifier output, per-finding evidence) is public at [Born14/verify-engine/calibration/](https://github.com/Born14/verify-engine/tree/main/calibration).
+The supporting calibration ledger lives in this repo at [calibration/](./calibration/): every shape, every corpus, and every attempt that produced the precision numbers above.
 
 ## What is not checked
 
@@ -62,15 +62,11 @@ This list ships in the receipt itself on every PR. Excerpted here so it's visibl
 - Runtime cloud state (deployed IAM, running pods, attached security groups) is not consulted.
 - Business logic, intent, recall, and uncalibrated detectors are out of scope.
 
-## Reproducing a receipt locally
+## Reproducing a receipt
 
-```
-git clone <repo> && cd <repo> && git checkout <commit>
-bun scripts/iac/change-receipt/cli.ts . \
-  --out .verify --repo owner/name --pr 123 --source-commit <sha>
-```
+The receipt is byte-deterministic: identical inputs (scan root, source commit, generated-at timestamp, Action bundle version) produce a byte-identical artifact. The same commit run twice through the Action will produce the same digest. Re-running on a different machine against the same checkout will produce the same digest.
 
-Identical inputs produce a byte-identical receipt.
+If you want a different digest, change one of those inputs. If you get a different digest from inputs you believe to be identical, that is a reproducibility bug — please open an issue.
 
 ## Status
 
@@ -78,4 +74,4 @@ Free during the design-partner phase.
 
 Terraform support is paused on public-corpus availability; the receipt's Not Checked block names that boundary explicitly until a Terraform check calibrates.
 
-The detector source, every calibration rubric, and the public ledger live at [Born14/verify-engine](https://github.com/Born14/verify-engine).
+The public calibration ledger lives in this repo at [calibration/](./calibration/). It includes every shape Verify ships, every corpus those shapes were measured against, and every calibration attempt — the ones that promoted and the ones that did not.

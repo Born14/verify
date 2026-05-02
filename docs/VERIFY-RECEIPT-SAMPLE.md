@@ -8,19 +8,9 @@ Inputs that produced this receipt:
 - pull request: `#1`
 - source commit: `1111111111111111111111111111111111111111`
 - generated_at: `2026-05-01T00:00:00.000Z`
-- engine commit: `0000000000000000000000000000000000000000`
+- Action bundle: pinned (the bundle version contributes to the digest)
 
-Reproduce locally (output is byte-identical):
-
-```
-bun scripts/iac/change-receipt/cli.ts demo/change-receipt-fixture \
-  --out demo/change-receipt-fixture/.verify \
-  --repo verify-demo/change-receipt-fixture \
-  --pr 1 \
-  --source-commit 1111111111111111111111111111111111111111 \
-  --generated-at 2026-05-01T00:00:00.000Z \
-  --engine-commit 0000000000000000000000000000000000000000
-```
+Identical inputs produce a byte-identical receipt. Re-running the same workflow against the same commit will produce the same digest.
 
 ---
 
@@ -174,8 +164,8 @@ packet_digest:         sha256:bceed6d396217a7ef677e2701c7a657b0f3721bc73b2b77eba
 
 What the reviewer sees:
 
-- **verify_engine_commit** -- the exact verify-engine code that produced the receipt.
-- **detector_versions** -- per-shape detector version. A v2 detector behaves differently from v1.
+- **verify_engine_commit** -- pins the exact version of the engine code that produced this receipt. If the engine changes, this commit changes, and the digest changes.
+- **detector_versions** -- per-shape detector version. A v2 detector behaves differently from v1; the version is part of the digest so the receipt cannot silently shift behaviour.
 - **packet_digest** -- SHA-256 over the receipt content. Identical inputs produce identical digests, byte-for-byte.
 
 ## Block 7 -- bottom banner

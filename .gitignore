@@ -13,11 +13,14 @@ src/report.ts
 src/verify.ts
 src/vision-helpers.ts
 src/types.ts
+src/types-migration.ts
 src/gates/
 src/runners/
 src/store/
 src/extractor/
 src/parsers/
+src/action/
+src/action-v2/
 
 # Substrate scripts
 scripts/harvest/
@@ -33,26 +36,9 @@ scripts/filesystem-smoke-test.ts
 scripts/message-smoke-test.ts
 scripts/sync-backup.sh
 
-# Substrate mvp-migration files (detectors stay, runners don't)
-scripts/mvp-migration/agent-corpus*.ts
-scripts/mvp-migration/backtest.ts
-scripts/mvp-migration/deploy-window-gate.ts
-scripts/mvp-migration/django-parser.py
-scripts/mvp-migration/django-runner.ts
-scripts/mvp-migration/dm28-*.ts
-scripts/mvp-migration/full-corpus-reverts.ts
-scripts/mvp-migration/historical-followup.ts
-scripts/mvp-migration/parse-one.ts
-scripts/mvp-migration/prefix-runner.ts
-scripts/mvp-migration/replay-engine.ts
-scripts/mvp-migration/repo-adapter.ts
-scripts/mvp-migration/test-*.ts
-scripts/mvp-migration/corpus/
-scripts/mvp-migration/fixtures/
-scripts/mvp-migration/reports/*
-# Published calibration evidence — un-ignore files MEASURED-CLAIMS.md references.
-!scripts/mvp-migration/reports/calibration-postfix-2026-04-12.jsonl
-scripts/mvp-migration/corpus/_repos/
+# Substrate mvp-migration files (whole subtree — migration-era, no longer
+# part of the public Gate A receipt surface)
+scripts/mvp-migration/
 
 # Substrate data
 data/
@@ -96,11 +82,13 @@ bun.lock
 tsconfig.json
 tsconfig.build.json
 
-# Dist (except the Action bundle which is tracked)
+# Dist (except the Action bundle and its slim calibration which are tracked)
 dist/*
 !dist/action/
 !dist/action/index.cjs
-!dist/action/libpg-query.wasm
+!dist/action/calibration/
+!dist/action/calibration/shapes.json
+!dist/action/calibration/attempts.jsonl
 
 # Nightly workflow (private)
 .github/workflows/nightly-improve.yml
