@@ -70,8 +70,6 @@ If you want a different digest, change one of those inputs. If you get a differe
 
 ## Status
 
-Free during the design-partner phase.
-
-Terraform support is paused on public-corpus availability; the receipt's Not Checked block names that boundary explicitly until a Terraform check calibrates.
+Free to use. Terraform support is paused on public-corpus availability; the receipt's Not Checked block names that boundary explicitly until a Terraform check calibrates.
 
 The public calibration ledger lives in this repo at [calibration/](./calibration/). It includes every shape Verify ships, every corpus those shapes were measured against, and every calibration attempt — the ones that promoted and the ones that did not.

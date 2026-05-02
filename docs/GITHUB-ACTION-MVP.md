@@ -148,4 +148,4 @@ The Action is published as `Born14/verify@v1`. The `v1` tag moves only when user
 
 ## Status
 
-Free during the design-partner phase. Terraform support is not currently in scope; the receipt's `Not Checked` block names that boundary explicitly until a Terraform check calibrates.
+Free to use. Terraform support is not currently in scope; the receipt's `Not Checked` block names that boundary explicitly until a Terraform check calibrates.
