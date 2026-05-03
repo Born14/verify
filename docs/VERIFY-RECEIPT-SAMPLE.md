@@ -127,7 +127,7 @@ What the reviewer sees:
 ## Block 5 -- NOT CHECKED
 
 ```
-This receipt does NOT attest to the items below. They are outside calibrated coverage at Gate A.
+This receipt does NOT attest to the items below. They are outside calibrated coverage at v1.
 
 - [NOT CHECKED] surface:terraform -- Terraform .tf files are not parsed.
 - [NOT CHECKED] surface:cloudformation -- CloudFormation YAML/JSON templates are not parsed.

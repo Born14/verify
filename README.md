@@ -35,7 +35,7 @@ jobs:
       - uses: Born14/verify@v1
 ```
 
-## What gets checked (Gate A)
+## What gets checked
 
 Seven calibrated checks. Each links to a calibration ledger entry that supports the published precision.
 

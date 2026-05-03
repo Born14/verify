@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "description": "Public calibration corpora for the Verify Gate A receipt product. Each entry pins a third-party repository at a specific commit; calibration measurements in attempts.jsonl reference these corpora by id.",
+  "description": "Public calibration corpora for the Verify v1 receipt product. Each entry pins a third-party repository at a specific commit; calibration measurements in attempts.jsonl reference these corpora by id.",
   "generated_from": {
     "attempts": "dist/action/calibration/attempts.jsonl",
     "engine_corpora": "calibration/corpora.json",

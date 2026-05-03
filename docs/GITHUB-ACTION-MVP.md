@@ -55,7 +55,7 @@ Optional input:
 
 Not inspected: Terraform, CloudFormation, Helm chart templates, Pulumi, CDK, Kustomize overlays.
 
-## Calibrated checks (Gate A)
+## Calibrated checks
 
 Seven checks. Each row points at a calibration ledger entry that supports the published precision.
 

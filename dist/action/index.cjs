@@ -9529,7 +9529,7 @@ function notCheckedBlock(receipt) {
   lines.push("## NOT CHECKED");
   lines.push("");
   lines.push(
-    "This receipt does NOT attest to the items below. They are outside calibrated coverage at Gate A."
+    "This receipt does NOT attest to the items below. They are outside calibrated coverage at v1."
   );
   lines.push("");
   for (const e of receipt.not_checked) {

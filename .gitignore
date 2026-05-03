@@ -37,7 +37,7 @@ scripts/message-smoke-test.ts
 scripts/sync-backup.sh
 
 # Substrate mvp-migration files (whole subtree — migration-era, no longer
-# part of the public Gate A receipt surface)
+# part of the public v1 receipt surface)
 scripts/mvp-migration/
 
 # Substrate data
@@ -51,6 +51,7 @@ fixtures/
 tests/
 
 # Internal planning docs (private)
+CLAUDE.md
 ASSESSMENT.md
 ROADMAP.md
 APRIL-2026-ANALYSIS.md
