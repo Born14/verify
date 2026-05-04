@@ -29,10 +29,10 @@ Every check Verify ships goes through the same pipeline before it lands in a rec
 3. **The detector runs** against the corpus and emits findings.
 4. **Every finding is classified** against the rubric as true positive, false positive, or ambiguous.
 5. **A precision number is computed:** true positives divided by (true positives + false positives).
-6. **The attempt is recorded** in [calibration/attempts.jsonl](calibration/attempts.jsonl) — whether it promoted, whether it held to the bar, or whether it failed.
+6. **The attempt is recorded** in [calibration/attempts.jsonl](calibration/attempts.jsonl) — whether it promoted, whether it did not, and the reason.
 7. **A check is promoted to "calibrated"** only if the precision clears a pre-set threshold on the corpus.
 
-Recording held-to-bar attempts as prominently as successful ones is the discipline that makes the ledger trustworthy. Anyone can publish wins. Publishing the misses is what proves the bar is real.
+Recording the attempts that did not promote as prominently as successful ones is the discipline that makes the ledger trustworthy. Anyone can publish wins. Publishing the misses is what proves the bar is real.
 
 ## The promotion paths
 

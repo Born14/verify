@@ -81,7 +81,7 @@
     },
     {
       "id": "iac-airflow-v1",
-      "description": "apache/airflow Dockerfile corpus for CONTAINER-ROOT-01 v2 measurement. Replaces iac-kubernetes-v1 (held v1 on private-registry AMB.c saturation) as the v2 second corpus. Apache Airflow is end-user workflow infrastructure that ships in containers; production Dockerfiles use public-base images (python, openjdk) heavily — different shape from container-tooling repos. 21 Dockerfiles at SHA 57955085ecfbd92567ac899406dc4269f966635d (cloned 2026-04-29).",
+      "description": "apache/airflow Dockerfile corpus for CONTAINER-ROOT-01 v2 measurement. Replaces iac-kubernetes-v1 (held v1 on private-registry an ambiguity bucket saturation) as the v2 second corpus. Apache Airflow is end-user workflow infrastructure that ships in containers; production Dockerfiles use public-base images (python, openjdk) heavily — different shape from container-tooling repos. 21 Dockerfiles at SHA 57955085ecfbd92567ac899406dc4269f966635d (cloned 2026-04-29).",
       "status": "active",
       "sourced_at": "2026-04-29",
       "corpus_type": "oss-production-iac",
@@ -113,7 +113,7 @@
       },
       "limitations": [
         "Sparse-clone fetched only Dockerfile* files.",
-        "Airflow's Dockerfile.ci variant tests §2.4 filename-suffix filter."
+        "Airflow's Dockerfile.ci variant tests filename-suffix filter."
       ]
     },
     {
@@ -129,7 +129,7 @@
           "sha": "f71239cc2a69614bf2f2e60e4f86ab20a6364ac8",
           "scope": "*.yaml and *.yml files anywhere in repo",
           "iac_format": "kubernetes-yaml",
-          "notes": "Sparse-checkout YAML-only. 31 production workload manifests after §2.4 production-context filter."
+          "notes": "Sparse-checkout YAML-only. 31 production workload manifests after production-context filter."
         }
       ],
       "adapters": [
@@ -174,11 +174,11 @@
           "K8S-MISSING-LIMITS-01",
           "K8S-MISSING-PROBES-01",
           "K8S-MISSING-SECURITY-CONTEXT-01",
-          "K8S-AUTOMOUNT-SA-TOKEN-01",
+          "K8S-a prior cycle-SA-TOKEN-01",
           "K8S-IMAGE-TAG-LATEST-01"
         ],
         "unsuitable_for": [],
-        "suitability_reason": "Primary corpus for multiple operator-deferred-decision k8s shapes. 31 production manifests after §2.4 filter; argo-cd manifests/ tree ships unbounded by design — every fire is a genuine TP under operator-deferred-decision predicates. 367 non-templated container-bearing documents and 178 Pod-template kinds. For K8S-IMAGE-TAG-LATEST-01: known FP.b cluster at resource_customizations/*/health_test.yaml (49 raw matches) which pre-reg explicitly enumerates."
+        "suitability_reason": "Primary corpus for multiple operator-configured k8s shapes. 31 production manifests after filter; argo-cd manifests/ tree ships unbounded by design — every fire is a genuine TP under operator-configured predicates. 367 non-templated container-bearing documents and 178 Pod-template kinds. For K8S-IMAGE-TAG-LATEST-01: known a false-positive bucket cluster at resource_customizations/*/health_test.yaml (49 raw matches) which pre-reg explicitly enumerates."
       },
       "limitations": [
         "Sparse-clone YAML-only. argo-cd's manifest paths under manifests/ and install/ are production-context."
@@ -218,7 +218,7 @@
       },
       "limitations": [
         "Same sparse-clone scope as iac-kubernetes-v1.",
-        "Grafana uses some Dockerfile.* variants (Dockerfile.dev, Dockerfile.ubuntu) that test §2.1 source-format rules and §2.4 production-context filter."
+        "Grafana uses some Dockerfile.* variants (Dockerfile.dev, Dockerfile.ubuntu) that test source-format rules and production-context filter."
       ]
     },
     {
@@ -267,11 +267,11 @@
           "K8S-MISSING-PROBES-01"
         ],
         "unsuitable_for": [],
-        "suitability_reason": "Largest available k8s-manifest corpus. 6080 YAML files clear sample floor by orders of magnitude after production-context filter applies. Note: §2.4 production-context filter does not enumerate kubernetes monorepo test-artifact path conventions (staging/src/<repo>/<component>/artifacts/); v2 candidate."
+        "suitability_reason": "Largest available k8s-manifest corpus. 6080 YAML files clear sample floor by orders of magnitude after production-context filter applies. Note: production-context filter does not enumerate kubernetes monorepo test-artifact path conventions (staging/src/<repo>/<component>/artifacts/); v2 candidate."
       },
       "limitations": [
         "Many tests/ and e2e/ subdirs; production-context filter expected to suppress aggressively.",
-        "§2.4 corpus-modeling gap on staging/src/.../artifacts/ inflates TP counts on operator-deferred-decision shapes; documented in MISSING-LIMITS and MISSING-PROBES v1 closeouts."
+        "corpus-modeling gap on staging/src/.../artifacts/ inflates TP counts on operator-configured shapes; documented in MISSING-LIMITS and MISSING-PROBES v1 closeouts."
       ]
     }
   ]
