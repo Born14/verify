@@ -35,6 +35,39 @@ jobs:
       - uses: Born14/verify@v1
 ```
 
+## Optional: fail CI on findings
+
+By default the receipt is informational. To make the workflow fail when there are non-suppressed findings, add `fail-on-findings: true`:
+
+```yaml
+      - uses: Born14/verify@v1
+        with:
+          fail-on-findings: true
+```
+
+Suppressed findings (declared with an in-band `# verify:ignore <SHAPE-ID> reason:"..."` comment) do not trigger the failure. They are still recorded in the receipt and covered by the digest.
+
+## Suppressing a finding intentionally
+
+Sometimes a finding fires on something you've decided is correct (a dev cluster running an edge tag, an internal action you trust). Verify lets you declare that intent in-band, on the line where the finding fires:
+
+```yaml
+spec:
+  containers:
+    # verify:ignore K8S-MISSING-LIMITS-01 reason:"unbounded by design pending sizing review"
+    - name: api
+      image: ghcr.io/example/api:1.4.2
+```
+
+A suppression must:
+
+- Use the exact syntax `# verify:ignore <SHAPE-ID> reason:"<text>"`
+- Be on the same line as the trigger (trailing) or the line immediately above it
+- Name a real shape ID (typos are reported as warnings)
+- Provide a non-empty reason
+
+Suppressions move the finding out of the primary findings list and into a separate "Manifest Intent / Suppressions" block on the receipt. They are part of the digest, so they cannot be silently removed without changing the receipt's hash. A reviewer reading the receipt sees both the suppression and the reason.
+
 ## What gets checked
 
 Seven calibrated checks. Each links to a calibration ledger entry that supports the published precision.

@@ -15,6 +15,10 @@ inputs:
     description: 'Directory to scan. Default is the repo root.'
     required: false
     default: '.'
+  fail-on-findings:
+    description: 'When true, the workflow exits non-zero if the receipt has any non-suppressed findings. Suppressions declared in-band with `# verify:ignore <SHAPE-ID> reason:"..."` comments do not trigger failure. Default false; the receipt is informational unless this is set.'
+    required: false
+    default: 'false'
 
 outputs:
   result:

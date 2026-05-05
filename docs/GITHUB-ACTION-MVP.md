@@ -37,13 +37,48 @@ jobs:
 
 That is the entire setup. The default `GITHUB_TOKEN` is sufficient.
 
-Optional input:
+Optional inputs:
 
 ```yaml
       - uses: Born14/verify@v1
         with:
-          scan-root: .   # default: repo root
+          scan-root: .              # default: repo root
+          fail-on-findings: false   # default: false; set to true to fail CI on non-suppressed findings
 ```
+
+`fail-on-findings` is the policy lever. The receipt's calibrated severity is determined by the methodology and stays at warning regardless of this setting. The CI failure is your team's policy, not Verify's claim about the shape. Suppressed findings (see "Intentional suppressions" below) do not trigger the failure.
+
+## Intentional suppressions
+
+When a developer determines a finding is intentional, they can declare that in-band with a comment on the trigger line or the line immediately above it:
+
+```
+# verify:ignore <SHAPE-ID> reason:"<text>"
+```
+
+Examples:
+
+```yaml
+# A trailing comment on the trigger line:
+spec:
+  containers:
+    - name: api
+      image: ghcr.io/example/api:latest  # verify:ignore K8S-IMAGE-TAG-LATEST-01 reason:"dev-only deploy; cluster pinned to dev tag"
+```
+
+```yaml
+# A standalone comment on the line immediately above the trigger:
+spec:
+  containers:
+    # verify:ignore K8S-MISSING-LIMITS-01 reason:"unbounded by design pending sizing review"
+    - name: api
+```
+
+A suppression must declare a real shape ID and a non-empty reason. Suppressions move the finding out of the primary findings block into the receipt's `MANIFEST INTENT / SUPPRESSIONS` block, where the file path, shape, comment line, and reason are all recorded. Suppressions are part of the receipt's SHA-256 packet digest -- they cannot be silently removed without changing the digest.
+
+Verify does not infer author intent. It only records intent that operators declare explicitly via these comments.
+
+If a `# verify:ignore` comment is found but does not match any fired finding (e.g. the shape ID is misspelled, or the comment is on a line where no detector fired), Verify records a suppression warning rather than silently treating it as a no-op.
 
 ## Surfaces inspected
 
