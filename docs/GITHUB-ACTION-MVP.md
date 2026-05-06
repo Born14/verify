@@ -87,12 +87,13 @@ If a `# verify:ignore` comment is found but does not match any fired finding (e.
 | Kubernetes | `*.yaml`, `*.yml` (excludes `.github/workflows/`, `examples/`, `tests/`, `fixtures/`, etc., and Helm-templated YAML) |
 | Dockerfile | `Dockerfile`, `Dockerfile.<suffix>`, `Containerfile` |
 | GitHub Actions | `.github/workflows/*.yml`, `.github/workflows/*.yaml` |
+| Terraform (narrow) | `*.tf` files inspected only by `TF-SG-WORLD-OPEN-INGRESS-01` (the first calibrated Terraform shape, warning-only). Other Terraform structure is not inspected. |
 
-Not inspected: Terraform, CloudFormation, Helm chart templates, Pulumi, CDK, Kustomize overlays.
+Not inspected (full surface): most Terraform structure beyond the security-group ingress shape, CloudFormation, Helm chart templates, Pulumi, CDK, Kustomize overlays.
 
 ## Calibrated checks
 
-Seven checks. Each row points at a calibration ledger entry that supports the published precision.
+Eight checks. Each row points at a calibration ledger entry that supports the published precision.
 
 | # | Shape | Surface | Calibrated precision |
 |---|---|---|---|
@@ -103,6 +104,7 @@ Seven checks. Each row points at a calibration ledger entry that supports the pu
 | 5 | `K8S-IMAGE-TAG-LATEST-01` | Kubernetes | 100.00% on 62 (`iac-argo-cd-v1`) |
 | 6 | `GHA-SHA-PIN-01` | GitHub Actions | 75.00% on 20 / 69.44% on 37 |
 | 7 | `DOCKERFILE-BASE-IMAGE-DIGEST-UNPINNED-01` | Dockerfile | 100.00% on 30 / 100.00% on 14 |
+| 8 | `TF-SG-WORLD-OPEN-INGRESS-01` | Terraform | 100.00% on 32 (warning-only, strong-single-corpus, v1.1 same-module resolver) |
 
 The public calibration ledger lives in this repo under [calibration/](../calibration/). Per-finding evidence and detector source stay private; the aggregate counts and dispositions are public so the receipt's claims are checkable from the ledger alone.
 
@@ -119,7 +121,9 @@ Three files in `.verify/` under the workflow's working directory:
 
 The Action posts the contents of `verify-receipt.pr-comment.md` to the PR. If a prior Verify comment exists, the Action replaces it.
 
-## Sample PR comment
+## Sample PR comment (historical, v1 schema; frozen)
+
+The block below is the v1-schema sample receipt. It is preserved verbatim because its digest (`sha256:bceed6d3…`) is referenced as an audit anchor for the v1 schema. The current Action ships the v1.3 schema with eight calibrated checks (including `TF-SG-WORLD-OPEN-INGRESS-01`); a current-state sample lives in [VERIFY-RECEIPT-SAMPLE-v1.3.md](VERIFY-RECEIPT-SAMPLE-v1.3.md).
 
 ```
 VERIFY CHANGE RECEIPT
@@ -161,7 +165,7 @@ The `Not Checked` block ships in the receipt itself on every PR.
 
 ## Not Checked (full list)
 
-- **surface:terraform** -- Terraform .tf files are not parsed.
+- **surface:terraform** -- Most Terraform .tf surface area is not parsed; only the security-group ingress shape (`TF-SG-WORLD-OPEN-INGRESS-01`, warning-only) is calibrated under the v1.1 same-module resolver.
 - **surface:cloudformation** -- CloudFormation YAML/JSON templates are not parsed.
 - **surface:helm-templated** -- Helm chart templates (`{{ ... }}` expressions) are skipped at detector level.
 - **surface:kustomize-overlays** -- Kustomize strategic-merge patches and overlay resolution are not modeled.

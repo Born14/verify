@@ -1,6 +1,6 @@
 # Verify
 
-**Posts a PR change receipt showing what was checked, what was found, and what was not checked. Covers Kubernetes, Dockerfile, and GitHub Actions.**
+**Posts a PR change receipt showing what was checked, what was found, and what was not checked. Covers Kubernetes, Dockerfile, GitHub Actions, and one Terraform shape (warning-only).**
 
 The receipt is the product. On every pull request, Verify writes a short artifact that names which checks ran, which fired and where, which ran and were clear, and what was deliberately not checked. Every check that runs carries a published precision number measured on a pinned third-party corpus under a pre-registered rubric.
 
@@ -70,7 +70,7 @@ Suppressions move the finding out of the primary findings list and into a separa
 
 ## What gets checked
 
-Seven calibrated checks. Each links to a calibration ledger entry that supports the published precision.
+Eight calibrated checks. Each links to a calibration ledger entry that supports the published precision.
 
 | Shape | Surface | Calibrated precision | Risk family |
 |---|---|---|---|
@@ -81,6 +81,9 @@ Seven calibrated checks. Each links to a calibration ledger entry that supports 
 | `K8S-IMAGE-TAG-LATEST-01` | Kubernetes | 100.00% / 62 | supply-chain drift |
 | `GHA-SHA-PIN-01` | GitHub Actions | 75.00% / 20 + 69.44% / 37 | supply-chain drift |
 | `DOCKERFILE-BASE-IMAGE-DIGEST-UNPINNED-01` | Dockerfile | 100.00% / 30 + 100.00% / 14 | supply-chain drift |
+| `TF-SG-WORLD-OPEN-INGRESS-01` | Terraform | 100.00% / 32 (warning-only, strong-single-corpus) | public exposure |
+
+The Terraform shape is the first calibrated Terraform row. It is narrow but real: one shape, warning-only, single-corpus, measured under the v1.1 same-module Terraform resolver. Not "Terraform solved" and not blocking-tier; future Terraform shapes ship when each one earns its own ledger row.
 
 The supporting calibration ledger lives in this repo at [calibration/](./calibration/): every shape, every corpus, and every attempt that produced the precision numbers above.
 
@@ -88,7 +91,7 @@ The supporting calibration ledger lives in this repo at [calibration/](./calibra
 
 This list ships in the receipt itself on every PR. Excerpted here so it's visible before install:
 
-- Terraform .tf files are not parsed.
+- Most Terraform .tf surface area is not parsed; only the security-group ingress shape (`TF-SG-WORLD-OPEN-INGRESS-01`, warning-only) is calibrated under the v1.1 same-module resolver.
 - CloudFormation templates are not parsed.
 - Helm-templated YAML (`{{ ... }}` expressions) is skipped at detector level.
 - Kustomize overlays are not resolved.
@@ -103,6 +106,6 @@ If you want a different digest, change one of those inputs. If you get a differe
 
 ## Status
 
-Free to use. Terraform support is paused on public-corpus availability; the receipt's Not Checked block names that boundary explicitly until a Terraform check calibrates.
+Free to use. The first calibrated Terraform shape ships in v1.3 (warning-only, narrow but real); the rest of the Terraform surface remains uncovered, and the receipt's Not Checked block names that boundary explicitly until additional Terraform checks calibrate.
 
 The public calibration ledger lives in this repo at [calibration/](./calibration/). It includes every shape Verify ships, every corpus those shapes were measured against, and every calibration attempt — the ones that promoted and the ones that did not.

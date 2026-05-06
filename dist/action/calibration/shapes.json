@@ -409,6 +409,58 @@
         "ONBUILD chain references in parent images are not resolved (an ambiguity bucket); v1 honors only the source text.",
         "Project-documentation-declared immutability (e.g., README states tag stability) is not detected (an ambiguity bucket); only the per-FROM and file-level # verify:exception:digest-pin comment forms are honored."
       ]
+    },
+    {
+      "id": "TF-SG-WORLD-OPEN-INGRESS-01",
+      "vertical": "infrastructure-as-code",
+      "category": "terraform-security-group-world-open-ingress",
+      "title": "Terraform AWS security group ingress opens sensitive service access to the world",
+      "description": "A Terraform AWS security-group ingress declaration allows 0.0.0.0/0 or::/0 to a sensitive port, open-all rule, or broad port range containing a sensitive port. v1.1 substrate resolves same-module var/local defaults before detector evaluation, so findings can include mechanically resolved CIDR and port values.",
+      "implementation": {
+        "gate_file": "scripts/iac/terraform/tf-sg-world-open-ingress-01-detector.ts",
+        "runner_file": "scripts/iac/terraform/run-tf-sg-world-open-ingress-01-measurement.ts",
+        "function": "runTfSgWorldOpenIngress01"
+      },
+      "rubric": "calibration/TF-SG-WORLD-OPEN-INGRESS-01-v1.1-pre-registration.md",
+      "substrate_version": "v1.1",
+      "current_tier": "calibrated",
+      "current_severity": "warning",
+      "ci_behavior": "warning-only",
+      "promoted_attempts": [
+        "tf-sg-world-open-ingress-01-v1.1-devops-in-the-cloud-2026-05-06"
+      ],
+      "tier_history": [
+        {
+          "tier": "shipped",
+          "at": "<pending>",
+          "reason": "Terraform v1 substrate detector and v1 pre-registration authored for AWS security-group world-open ingress. v1 semantics routed var/local references to AMB.",
+          "date": "2026-05-05"
+        },
+        {
+          "tier": "calibrated",
+          "at": "<pending>",
+          "reason": "Strong-single-corpus promotion on devops-in-the-cloud under v1.1 substrate: 32 true positives, 0 false positives, 16 ambiguous on 48 findings, 100.00% clean precision, 33.33% ambiguity, deterministic. nextgen-sample-app excluded as duplicate corpus. project promotion policy keeps severity at warning.",
+          "date": "2026-05-06"
+        }
+      ],
+      "corpus_suitability": [
+        {
+          "corpus_id": "devops-in-the-cloud",
+          "fires": true,
+          "reason": "v1.1 measurement cleared strong-single-corpus path: 32 true positives, 0 false positives, 16 ambiguous, 100.00% precision, 33.33% ambiguity."
+        },
+        {
+          "corpus_id": "nextgen-sample-app",
+          "fires": false,
+          "reason": "Excluded from independence claims after byte-identical Terraform finding fingerprint matched devops-in-the-cloud."
+        }
+      ],
+      "known_issues": [
+        "Promotion is strong-single-corpus, not two-corpus. Generalization across independent Terraform corpora remains future work.",
+        "v1.1 resolves only same-module var/local literal defaults. Cross-module inputs, data sources, jsonencode, file/templatefile, for-expressions, and dynamic block expansion remain AMB or out of scope.",
+        "First calibrated Terraform row is warning-only by project promotion policy despite blocking-band precision.",
+        "Runtime duplicate-corpus warning is a late-stage guard; corpus-pool curation still needs an earlier content-fingerprint dedup gate."
+      ]
     }
   ]
 }

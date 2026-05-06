@@ -1,5 +1,5 @@
 name: 'Verify by Born14'
-description: 'Posts a PR change receipt showing what was checked, what was found, and what was not checked. Covers Kubernetes, Dockerfile, and GitHub Actions.'
+description: 'Posts a PR change receipt showing what was checked, what was found, and what was not checked. Covers Kubernetes, Dockerfile, GitHub Actions, and one Terraform shape (warning-only).'
 author: 'Born14'
 
 branding:
