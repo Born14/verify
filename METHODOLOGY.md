@@ -52,9 +52,37 @@ Three files in this repo:
 
 Detector source and per-finding evidence stay private. The aggregate counts and dispositions are public so the receipt's claims are independently checkable from the ledger alone.
 
+## Methodology vs. policy
+
+The receipt represents the methodology. The CI behaviour represents your team's policy. These are deliberately decoupled.
+
+A check's calibrated severity reflects what the calibration measurement supports. A check that has cleared the bar on one corpus but not two stays at warning severity until cross-corpus confirmation. The receipt's `status` reflects this honestly.
+
+Whether your CI fails on a finding is a separate question, owned by your team. The Action's `fail-on-findings` input lets you opt into hard-stop enforcement. The receipt's severity claim does not move when you do; only the CI behaviour does. Severity belongs to the discipline. Enforcement belongs to you.
+
+## Suppressions and intent
+
+Verify does not infer author intent. Sometimes a finding fires on something the operator has decided is correct — a dev cluster running an edge tag, an internal action they trust. The receipt records that intent only when the operator declares it explicitly.
+
+The mechanism is an in-band comment on the trigger line or the line immediately above it:
+
+```
+# verify:ignore <SHAPE-ID> reason:"<text>"
+```
+
+A suppression must declare a real shape ID and a non-empty reason. When a suppression is recognized:
+
+- The finding moves out of the primary findings list and into the receipt's "Manifest Intent / Suppressions" block.
+- The file path, shape ID, comment line, and verbatim reason are recorded.
+- The suppression record is part of the receipt's SHA-256 packet digest.
+
+The packet digest covering suppressions is the load-bearing property here. A suppression cannot be silently removed: doing so changes the digest. A reviewer reading two receipts can tell whether a suppression was added, removed, or modified between commits. The audit chain holds.
+
+Comments that look like suppressions but don't match a fired finding (typo'd shape ID, comment placed where no detector fired) are recorded as suppression warnings rather than silently treated as no-ops. Silent failures are the enemy of auditable systems.
+
 ## Reproducing a receipt
 
-The receipt is byte-deterministic. Identical inputs (scan root, source commit, generated-at timestamp, Action bundle version) produce a byte-identical artifact.
+The receipt is byte-deterministic. Identical inputs (scan root, source commit, generated-at timestamp, Action bundle version, including any in-band suppression comments) produce a byte-identical artifact.
 
 ```
 git clone <repo> && cd <repo> && git checkout <commit>
